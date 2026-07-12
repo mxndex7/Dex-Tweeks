@@ -2,6 +2,10 @@
 
 **Dex Tweaks** é um script em Batch para Windows que reúne um conjunto de otimizações de desempenho, privacidade e estabilidade voltadas para usuários avançados e jogadores. O script possui interface interativa, verificações de pré-requisito e diversas opções de configuração para melhorar o comportamento do sistema e dos navegadores.
 
+<p align="center">
+  <img src="dt.img.png" alt="Banner do Projeto" width="100%">
+</p>
+
 ## Visão geral
 
 - Nome do arquivo: `Dex-Tweaks.bat`
