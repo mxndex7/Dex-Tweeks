@@ -1,15 +1,23 @@
 # Dex Tweaks
 
-Painel administrativo em Batch para Windows 11 que reúne diagnóstico, manutenção, privacidade, configuração de hardware e ajustes de desempenho em um único arquivo executável: `Dex-Tweaks.bat`.
+Painel administrativo em Batch para Windows 10 e Windows 11 que reúne diagnóstico, manutenção, privacidade, configuração de hardware e ajustes de desempenho em um único arquivo executável: `Dex-Tweaks.bat`.
 
-[![Versão](https://img.shields.io/badge/vers%C3%A3o-2.0.0-1677ff)](https://github.com/mxndex7/Dex-Tweaks/releases)
-[![Plataforma](https://img.shields.io/badge/Windows-11-0078d4)](https://www.microsoft.com/windows/windows-11)
+[![Versão](https://img.shields.io/badge/vers%C3%A3o-2.1.0-1677ff)](https://github.com/mxndex7/Dex-Tweaks/releases)
+[![Plataforma](https://img.shields.io/badge/Windows-10%20%7C%2011-0078d4)](https://www.microsoft.com/windows)
 [![Interface](https://img.shields.io/badge/interface-Batch-4d4d4d)](Dex-Tweaks.bat)
 [![Privilégios](https://img.shields.io/badge/requer-administrador-c62828)](#requisitos)
 
 > O Dex Tweaks altera configurações sensíveis do Windows. Leia a prévia exibida pelo painel, crie um backup e aplique somente as funções que você compreende.
 
-## Destaques da versão 2.0
+## Destaques da versão 2.1
+
+- Compatibilidade oficial com Windows 10 21H2, 22H2 e LTSC 2021 de 64 bits, a partir da build 19044.
+- Detecção centralizada do Windows 10 e Windows 11, com capacidades específicas por versão.
+- Interface, relatórios e preflight identificam o sistema e o modo de compatibilidade ativos.
+- Rotinas de Copilot, Widgets, Notícias e Interesses e barra de tarefas usam caminhos próprios para cada versão.
+- System Guard disponível no Windows 10 e 11 quando TPM, Secure Boot, UEFI e virtualização de firmware estão presentes.
+- Windows Update não é mais fixado em outro produto ou versão pelas rotinas de privacidade.
+- Teste de fumaça cobre builds simuladas do Windows 10 e Windows 11.
 
 - Dashboard com visão do Defender, rede, plano de energia, build do Windows, perfil aplicado, backups e reinicialização pendente.
 - Perfis gerenciados `Safe`, `Balanced`, `Competitive`, `Streaming`, `Laptop` e `Privacy`.
@@ -26,13 +34,19 @@ Painel administrativo em Batch para Windows 11 que reúne diagnóstico, manuten�
 
 | Item | Requisito |
 |---|---|
-| Sistema | Windows 11, build 22000 ou superior |
+| Sistema | Windows cliente de 64 bits: Windows 10 build 19044 ou superior, ou Windows 11 build 22000 ou superior |
 | Conta | Usuário com privilégios de administrador |
 | Shell | Prompt de Comando e PowerShell disponíveis |
 | Internet | Necessária para atualização, downloads, DISM e algumas ferramentas |
 | Restauração | Recomendável manter a Proteção do Sistema habilitada |
 
 O painel verifica a versão do Windows e os privilégios administrativos durante a inicialização.
+
+### Compatibilidade com Windows 10
+
+O Windows 10 é executado em modo de compatibilidade, mantendo o mesmo painel e praticamente o mesmo catálogo do Windows 11. Ações ligadas exclusivamente à interface do Windows 11 são ignoradas ou substituídas pelos equivalentes do Windows 10. Recursos dependentes de edição ou hardware, como Hyper-V, Windows Sandbox, HAGS, BitLocker e System Guard, continuam sujeitos à disponibilidade real do computador.
+
+O alvo recomendado é Windows 10 22H2 build 19045. A build 19044 é aceita para incluir Windows 10 21H2 e LTSC 2021. O Windows 10 Home e Pro encerrou o suporte regular da Microsoft; mantenha ESU ativo ou utilize uma edição LTSC ainda elegível para atualizações de segurança.
 
 ## Download e execução
 
@@ -166,7 +180,7 @@ A descrição detalhada de cada função, sua intenção, efeitos e cuidados est
 
 ## Avisos
 
-- Resultados variam conforme hardware, drivers, versão do Windows e programas instalados.
+- Resultados variam conforme hardware, drivers, edição e versão do Windows e programas instalados.
 - Ajustes agressivos podem afetar compatibilidade, consumo, temperatura, recursos do Windows ou segurança.
 - Métricas do Benchmark são fotografias do sistema e não representam garantia de FPS ou latência.
 - Revise scripts baixados da internet antes de executá-los como administrador.
@@ -175,4 +189,4 @@ A descrição detalhada de cada função, sua intenção, efeitos e cuidados est
 
 - Autor: Mendes
 - Repositório: [github.com/mxndex7/Dex-Tweaks](https://github.com/mxndex7/Dex-Tweaks)
-- Versão atual: `2.0.0`
+- Versão atual: `2.1.0`

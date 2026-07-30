@@ -1,8 +1,8 @@
-# Dex Tweaks 2.0.0 - Documentacao funcional
+# Dex Tweaks 2.1.0 - Documentacao funcional
 
 Esta documentacao descreve as funcionalidades disponiveis no `Dex-Tweaks.bat`, a intencao de cada uma, os efeitos esperados e os principais cuidados de uso.
 
-O Dex Tweaks e um painel administrativo para Windows 11 voltado a diagnostico, manutencao, privacidade, configuracao de hardware e ajustes de desempenho. Todo o codigo executavel continua concentrado em um unico arquivo BAT. Este documento e apenas uma referencia externa e nao participa da execucao.
+O Dex Tweaks e um painel administrativo para Windows 10 e Windows 11 voltado a diagnostico, manutencao, privacidade, configuracao de hardware e ajustes de desempenho. Todo o codigo executavel continua concentrado em um unico arquivo BAT. Este documento e apenas uma referencia externa e nao participa da execucao.
 
 ## Sumario
 
@@ -29,7 +29,8 @@ O Dex Tweaks e um painel administrativo para Windows 11 voltado a diagnostico, m
 
 | Item | Comportamento | Intencao |
 |---|---|---|
-| Windows 11 | Exige build 22000 ou superior | Evitar a aplicacao de configuracoes nao suportadas no Windows 10 |
+| Windows 10 | Exige sistema cliente de 64 bits e build 19044 ou superior | Oferecer o mesmo painel em modo de compatibilidade |
+| Windows 11 | Exige sistema cliente de 64 bits e build 22000 ou superior | Usar o modo nativo e os recursos de interface do Windows 11 |
 | Administrador | Verifica privilegios com `net session` | Garantir acesso ao Registro, servicos, BCD, DISM e configuracoes protegidas |
 | Termo inicial | Solicita `I agree` na primeira execucao | Deixar claro que ajustes de sistema podem ter resultados diferentes em cada computador |
 | Backup inicial | Oferece Registro e Ponto de Restauracao | Criar uma rota de recuperacao antes das primeiras alteracoes |
@@ -37,6 +38,30 @@ O Dex Tweaks e um painel administrativo para Windows 11 voltado a diagnostico, m
 | Atualizador | Consulta a ultima release no GitHub e compara a versao completa | Informar novas versoes sem substituir automaticamente o arquivo atual |
 
 Depois da primeira aceitacao, o termo e a cor escolhida ficam salvos. O usuario ainda pode criar backups a qualquer momento pela opcao `Backup / Restore`.
+
+### Camada de compatibilidade do sistema operacional
+
+Na inicializacao, o painel identifica:
+
+- Familia Windows 10 ou Windows 11;
+- Build instalada;
+- Tipo cliente, rejeitando Windows Server;
+- Arquitetura de 64 bits;
+- Capacidades vinculadas a versao, como HAGS e interface do Windows 11.
+
+O Windows 10 build 19044 ou superior usa modo de compatibilidade. O alvo recomendado e o Windows 10 22H2 build 19045; a build 19044 inclui Windows 10 21H2 e LTSC 2021. As mesmas areas do painel permanecem disponiveis. Operacoes exclusivas da interface do Windows 11 sao substituidas por equivalentes do Windows 10 ou ignoradas sem criar chaves exclusivas do Windows 11.
+
+Algumas funcoes dependem da edicao, do driver ou do hardware e nao apenas da build:
+
+- HAGS requer GPU e driver WDDM compativeis;
+- Hyper-V e Windows Sandbox nao existem em todas as edicoes;
+- BitLocker depende da edicao e configuracao;
+- System Guard requer TPM, Secure Boot, UEFI e virtualizacao de firmware;
+- Pacotes AppX podem variar conforme a imagem do Windows e o fabricante.
+
+O painel preserva o produto e a versao-alvo configurados no Windows Update. As rotinas de privacidade nao forcam Windows 10 a migrar para Windows 11 e nao fixam o Windows 11 em uma release especifica.
+
+Windows 10 Home e Pro encerraram o suporte regular da Microsoft. Para manter atualizacoes de seguranca, use ESU ou uma edicao LTSC ainda dentro do ciclo aplicavel.
 
 ## Conceitos de seguranca
 
@@ -55,7 +80,7 @@ As funcoes novas de Perfis e da Central de Alteracoes seguem este fluxo:
 
 1. Montam uma fila de mudancas.
 2. Exibem uma previa.
-3. Executam uma verificacao de compatibilidade.
+3. Executam uma verificacao de compatibilidade por sistema, build e capacidade conhecida.
 4. Criam um snapshot gerenciado.
 5. Aplicam uma acao por vez.
 6. Consultam o estado resultante.
@@ -991,6 +1016,8 @@ Dex-Tweaks.bat --smoke-test
 
 Valida sem aplicar tweaks:
 
+- Deteccao simulada de Windows 10 e Windows 11;
+- Bloqueio de builds abaixo do minimo;
 - Inicializacao do runtime;
 - Consultas do Dashboard;
 - Montagem e validacao de perfil;

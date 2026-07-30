@@ -1,5 +1,5 @@
 @echo off
-set version=2.0.0
+set version=2.1.0
 title Dex Tweaks - %version%
 if /I "%~1"=="--self-test" goto DexSelfTestEntry
 if /I "%~1"=="--smoke-test" goto DexSmokeTestEntry
@@ -22,26 +22,30 @@ chcp 437 >nul
 chcp 65001 >nul
 setlocal enabledelayedexpansion
 call :InitializeDexRuntime
-
-for /f "delims=" %%b in ('powershell -NoProfile -ExecutionPolicy Bypass -Command "try { [Environment]::OSVersion.Version.Build } catch { 0 }" 2^>nul') do set "_OS_BUILD=%%b"
-set /a _OS_BUILD_NUM=_OS_BUILD+0
-if !_OS_BUILD_NUM! LSS 22000 (
+call :DetectOperatingSystem
+if errorlevel 1 (
     call :SetupConsole
     echo.
     echo %red%╔══════════════════════════════════════════════════════════════════════════════╗
     echo ║                        UNSUPPORTED OPERATING SYSTEM                          ║
     echo ╚══════════════════════════════════════════════════════════════════════════════╝%u%
     echo.
-    echo %red%  Dex Tweaks requires Windows 11 or later.%u%
+    echo %red%  Dex Tweaks requires 64-bit Windows 10 build 19044 or later.%u%
     echo.
-    echo %orange%  Windows 10 is no longer supported.%u%
-    echo %c%  Please upgrade to Windows 11 before using this tool.%u%
+    echo %orange%  Windows 10 21H2/LTSC 2021 and Windows 11 are supported.%u%
+    echo %c%  Update Windows before using this tool.%u%
     echo.
-    echo %grey%  Detected build: !_OS_BUILD_NUM!   Required: 22000 ^(Windows 11^)%u%
+    echo %grey%  Detected build: !_OS_BUILD_NUM!   Client type: !DEX_PRODUCT_TYPE!   64-bit: !DEX_OS_64BIT!%u%
     echo.
     echo %red%  Exiting in 10 seconds...%u%
     timeout /t 10 >nul /nobreak
-    exit
+    exit /b 1
+)
+
+if /I "!DEX_OS_FAMILY!"=="Windows 10" (
+    echo Windows 10 compatibility mode active - build !_OS_BUILD_NUM!.
+    echo Keep ESU or an eligible LTSC edition updated to receive security fixes.
+    timeout /t 3 >nul /nobreak
 )
 
 echo Checking for updates...
@@ -2007,7 +2011,7 @@ echo.
 choice /C YN /M "%c%Apply comprehensive BCDEdit optimizations? (Y/N)%u%"
 if errorlevel 2 goto TweaksMenu
 
-echo %c%[Pre] Applying Windows 11 timer resolution and kernel timer registry tweaks...%u%
+echo %c%[Pre] Applying Windows timer resolution and kernel timer registry tweaks...%u%
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Kernel" /v "GlobalTimerResolutionRequests" /t REG_DWORD /d "1" /f >nul 2>&1
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Kernel" /v "SerializeTimerExpiration" /t REG_DWORD /d "2" /f >nul 2>&1
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Kernel" /v "EnablePerCpuClockTickScheduling" /t REG_DWORD /d "2" /f >nul 2>&1
@@ -2486,9 +2490,7 @@ if not exist "C:\DexTools\TimerResolution\SetTimerResolution.exe" (
 
 echo.
 echo %c%[2/3] Detecting Windows version...%u%
-for /f "tokens=2 delims==" %%v in ('wmic os get BuildNumber /value 2^>nul ^| findstr "="') do set "OS_BUILD=%%v"
-set /a OS_BUILD_NUM=OS_BUILD+0
-echo %green%  Windows 11 detected%u%
+echo %green%  !DEX_OS_NAME! build !_OS_BUILD_NUM! detected%u%
 
 echo.
 echo %c%[3/3] Choose Timer Resolution:%u%
@@ -6999,7 +7001,7 @@ if errorlevel 2 (
 echo.
 echo %c%[6/12] Cortana and Windows Search Integration%u%
 echo.
-echo %c%Cortana/Search is built into Windows 11 and can consume memory/CPU.%u%
+echo %c%Cortana/Search is built into Windows and can consume memory/CPU.%u%
 echo %c%Removing it will disable the Search bar, voice assistant, and some functions.%u%
 echo %c%Recommended: REMOVE if you never use Cortana or integrated Search.%u%
 echo.
@@ -7493,9 +7495,11 @@ exit /b
 :RemoveCopilot
 reg add "HKCU\SOFTWARE\Policies\Microsoft\Windows\WindowsCopilot" /v "TurnOffWindowsCopilot" /t REG_DWORD /d "1" /f >nul 2>&1
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsCopilot" /v "TurnOffWindowsCopilot" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "ShowCopilotButton" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKCU\Software\Microsoft\Windows\Shell\Copilot\BingChat" /v "IsUserEligible" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKCU\Software\Microsoft\Windows\Shell\Copilot" /v "AutoOpenCopilotLargeScreens" /t REG_DWORD /d "0" /f >nul 2>&1
+if "!DEX_CAP_WIN11_UI!"=="1" (
+    reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "ShowCopilotButton" /t REG_DWORD /d "0" /f >nul 2>&1
+    reg add "HKCU\Software\Microsoft\Windows\Shell\Copilot\BingChat" /v "IsUserEligible" /t REG_DWORD /d "0" /f >nul 2>&1
+    reg add "HKCU\Software\Microsoft\Windows\Shell\Copilot" /v "AutoOpenCopilotLargeScreens" /t REG_DWORD /d "0" /f >nul 2>&1
+)
 chcp 437 >nul
 powershell -Command "Get-AppxPackage *Microsoft.Copilot* | Remove-AppxPackage" >nul 2>&1
 powershell -Command "Get-AppxPackage *Microsoft.Windows.Ai.Copilot.Provider* | Remove-AppxPackage" >nul 2>&1
@@ -7506,8 +7510,13 @@ reg delete "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Microsoft.C
 exit /b
 
 :RemoveTaskbarBloat
-reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "TaskbarDa" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\Policies\Microsoft\Dsh" /v "AllowNewsAndInterests" /t REG_DWORD /d "0" /f >nul 2>&1
+if "!DEX_CAP_WIN11_UI!"=="1" (
+    reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "TaskbarDa" /t REG_DWORD /d "0" /f >nul 2>&1
+    reg add "HKLM\SOFTWARE\Policies\Microsoft\Dsh" /v "AllowNewsAndInterests" /t REG_DWORD /d "0" /f >nul 2>&1
+) else (
+    reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Feeds" /v "ShellFeedsTaskbarViewMode" /t REG_DWORD /d "2" /f >nul 2>&1
+    reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Feeds" /v "EnableFeeds" /t REG_DWORD /d "0" /f >nul 2>&1
+)
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer" /v "HideSCAMeetNow" /t REG_DWORD /d "1" /f >nul 2>&1
 reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer" /v "HideSCAMeetNow" /t REG_DWORD /d "1" /f >nul 2>&1
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "TaskbarMn" /t REG_DWORD /d "0" /f >nul 2>&1
@@ -8647,13 +8656,13 @@ echo.
 
 echo %c%[1/6] Checking System Guard compatibility...%u%
 chcp 437 >nul
-powershell -Command "if ((Get-WmiObject -Class Win32_OperatingSystem).Version -ge '10.0.22000') { Write-Host 'COMPATIBLE' } else { Write-Host 'INCOMPATIBLE' }" > %temp%\sg_compat.txt
+powershell -NoProfile -Command "$ok=$true;try{$build=[Environment]::OSVersion.Version.Build;if($build-lt 17763){$ok=$false};$t=Get-Tpm -ErrorAction Stop;if(-not $t.TpmPresent){$ok=$false};if(-not (Confirm-SecureBootUEFI -ErrorAction Stop)){$ok=$false};$v=Get-CimInstance Win32_Processor -ErrorAction Stop|Select-Object -First 1;if(-not $v.VirtualizationFirmwareEnabled){$ok=$false}}catch{$ok=$false};if($ok){'COMPATIBLE'}else{'INCOMPATIBLE'}" > %temp%\sg_compat.txt
 chcp 65001 >nul
 set /p sg_compat=<%temp%\sg_compat.txt
 
 if "%sg_compat%"=="INCOMPATIBLE" (
-    echo %red%✗ System Guard requires Windows 11 or later%u%
-    echo %c%Your system is not compatible with System Guard.%u%
+    echo %red%✗ System Guard requires TPM, Secure Boot, UEFI and firmware virtualization.%u%
+    echo %c%Windows 10 and 11 are supported when the hardware requirements are met.%u%
     timeout /t 3 >nul
     goto HardwareSecurityCenter
 )
@@ -10342,16 +10351,10 @@ for /f "tokens=2 delims==" %%i in ('wmic computersystem get username /value 2^>n
 )
 
 echo %c%• Reading Windows version...%u%
-for /f "tokens=2 delims==" %%i in ('wmic os get version /value 2^>nul ^| find "=" 2^>nul') do (
-    set "win_version=%%i"
-    if "!win_version!"=="" set "win_version=Unknown"
-)
+set "win_version=!DEX_OS_NAME!"
 
 echo %c%• Reading build number...%u%
-for /f "tokens=2 delims==" %%i in ('wmic os get buildnumber /value 2^>nul ^| find "=" 2^>nul') do (
-    set "win_build=%%i"
-    if "!win_build!"=="" set "win_build=Unknown"
-)
+set "win_build=!_OS_BUILD_NUM!"
 
 echo.
 echo %c%Computer Model: !comp_model!%u%
@@ -11661,6 +11664,8 @@ goto WindowsMenu
 cls
 call :SetupConsole
 echo.
+echo %c%Detected: !DEX_OS_NAME! build !_OS_BUILD_NUM!. Feature availability varies by edition.%u%
+echo %c%Unavailable optional features are left unchanged.%u%
 echo.
 echo %c%╔═══════════════════════════════════════════════════════════════════════════════╗
 echo ║                           WINDOWS FEATURES MANAGER                           ║
@@ -12147,6 +12152,13 @@ goto CustomFeatures
 
 :ManageHyperV
 cls
+call :OptionalFeatureExists "Microsoft-Hyper-V-All"
+if errorlevel 1 (
+    echo %yellow%Hyper-V is not available in this Windows edition.%u%
+    echo Use Virtual Machine Platform where supported, or upgrade the Windows edition.
+    pause
+    goto CustomFeatures
+)
 echo %c%Hyper-V Feature Management%u%
 echo.
 echo %c%[1] Enable Hyper-V Platform%u%
@@ -12171,6 +12183,12 @@ goto CustomFeatures
 
 :ManageWSL
 cls
+call :OptionalFeatureExists "Microsoft-Windows-Subsystem-Linux"
+if errorlevel 1 (
+    echo %yellow%WSL is not available in this Windows installation.%u%
+    pause
+    goto CustomFeatures
+)
 echo %c%WSL Feature Management%u%
 echo.
 echo %c%[1] Enable WSL%u%
@@ -12229,6 +12247,14 @@ setlocal enabledelayedexpansion
 set "featureLabel=%~1"
 set "featureName=%~2"
 cls
+call :OptionalFeatureExists "!featureName!"
+if errorlevel 1 (
+    echo %yellow%!featureLabel! is not available in this Windows edition or build.%u%
+    echo No changes were made.
+    pause
+    endlocal
+    exit /b 1
+)
 echo %c%!featureLabel! Management%u%
 echo.
 echo %c%[1] Enable !featureLabel!%u%
@@ -12252,6 +12278,10 @@ echo.
 pause
 endlocal
 exit /b
+
+:OptionalFeatureExists
+dism /online /get-featureinfo /featurename:"%~1" >nul 2>&1
+exit /b %errorlevel%
 
 :FeaturesComplete
 echo.
@@ -12733,8 +12763,12 @@ reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "T
 reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "TaskbarSmallIcons" /t REG_DWORD /d "1" /f >nul 2>&1
 reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "UseCompactMode" /t REG_DWORD /d "1" /f >nul 2>&1
 
-reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "TaskbarDa" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "ShowCopilotButton" /t REG_DWORD /d "0" /f >nul 2>&1
+if "!DEX_CAP_WIN11_UI!"=="1" (
+    reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "TaskbarDa" /t REG_DWORD /d "0" /f >nul 2>&1
+    reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "ShowCopilotButton" /t REG_DWORD /d "0" /f >nul 2>&1
+) else (
+    reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Feeds" /v "ShellFeedsTaskbarViewMode" /t REG_DWORD /d "2" /f >nul 2>&1
+)
 reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "TaskbarMn" /t REG_DWORD /d "0" /f >nul 2>&1
 echo %c%✓ Taskbar settings optimized%u%
 
@@ -13882,7 +13916,7 @@ echo %c%• Disable Application Impact Telemetry%u%
 echo %c%• Block Windows Media Player usage data%u%
 echo %c%• Disable WMI ETW autologger tracking sessions%u%
 echo %c%• Suppress user feedback (SIUF) prompts and input data harvesting%u%
-echo %c%• Harden system: SvcHost threshold, WPBT, driver co-installers, Win update lock%u%
+echo %c%• Harden system: SvcHost threshold, WPBT and driver co-installers%u%
 echo.
 choice /C YN /M "%c%Apply comprehensive telemetry blocking? (Y/N)%u%"
 if errorlevel 2 goto PrivacyMenu
@@ -13983,11 +14017,8 @@ reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager" /v "DisableWpbtE
 reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Device Installer" /v "DisableCoInstallers" /t REG_DWORD /d "1" /f >nul 2>&1
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate" /v "DeferQualityUpdates" /t REG_DWORD /d "1" /f >nul 2>&1
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate" /v "DeferQualityUpdatesPeriodInDays" /t REG_DWORD /d "4" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate" /v "ProductVersion" /t REG_SZ /d "Windows 11" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate" /v "TargetReleaseVersion" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate" /v "TargetReleaseVersionInfo" /t REG_SZ /d "24H2" /f >nul 2>&1
 reg add "HKLM\Software\Microsoft\Windows Script Host\Settings" /v "Enabled" /t REG_DWORD /d "0" /f >nul 2>&1
-echo %c%✓ SvcHost threshold, WPBT, co-installers hardened; Windows locked to 24H2; WSH disabled%u%
+echo %c%✓ SvcHost threshold, WPBT and co-installers hardened; Windows release targeting preserved; WSH disabled%u%
 
 echo.
 echo %c%╔═══════════════════════════════════════════════════════════════════════════════╗
@@ -14006,7 +14037,7 @@ echo %c%• Media Player usage tracking%u%
 echo %c%• WMI ETW autologger sessions%u%
 echo %c%• User feedback (SIUF) prompts and input personalization harvesting%u%
 echo %c%• System hardened: SvcHost threshold, WPBT, driver co-installers, Windows Script Host disabled%u%
-echo %c%• Windows locked to 24H2 (security updates only)%u%
+echo %c%• Windows Update product and feature release targeting preserved%u%
 echo.
 echo %c%Privacy Benefits:%u%
 echo %c%• No more data sent to Microsoft servers%u%
@@ -16742,12 +16773,26 @@ endlocal & exit /b %DEX_SELF_RC%
 setlocal enabledelayedexpansion
 set "DEX_TEST_ROOT=%TEMP%\DexTweaksSmoke_%RANDOM%_%RANDOM%"
 call :InitializeDexRuntime
-set "_OS_BUILD_NUM=TEST"
+set "DEX_SMOKE_INVALID=0"
+set "DEX_TEST_BUILD=19044"
+call :DetectOperatingSystem
+if errorlevel 1 set "DEX_SMOKE_INVALID=1"
+if /I not "!DEX_OS_FAMILY!"=="Windows 10" set "DEX_SMOKE_INVALID=1"
+if not "!DEX_CAP_WIN11_UI!"=="0" set "DEX_SMOKE_INVALID=1"
+set "DEX_TEST_BUILD=22631"
+call :DetectOperatingSystem
+if errorlevel 1 set "DEX_SMOKE_INVALID=1"
+if /I not "!DEX_OS_FAMILY!"=="Windows 11" set "DEX_SMOKE_INVALID=1"
+if not "!DEX_CAP_WIN11_UI!"=="1" set "DEX_SMOKE_INVALID=1"
+set "DEX_TEST_BUILD=19043"
+call :DetectOperatingSystem
+if not errorlevel 1 set "DEX_SMOKE_INVALID=1"
+set "DEX_TEST_BUILD=19045"
+call :DetectOperatingSystem
 set "c="
 set "u="
 call :RefreshDashboardCache
 call :BuildProfile "Balanced"
-set "DEX_SMOKE_INVALID=0"
 for /f "usebackq eol=# delims=" %%Q in ("%DEX_QUEUE%") do (
     call :ValidateChangeCode "%%Q"
     if errorlevel 1 set "DEX_SMOKE_INVALID=1"
@@ -16763,7 +16808,7 @@ if "%DEX_SMOKE_INVALID%"=="1" (
     endlocal
     exit /b 1
 )
-echo PASS: runtime, dashboard queries, profile queue and snapshot are operational.
+echo PASS: Windows 10/11 detection, runtime, dashboard, profile queue and snapshot are operational.
 rd /s /q "%DEX_TEST_ROOT%" >nul 2>&1
 echo Temporary smoke-test data cleaned.
 endlocal
@@ -16800,6 +16845,54 @@ if exist "%DEX_PROFILE_FILE%" set /p DEX_LAST_PROFILE=<"%DEX_PROFILE_FILE%"
 call :BuildSearchCatalog
 call :LogEvent "INFO" "Runtime initialized"
 exit /b
+
+:DetectOperatingSystem
+set "_OS_BUILD=0"
+set "DEX_PRODUCT_TYPE=0"
+set "DEX_OS_64BIT=0"
+if defined DEX_TEST_BUILD (
+    set "_OS_BUILD=%DEX_TEST_BUILD%"
+    set "DEX_PRODUCT_TYPE=1"
+    set "DEX_OS_64BIT=1"
+)
+if not defined DEX_TEST_BUILD for /f "delims=" %%b in ('powershell -NoProfile -ExecutionPolicy Bypass -Command "try { [Environment]::OSVersion.Version.Build } catch { 0 }" 2^>nul') do set "_OS_BUILD=%%b"
+if not defined DEX_TEST_BUILD for /f "tokens=1,2 delims=|" %%P in ('powershell -NoProfile -Command "try {$i=(Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion' -ErrorAction Stop).InstallationType;$p=if($i-eq'Client'){1}else{3};'{0}|{1}' -f $p,[int][Environment]::Is64BitOperatingSystem} catch {'0|0'}" 2^>nul') do (
+    set "DEX_PRODUCT_TYPE=%%P"
+    set "DEX_OS_64BIT=%%Q"
+)
+set /a _OS_BUILD_NUM=_OS_BUILD+0
+set "DEX_OS_FAMILY=Unsupported"
+set "DEX_OS_NAME=Unsupported Windows"
+set "DEX_OS_SUPPORT=Blocked"
+set "DEX_CAP_HAGS=0"
+set "DEX_CAP_WIN11_UI=0"
+set "DEX_CAP_SYSTEM_GUARD=0"
+if not "!DEX_PRODUCT_TYPE!"=="1" (
+    call :LogEvent "BLOCKED" "Windows client required; ProductType !DEX_PRODUCT_TYPE! detected"
+    exit /b 1
+)
+if not "!DEX_OS_64BIT!"=="1" (
+    call :LogEvent "BLOCKED" "64-bit Windows required"
+    exit /b 1
+)
+if !_OS_BUILD_NUM! LSS 19044 (
+    call :LogEvent "BLOCKED" "Unsupported Windows client build !_OS_BUILD_NUM!"
+    exit /b 1
+)
+if !_OS_BUILD_NUM! LSS 22000 (
+    set "DEX_OS_FAMILY=Windows 10"
+    set "DEX_OS_NAME=Windows 10"
+    set "DEX_OS_SUPPORT=Compatibility"
+) else (
+    set "DEX_OS_FAMILY=Windows 11"
+    set "DEX_OS_NAME=Windows 11"
+    set "DEX_OS_SUPPORT=Native"
+    set "DEX_CAP_WIN11_UI=1"
+)
+if !_OS_BUILD_NUM! GEQ 19041 set "DEX_CAP_HAGS=1"
+if !_OS_BUILD_NUM! GEQ 19044 set "DEX_CAP_SYSTEM_GUARD=1"
+call :LogEvent "COMPAT" "!DEX_OS_NAME! build !_OS_BUILD_NUM! detected; mode !DEX_OS_SUPPORT!"
+exit /b 0
 
 :LogEvent
 >>"%DEX_LOG%" echo [%date% %time%] [%~1] %~2
@@ -16856,7 +16949,7 @@ exit /b
 :DisplayCompactDashboard
 echo.
 echo %c%===============================================================================%u%
-echo %c% DEX TWEAKS CONTROL PANEL%u%  v%version%  ^| Windows build !_OS_BUILD_NUM!
+echo %c% DEX TWEAKS CONTROL PANEL%u%  v%version%  ^| !DEX_OS_NAME! build !_OS_BUILD_NUM!
 echo %c%-------------------------------------------------------------------------------%u%
 echo  Security: %DEX_DEFENDER%  ^| Network: %DEX_NETWORK%  ^| Reboot: %DEX_REBOOT_STATUS%
 echo  Power: %DEX_POWER%
@@ -16919,6 +17012,8 @@ set "DEX_DASH_REPORT=%DEX_REPORTS%\Dashboard_%DEX_SESSION%.txt"
 > "%DEX_DASH_REPORT%" echo Dex Tweaks Dashboard Report
 >>"%DEX_DASH_REPORT%" echo Generated=%date% %time%
 >>"%DEX_DASH_REPORT%" echo Version=%version%
+>>"%DEX_DASH_REPORT%" echo OperatingSystem=!DEX_OS_NAME!
+>>"%DEX_DASH_REPORT%" echo CompatibilityMode=!DEX_OS_SUPPORT!
 >>"%DEX_DASH_REPORT%" echo WindowsBuild=!_OS_BUILD_NUM!
 >>"%DEX_DASH_REPORT%" echo Security=%DEX_DEFENDER%
 >>"%DEX_DASH_REPORT%" echo Network=%DEX_NETWORK%
@@ -17046,14 +17141,34 @@ goto ProfilesCenter
 :RunCompatibilityPreflight
 set "DEX_DEVICE_TYPE=Desktop"
 for /f "delims=" %%D in ('powershell -NoProfile -Command "if(Get-CimInstance Win32_Battery -ErrorAction SilentlyContinue){'Laptop'}else{'Desktop'}" 2^>nul') do set "DEX_DEVICE_TYPE=%%D"
+set "DEX_EDITION=Unknown edition"
+for /f "delims=" %%E in ('powershell -NoProfile -Command "try {(Get-CimInstance Win32_OperatingSystem -ErrorAction Stop).Caption} catch {'Unknown edition'}" 2^>nul') do set "DEX_EDITION=%%E"
 set "DEX_FREE_GB=Unknown"
 for /f "delims=" %%F in ('powershell -NoProfile -Command "[math]::Round((Get-PSDrive $env:SystemDrive.Substring(0,1)).Free/1GB,1)" 2^>nul') do set "DEX_FREE_GB=%%F GB"
 set "DEX_QUEUE_COUNT=0"
 for /f %%N in ('find /v /c "" ^< "%DEX_QUEUE%"') do set /a DEX_QUEUE_COUNT=%%N-1
-echo  Preflight: Windows build !_OS_BUILD_NUM! ^| %DEX_DEVICE_TYPE% ^| Free disk %DEX_FREE_GB%
+set "DEX_QUEUE_INCOMPATIBLE=0"
+for /f "usebackq eol=# delims=" %%Q in ("%DEX_QUEUE%") do (
+    call :CheckChangeCompatibility "%%Q" quiet
+    if errorlevel 1 set /a DEX_QUEUE_INCOMPATIBLE+=1
+)
+echo  Preflight: !DEX_OS_NAME! build !_OS_BUILD_NUM! ^| %DEX_DEVICE_TYPE% ^| Free disk %DEX_FREE_GB%
+echo  Edition: %DEX_EDITION%
 echo  Queue: %DEX_QUEUE_COUNT% managed action(s) ^| Existing backups: %DEX_BACKUP_COUNT%
+if "%DEX_QUEUE_INCOMPATIBLE%"=="0" (
+    echo  Compatibility: all queued actions are supported by this Windows build.
+) else (
+    echo  %yellow%Compatibility: %DEX_QUEUE_INCOMPATIBLE% action(s) will be blocked on this system.%u%
+)
+if /I "!DEX_OS_FAMILY!"=="Windows 10" echo  Windows 10 mode: Windows 11-only shell actions are automatically skipped.
+if "%DEX_CAP_HAGS%"=="1" echo  HAGS: operating system capable; compatible GPU and WDDM driver still required.
 if /I "%DEX_DEVICE_TYPE%"=="Laptop" if /I "%DEX_SELECTED_PROFILE%"=="Competitive" echo  %yellow%Warning: High Performance can increase heat and battery usage.%u%
 exit /b
+
+:CheckChangeCompatibility
+if /I "%~1"=="HAGS_ON" if not "!DEX_CAP_HAGS!"=="1" exit /b 1
+if /I "%~1"=="HAGS_OFF" if not "!DEX_CAP_HAGS!"=="1" exit /b 1
+exit /b 0
 
 :DescribeChange
 if /I "%~1"=="DEFENDER_ON"  echo  [SAFE] Enable and verify Microsoft Defender protections
@@ -17136,6 +17251,13 @@ set "DEX_CHANGE=%~1"
 set "DEX_CHANGE_OK=1"
 echo.
 echo [%DEX_CHANGE%] Applying...
+call :CheckChangeCompatibility "%DEX_CHANGE%" quiet
+if errorlevel 1 (
+    echo   Result: blocked because this Windows build does not support the action
+    set /a DEX_APPLY_FAIL+=1
+    call :LogEvent "BLOCKED" "Incompatible action %DEX_CHANGE% on !DEX_OS_NAME! build !_OS_BUILD_NUM!"
+    exit /b
+)
 if /I "%DEX_CHANGE%"=="DEFENDER_ON" (
     powershell -NoProfile -Command "try { Set-MpPreference -DisableRealtimeMonitoring $false -DisableBehaviorMonitoring $false -DisableBlockAtFirstSeen $false -DisableIOAVProtection $false -DisableScriptScanning $false -MAPSReporting Advanced -ErrorAction Stop; Remove-MpPreference -ExclusionPath 'C:\Windows\Temp','C:\Windows\Prefetch','C:\Windows\SoftwareDistribution','%TEMP%' -ErrorAction SilentlyContinue; Remove-MpPreference -ExclusionProcess 'svchost.exe' -ErrorAction SilentlyContinue; exit 0 } catch { exit 1 }" >nul 2>&1
     if errorlevel 1 set "DEX_CHANGE_OK=0"
