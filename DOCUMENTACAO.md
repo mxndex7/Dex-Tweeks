@@ -428,7 +428,7 @@ Nao altera configuracoes.
 **Intencao:** ajustar armazenamento conforme SSD, NVMe ou HDD.
 
 - TRIM;
-- Cache e prefetch;
+- Cache por tipo de unidade, preservando os arquivos de Prefetch;
 - Agendamento de desfragmentacao;
 - Write caching;
 - Energia do controlador;
@@ -529,11 +529,11 @@ O modo completo desativa Windows Search, limpa o indice e remove integracoes web
 |---|---|---|
 | Gaming | Reduzir carga de scan mantendo protecao ativa | Moderado |
 | Performance | Desativar protecao em tempo real e nuvem | Critico |
-| Complete Removal | Desativar e remover componentes do Defender | Critico |
+| Complete Removal | Bloqueado para preservar seguranca, servicing e recuperacao | Indisponivel |
 
 O modo Gaming mantem Real-Time Protection, Behavior Monitoring e Network Protection e nao cria exclusoes amplas de pastas de jogos.
 
-Performance e Complete Removal usam Modo Especialista. O perfil Safe pode restaurar as protecoes gerenciadas, mas arquivos fisicamente removidos podem exigir DISM, SFC ou Restauracao do Sistema.
+Performance usa Modo Especialista. A remocao completa nao executa: o painel preserva arquivos protegidos, servicos do Security Center e SmartScreen. Para usar outro antivirus, instale um produto compativel e deixe o Windows gerenciar o modo passivo do Defender.
 
 ### 5.3 Windows Explorer Fixes
 

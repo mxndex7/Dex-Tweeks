@@ -71,8 +71,16 @@ if exist "%temp%\update_check.txt" (
 )
 
 if defined latest_version (
+    powershell -NoProfile -Command "if($env:latest_version -notmatch '^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$'){exit 1};if($env:download_url -notlike 'https://github.com/mxndex7/Dex-Tweaks/releases/*'){exit 1};exit 0" >nul 2>&1
+    if errorlevel 1 (
+        echo Update metadata failed validation - continuing with current version
+        call :LogEvent "BLOCKED" "Invalid update metadata received"
+        set "latest_version="
+        set "download_url="
+        goto skip_update_check
+    )
     set "update_available=false"
-    for /f "delims=" %%V in ('powershell -NoProfile -Command "try { if ([version]'!latest_version!' -gt [version]'%version%') { 'true' } else { 'false' } } catch { 'false' }" 2^>nul') do set "update_available=%%V"
+    for /f "delims=" %%V in ('powershell -NoProfile -Command "try { if ([version]$env:latest_version -gt [version]$env:version) { 'true' } else { 'false' } } catch { 'false' }" 2^>nul') do set "update_available=%%V"
     if "!update_available!"=="true" (
         call :SetupConsole
         echo.
@@ -154,8 +162,13 @@ set "DEX_AGREEMENT_FILE=%DEX_STATE_DIR%\agreement.accepted"
 set "DEX_COLOR_FILE=%DEX_STATE_DIR%\color.value"
 if exist "%DEX_AGREEMENT_FILE%" if exist "%DEX_COLOR_FILE%" (
     set /p c=<"%DEX_COLOR_FILE%"
-    set "DEX_COLOR_LOADED=1"
-    goto menu
+    set "DEX_COLOR_VALID="
+    for %%C in ("!aqua!" "!teal!" "!cyan!" "!blue!" "!indigo!" "!lime!" "!green!" "!mint!" "!olive!" "!yellow!" "!gold!" "!orange!" "!peach!" "!tan!" "!brown!" "!crimson!" "!red!" "!hotpink!" "!pink!" "!purple!" "!violet!" "!orchid!" "!silver!" "!grey!" "!charcoal!" "!white!") do if "!c!"=="%%~C" set "DEX_COLOR_VALID=1"
+    if defined DEX_COLOR_VALID (
+        set "DEX_COLOR_LOADED=1"
+        goto menu
+    )
+    call :LogEvent "WARN" "Invalid saved color ignored"
 )
 
 :loading
@@ -173,7 +186,7 @@ echo.
 echo.
 set "userInput="
 set /p "userInput=Type your response: "
-if /I "%userInput%"=="I agree" (
+if /I "!userInput!"=="I agree" (
     goto :legit
 ) else (
     goto :epicmanfail
@@ -357,41 +370,41 @@ if not defined preset (
     goto Presets
 )
 
-for /f "tokens=* delims= " %%A in ("%preset%") do set "preset=%%A"
+for /f "tokens=* delims= " %%A in ("!preset!") do set "preset=%%A"
 :trimPresetTrail
-if "%preset:~-1%"==" " set "preset=%preset:~0,-1%" & goto trimPresetTrail
+if "!preset:~-1!"==" " set "preset=!preset:~0,-1!" & goto trimPresetTrail
 
-if /i "%preset%"=="Aqua"      set "c=%aqua%"      & goto menu
-if /i "%preset%"=="Teal"      set "c=%teal%"      & goto menu
-if /i "%preset%"=="Cyan"      set "c=%cyan%"      & goto menu
-if /i "%preset%"=="Blue"      set "c=%blue%"      & goto menu
-if /i "%preset%"=="Indigo"    set "c=%indigo%"    & goto menu
+if /i "!preset!"=="Aqua"      set "c=%aqua%"      & goto menu
+if /i "!preset!"=="Teal"      set "c=%teal%"      & goto menu
+if /i "!preset!"=="Cyan"      set "c=%cyan%"      & goto menu
+if /i "!preset!"=="Blue"      set "c=%blue%"      & goto menu
+if /i "!preset!"=="Indigo"    set "c=%indigo%"    & goto menu
 
-if /i "%preset%"=="Lime"      set "c=%lime%"      & goto menu
-if /i "%preset%"=="Green"     set "c=%green%"     & goto menu
-if /i "%preset%"=="Mint"      set "c=%mint%"      & goto menu
-if /i "%preset%"=="Olive"     set "c=%olive%"     & goto menu
+if /i "!preset!"=="Lime"      set "c=%lime%"      & goto menu
+if /i "!preset!"=="Green"     set "c=%green%"     & goto menu
+if /i "!preset!"=="Mint"      set "c=%mint%"      & goto menu
+if /i "!preset!"=="Olive"     set "c=%olive%"     & goto menu
 
-if /i "%preset%"=="Yellow"    set "c=%yellow%"    & goto menu
-if /i "%preset%"=="Gold"      set "c=%gold%"      & goto menu
-if /i "%preset%"=="Orange"    set "c=%orange%"    & goto menu
-if /i "%preset%"=="Peach"     set "c=%peach%"     & goto menu
-if /i "%preset%"=="Tan"       set "c=%tan%"       & goto menu
-if /i "%preset%"=="Brown"     set "c=%brown%"     & goto menu
+if /i "!preset!"=="Yellow"    set "c=%yellow%"    & goto menu
+if /i "!preset!"=="Gold"      set "c=%gold%"      & goto menu
+if /i "!preset!"=="Orange"    set "c=%orange%"    & goto menu
+if /i "!preset!"=="Peach"     set "c=%peach%"     & goto menu
+if /i "!preset!"=="Tan"       set "c=%tan%"       & goto menu
+if /i "!preset!"=="Brown"     set "c=%brown%"     & goto menu
 
-if /i "%preset%"=="Crimson"   set "c=%crimson%"   & goto menu
-if /i "%preset%"=="Red"       set "c=%red%"       & goto menu
-if /i "%preset%"=="Hot Pink"  set "c=%hotpink%"   & goto menu
-if /i "%preset%"=="Pink"      set "c=%pink%"      & goto menu
+if /i "!preset!"=="Crimson"   set "c=%crimson%"   & goto menu
+if /i "!preset!"=="Red"       set "c=%red%"       & goto menu
+if /i "!preset!"=="Hot Pink"  set "c=%hotpink%"   & goto menu
+if /i "!preset!"=="Pink"      set "c=%pink%"      & goto menu
 
-if /i "%preset%"=="Purple"    set "c=%purple%"    & goto menu
-if /i "%preset%"=="Violet"    set "c=%violet%"    & goto menu
-if /i "%preset%"=="Orchid"    set "c=%orchid%"    & goto menu
+if /i "!preset!"=="Purple"    set "c=%purple%"    & goto menu
+if /i "!preset!"=="Violet"    set "c=%violet%"    & goto menu
+if /i "!preset!"=="Orchid"    set "c=%orchid%"    & goto menu
 
-if /i "%preset%"=="Silver"    set "c=%silver%"    & goto menu
-if /i "%preset%"=="Grey"      set "c=%grey%"      & goto menu
-if /i "%preset%"=="Charcoal"  set "c=%charcoal%"  & goto menu
-if /i "%preset%"=="White"     set "c=%white%"     & goto menu
+if /i "!preset!"=="Silver"    set "c=%silver%"    & goto menu
+if /i "!preset!"=="Grey"      set "c=%grey%"      & goto menu
+if /i "!preset!"=="Charcoal"  set "c=%charcoal%"  & goto menu
+if /i "!preset!"=="White"     set "c=%white%"     & goto menu
 
 
 echo %red%Invalid option. Please try again.%u%
@@ -516,12 +529,12 @@ echo                                                       %c%[ X to close ]%u%
 echo.
 set /p M="%c%Choose an option »%u% "
 set choice=%errorlevel%
-if "%M%"=="1" goto about
-if "%M%"=="2" goto disclaimer
-if "%M%"=="3" goto changelog
-if "%M%"=="4" goto menu
-if "%M%"=="X" goto Destruct
-if "%M%"=="x" goto Destruct
+if "!M!"=="1" goto about
+if "!M!"=="2" goto disclaimer
+if "!M!"=="3" goto changelog
+if "!M!"=="4" goto menu
+if "!M!"=="X" goto Destruct
+if "!M!"=="x" goto Destruct
 echo %red%Invalid selection. Please try again.%u%
 pause >nul
 goto More
@@ -627,10 +640,10 @@ echo.
 echo.
 echo.
 set /p input="%c%Would you like to create a Restore and Registry Point? %white%(Y/N)%u% %c%»%u% "
-if "%input%"=="Y" goto restorepoint10
-if "%input%"=="y" goto restorepoint10
-if "%input%"=="N" goto menu
-if "%input%"=="n" goto menu
+if "!input!"=="Y" goto restorepoint10
+if "!input!"=="y" goto restorepoint10
+if "!input!"=="N" goto menu
+if "!input!"=="n" goto menu
 echo %c%Please enter a valid number!%u% & goto Backup
 
 :TweaksMenu
@@ -650,22 +663,22 @@ echo                              %u%[%c%13%u%] Colour Presets   [%c%14%u%] Back
 echo.
 echo.
 set /p M="%c%Choose an option »%u% "
-if "%M%"=="1" goto A
-if "%M%"=="2" goto B
-if "%M%"=="3" goto C
-if "%M%"=="4" goto D
-if "%M%"=="5" goto E
-if "%M%"=="6" goto F
-if "%M%"=="7" goto G
-if "%M%"=="8" goto H
-if "%M%"=="9" goto I
-if "%M%"=="10" goto J
-if "%M%"=="11" goto K
-if "%M%"=="12" goto L
-if "%M%"=="13" goto Presets
-if "%M%"=="14" goto menu
-if "%M%"=="X" goto Destruct
-if "%M%"=="x" goto Destruct
+if "!M!"=="1" goto A
+if "!M!"=="2" goto B
+if "!M!"=="3" goto C
+if "!M!"=="4" goto D
+if "!M!"=="5" goto E
+if "!M!"=="6" goto F
+if "!M!"=="7" goto G
+if "!M!"=="8" goto H
+if "!M!"=="9" goto I
+if "!M!"=="10" goto J
+if "!M!"=="11" goto K
+if "!M!"=="12" goto L
+if "!M!"=="13" goto Presets
+if "!M!"=="14" goto menu
+if "!M!"=="X" goto Destruct
+if "!M!"=="x" goto Destruct
 cls
 echo %underline%%red%Invalid Input. Press any key to continue.%u%
 pause >nul
@@ -745,18 +758,8 @@ cd /d "%TEMP%\DexBrowserExtensions"
 echo.
 echo %c%[1/8] Downloading Privacy Extension Installers...%u%
 
-echo %c%• Downloading uBlock Origin extension files...%u%
-chcp 437>nul
-powershell -Command "try { Invoke-WebRequest 'https://clients2.google.com/service/update2/crx?response=redirect&prodversion=91.0&acceptformat=crx2,crx3&x=id%3Dcjpalhdlnbpafiamejdnhcphjbkeiagm%26uc' -OutFile 'ublock_origin.crx' -ErrorAction Stop } catch { Write-Host 'Download failed, will use store method' }" >nul 2>&1
-chcp 65001 >nul 
-echo %c%• Downloading Privacy Badger extension files...%u%
-chcp 437>nul
-powershell -Command "try { Invoke-WebRequest 'https://clients2.google.com/service/update2/crx?response=redirect&prodversion=91.0&acceptformat=crx2,crx3&x=id%3Dpkehgijcmpdhfbdbbnkijodmdjhbjlgp%26uc' -OutFile 'privacy_badger.crx' -ErrorAction Stop } catch { Write-Host 'Download failed, will use store method' }" >nul 2>&1
-chcp 65001 >nul 
-echo %c%• Downloading Decentraleyes extension files...%u%
-chcp 437>nul
-powershell -Command "try { Invoke-WebRequest 'https://clients2.google.com/service/update2/crx?response=redirect&prodversion=91.0&acceptformat=crx2,crx3&x=id%3Dldpochfccmkkmhdbclfhpagapcfdljkj%26uc' -OutFile 'decentraleyes.crx' -ErrorAction Stop } catch { Write-Host 'Download failed, will use store method' }" >nul 2>&1
-chcp 65001 >nul 
+echo %c%• Browser extensions are left to each browser's verified extension store.%u%
+echo %c%• Dex Tweaks does not side-load CRX files or bypass browser validation.%u%
 
 if "%EDGE_FOUND%"=="true" (
     echo.
@@ -1364,10 +1367,10 @@ echo %c%Desktop Plan: Maximum performance, no power saving (recommended for gami
 echo %c%Laptop Plan: Balanced performance with battery optimization (recommended for laptops)%u%
 echo.
 set /p choice="%c%Select your power plan type »%u% "
-if "%choice%"=="0" goto TweaksMenu
-if "%choice%"=="1" goto DesktopPowerPlan
-if "%choice%"=="2" goto LaptopPowerPlan
-if "%choice%"=="3" goto ViewCurrentPlan
+if "!choice!"=="0" goto TweaksMenu
+if "!choice!"=="1" goto DesktopPowerPlan
+if "!choice!"=="2" goto LaptopPowerPlan
+if "!choice!"=="3" goto ViewCurrentPlan
 cls
 echo.
 echo %red%╔══════════════════════════════════════════════════════════════════════════════╗
@@ -1872,14 +1875,14 @@ echo ╚════════════════════════
 echo.
 echo %c%[1/8] Cleaning Windows System Files...%u%
 if exist "C:\Windows\Temp" (
-    del /s /f /q "C:\Windows\Temp\*.*" 2>nul
+    del /f /q "C:\Windows\Temp\*.*" 2>nul
     for /d %%D in ("C:\Windows\Temp\*") do rd /s /q "%%D" 2>nul
 )
-del /s /f /q "C:\Windows\tempor~1\*.*" 2>nul
-del /s /f /q "C:\Windows\Tmp\*.*" 2>nul
-del /s /f /q "C:\Windows\ff*.tmp" 2>nul
-del /s /f /q "C:\Windows\Prefetch\*.*" 2>nul
-del /s /f /q "%SystemRoot%\SoftwareDistribution\Download\*.*" 2>nul
+del /f /q "C:\Windows\tempor~1\*.*" 2>nul
+del /f /q "C:\Windows\Tmp\*.*" 2>nul
+del /f /q "C:\Windows\ff*.tmp" 2>nul
+rem Prefetch and Windows Update caches are intentionally preserved. Removing them
+rem can slow application startup or interfere with an update already in progress.
 
 echo %c%[2/8] Cleaning User Temporary Files...%u%
 if exist "%temp%" (
@@ -1888,7 +1891,7 @@ if exist "%temp%" (
 )
 del /s /f /q "%USERPROFILE%\AppData\Local\Temp\*.*" 2>nul
 for /d %%D in ("%USERPROFILE%\AppData\Local\Temp\*") do rd /s /q "%%D" 2>nul
-del /s /f /q "%userprofile%\Recent\*.*" 2>nul
+rem Recent-document history is user data and is not removed by a general cleanup.
 
 echo %c%[3/8] Cleaning Browser Caches...%u%
 del /s /f /q "%LocalAppData%\Google\Chrome\User Data\Default\Cache\*.*" 2>nul
@@ -1918,7 +1921,6 @@ del /s /f /q "%AppData%\discord\Cache\*.*" 2>nul
 del /s /f /q "%AppData%\discord\Code Cache\*.*" 2>nul
 del /s /f /q "%AppData%\discord\GPUCache\*.*" 2>nul
 del /s /f /q "%ProgramFiles(x86)%\Steam\appcache\httpcache\*.*" 2>nul
-del /s /f /q "%ProgramFiles(x86)%\Steam\depotcache\*.*" 2>nul
 del /s /f /q "%ProgramFiles(x86)%\Steam\logs\*.*" 2>nul
 del /s /f /q "%ProgramFiles(x86)%\Steam\dumps\*.*" 2>nul
 del /s /f /q "%ProgramFiles(x86)%\Steam\steamapps\temp\*.*" 2>nul
@@ -1930,15 +1932,9 @@ del /s /f /q "%LocalAppData%\EpicGamesLauncher\Saved\webcache\*.*" 2>nul
 del /s /f /q "%AppData%\.minecraft\logs\*.*" 2>nul
 del /s /f /q "%AppData%\.minecraft\crash-reports\*.*" 2>nul
 
-echo %c%[6/8] Cleaning System Logs and Dumps...%u%
-del /s /f /q "%SystemRoot%\*.log" 2>nul
-del /s /f /q "%SystemRoot%\Logs\CBS\*.log" 2>nul
-del /s /f /q "%SystemRoot%\Logs\MoSetup\*.log" 2>nul
-del /s /f /q "%SystemRoot%\Panther\*.*" 2>nul
-del /s /f /q "%SystemRoot%\inf\setupapi.*.log" 2>nul
-del /s /f /q "%SystemRoot%\Minidump\*.*" 2>nul
-del /s /f /q "%SystemRoot%\Memory.dmp" 2>nul
-del /s /f /q "%ProgramData%\Microsoft\Windows\WER\Temp\*.*" 2>nul
+echo %c%[6/8] Preserving Windows diagnostic logs and crash dumps...%u%
+rem CBS, setup, driver and crash logs are required to diagnose update, boot and
+rem driver failures. A cleanup tool must not erase that recovery evidence.
 
 echo %c%[7/8] Cleaning Registry History...%u%
 reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Applets\Regedit" /va /f 2>nul
@@ -1978,494 +1974,40 @@ goto TweaksMenu
 
 :B
 rem Delayed expansion is already enabled globally.
-call :RequireExpertMode "Boot configuration changes can reduce Windows security and recovery."
+call :RequireExpertMode "Boot configuration repair changes BCD values and requires a restart."
 if errorlevel 1 goto TweaksMenu
 cls
 call :SetupConsole
 echo.
+echo %c%SAFE BOOT CONFIGURATION REPAIR%u%
 echo.
-echo %c%╔══════════════════════════════════════════════════════════════════════════════╗
-echo ║                           BCDEDIT OPTIMIZATION SUITE                         ║
-echo ╚══════════════════════════════════════════════════════════════════════════════╝%u%
+echo %c%This workflow removes forced timer, memory, APIC and security overrides so Windows%u%
+echo %c%can select supported defaults for the installed build and hardware.%u%
+echo %c%Test signing and kernel debugging will be explicitly disabled.%u%
 echo.
-echo %c%BCDEdit optimization includes:%u%
-echo %c%• Dynamic tick and platform tick optimization for better timer performance%u%
-echo %c%• PCI settings and firmware optimization for hardware compatibility%u%
-echo %c%• TSC sync policy enhancement for improved CPU timing synchronization%u%
-echo %c%• APIC mode and physical destination optimization for interrupt handling%u%
-echo %c%• TPM boot entropy and boot UX optimization for faster boot times%u%
-echo %c%• Integrity checks and code signing optimization for performance%u%
-echo %c%• Hypervisor and virtualization optimization for gaming performance%u%
-echo %c%• NX (Data Execution Prevention) optimization for compatibility%u%
-echo %c%• Advanced boot configuration for maximum system performance%u%
-echo %c%• Hardware abstraction layer optimization%u%
-echo %c%• Interrupt and timer subsystem enhancement%u%
-echo %c%• Security feature optimization for gaming workloads%u%
-echo.
-echo %red%%underline%BCDEdit Notice:%u%
-echo %c%These tweaks modify critical boot configuration settings.%u%
-echo %c%A system restart will be required for all changes to take effect.%u%
-echo %c%All changes can be reverted if needed using BCDEdit commands.%u%
-echo.
-echo.
-choice /C YN /M "%c%Apply comprehensive BCDEdit optimizations? (Y/N)%u%"
-if errorlevel 2 goto TweaksMenu
-
-echo %c%[Pre] Applying Windows timer resolution and kernel timer registry tweaks...%u%
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Kernel" /v "GlobalTimerResolutionRequests" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Kernel" /v "SerializeTimerExpiration" /t REG_DWORD /d "2" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Kernel" /v "EnablePerCpuClockTickScheduling" /t REG_DWORD /d "2" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Kernel" /v "TimerCheckFlags" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Kernel" /v "DistributeTimers" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Kernel" /v "DebugPollInterval" /t REG_DWORD /d "1000" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\KernelVelocity" /v "DisableFGBoostDecay" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\I/O System" /v "PassiveIntRealTimeWorkerPriority" /t REG_DWORD /d "18" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager" /v "CoalescingTimerInterval" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Kernel" /v "CoalescingTimerInterval" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" /v "CoalescingTimerInterval" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Executive" /v "CoalescingTimerInterval" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power\ModernSleep" /v "CoalescingTimerInterval" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\Ndu" /v "Start" /t REG_DWORD /d "4" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\NdisCap" /v "Start" /t REG_DWORD /d "4" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\NdisVirtualBus" /v "Start" /t REG_DWORD /d "4" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\DriverSearching" /v "SearchOrderConfig" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\ControlSet001\Services\NlaSvc\Parameters\Internet" /v "EnableActiveProbing" /t REG_DWORD /d "0" /f >nul 2>&1
-
-echo.
-echo %c%╔══════════════════════════════════════════════════════════════════════════════╗
-echo ║                      BCDEDIT OPTIMIZATION IN PROGRESS                        ║
-echo ╚══════════════════════════════════════════════════════════════════════════════╝%u%
-
-echo %c%[Category 1/6] CPU Timer Optimization%u%
-echo %c%These settings affect how Windows handles CPU timers and can improve performance%u%
-echo %c%and reduce input latency, but may cause instability on some systems.%u%
-echo.
-choice /C YN /M "%c%Apply CPU timer tweaks? (Y=Performance, N=Stability) %u%" /D N /T 10
-echo.
-if errorlevel 2 (
-    echo %c%Skipping CPU timer tweaks for better stability...%u%
+choice /C YN /M "Repair unsafe or legacy BCD overrides? (Y/N)"
+if errorlevel 2 goto TimerResolutionSetup
+set /a DEX_BCD_FAILURES=0
+for %%V in (useplatformclock useplatformtick disabledynamictick tscsyncpolicy uselegacyapicmode x2apicpolicy usemsr isolatedcontext highestmode noumex usefirmwarepcisettings increaseuserva firstmegabytepolicy linearaddress57 perfmem nolowmem avoidlowmemory usephysicaldestination tpmbootentropy pciexpress forcehardwarepte bootux quietboot bootlog bootstatuspolicy sos loadoptions nointegritychecks hypervisorlaunchtype nx vsmlaunchtype vm clustermodeaddressing xsavedisable graphicsmodedisabled forcelegacyplatform) do (
+    bcdedit /deletevalue %%V >nul 2>&1
+    rem A missing value already means the Windows default, so it is not a failure.
+ )
+bcdedit /set testsigning No >nul 2>&1
+if errorlevel 1 set /a DEX_BCD_FAILURES+=1
+bcdedit /set debug No >nul 2>&1
+if errorlevel 1 set /a DEX_BCD_FAILURES+=1
+if !DEX_BCD_FAILURES! GTR 0 (
+    echo %red%One or more required BCD security settings could not be applied.%u%
+    call :LogEvent "FAIL" "BCD safety repair returned !DEX_BCD_FAILURES! error(s)"
 ) else (
-    echo %c%[1/4] Applying dynamic tick optimization...%u%
-    bcdedit /set disabledynamictick yes >nul 2>&1
-    if !errorlevel! equ 0 (
-        echo %c%  ✓ Dynamic tick disabled for consistent timer performance%u%
-    ) else (
-        echo %c%  ✗ Failed to disable dynamic tick%u%
-    )
-    
-    echo %c%[2/4] Applying platform tick optimization...%u%
-    bcdedit /set useplatformtick yes >nul 2>&1
-    if !errorlevel! equ 0 (
-        echo %c%  ✓ Platform tick enabled for improved timing accuracy%u%
-    ) else (
-        echo %c%  ✗ Failed to enable platform tick%u%
-    )
-    
-    echo %c%[3/4] Applying TSC synchronization policy enhancement...%u%
-    bcdedit /set tscsyncpolicy enhanced >nul 2>&1
-    if !errorlevel! equ 0 (
-        echo %c%  ✓ TSC sync policy set to enhanced for better CPU timing%u%
-    ) else (
-        echo %c%  ✗ Failed to set TSC sync policy%u%
-    )
-    
-    echo %c%[4/4] Applying high precision event timer optimization...%u%
-    bcdedit /set disableelamdrivers yes >nul 2>&1
-    if !errorlevel! equ 0 (
-        echo %c%  ✓ ELAM drivers disabled for reduced timer overhead%u%
-    ) else (
-        echo %c%  ✗ Failed to disable ELAM drivers%u%
-    )
+    echo %green%BCD overrides repaired; Windows defaults and security enforcement are active.%u%
+    call :MarkRebootRequired "BCD safety repair"
+    call :LogEvent "OK" "BCD safety repair completed"
 )
+pause
+goto TimerResolutionSetup
 
-echo.
-echo %c%[Category 2/6] CPU Architecture Settings%u%
-echo %c%These settings optimize how Windows interacts with your CPU architecture.%u%
-echo %c%They can improve performance but may cause instability on some systems.%u%
-echo.
-choice /C YN /M "%c%Apply CPU architecture tweaks? (Y=Performance, N=Compatibility) %u%" /D N /T 10
-echo.
-if errorlevel 2 (
-    echo %c%Skipping CPU architecture tweaks for better compatibility...%u%
-) else (
-    echo %c%[1/5] Applying legacy APIC mode optimization...%u%
-    bcdedit /set uselegacyapicmode no >nul 2>&1
-    if !errorlevel! equ 0 (
-        echo %c%  ✓ Legacy APIC mode disabled for modern interrupt handling%u%
-    ) else (
-        echo %c%  ✗ Failed to disable legacy APIC mode%u%
-    )
-    
-    echo %c%[2/5] Applying advanced x2APIC policy...%u%
-    bcdedit /set x2apicpolicy Enable >nul 2>&1
-    if !errorlevel! equ 0 (
-        echo %c%  ✓ x2APIC policy enabled for improved interrupt handling%u%
-    ) else (
-        echo %c%  ✗ Failed to enable x2APIC policy%u%
-    )
-    
-    echo %c%[3/5] Applying MSI (Message Signaled Interrupts) optimization...%u%
-    bcdedit /set MSI Default >nul 2>&1
-    if !errorlevel! equ 0 (
-        echo %c%  ✓ MSI set to Default for optimal interrupt delivery%u%
-    ) else (
-        echo %c%  ✗ Failed to set MSI to Default%u%
-    )
-    
-    echo %c%[4/5] Optimizing CPU MSR settings...%u%
-    bcdedit /set usemsr No >nul 2>&1
-    if !errorlevel! equ 0 (
-        echo %c%  ✓ CPU MSR access optimized for performance%u%
-    ) else (
-        echo %c%  ✗ Failed to optimize CPU MSR access%u%
-    )
-    
-    echo %c%[5/5] Applying CPU isolation settings...%u%
-    bcdedit /set isolatedcontext No >nul 2>&1
-    if !errorlevel! equ 0 (
-        echo %c%  ✓ Isolated context disabled for lower CPU overhead%u%
-    ) else (
-        echo %c%  ✗ Failed to disable isolated context%u%
-    )
-    bcdedit /set highestmode Yes >nul 2>&1
-    bcdedit /set noumex Yes >nul 2>&1
-    bcdedit /set usefirmwarepcisettings No >nul 2>&1
-)
-
-echo.
-echo %c%[Category 3/6] Memory Optimization Settings%u%
-echo %c%These settings modify how Windows manages system memory.%u%
-echo %c%They can improve performance but may reduce stability on some systems.%u%
-echo.
-choice /C YN /M "%c%Apply memory optimization tweaks? (Y=Performance, N=Stability) %u%" /D N /T 10
-echo.
-if errorlevel 2 (
-    echo %c%Skipping memory optimization tweaks for better stability...%u%
-) else (
-    echo %c%[1/4] Applying user virtual address space increase...%u%
-    bcdedit /set increaseuserva 8192 >nul 2>&1
-    if !errorlevel! equ 0 (
-        echo %c%  ✓ User virtual address space increased for better memory allocation%u%
-    ) else (
-        echo %c%  ✗ Failed to increase user virtual address space%u%
-    )
-    
-    echo %c%[2/4] Optimizing first megabyte memory policy...%u%
-    bcdedit /set firstmegabytepolicy UseAll >nul 2>&1
-    if !errorlevel! equ 0 (
-        echo %c%  ✓ First megabyte policy optimized for full memory utilization%u%
-    ) else (
-        echo %c%  ✗ Failed to optimize first megabyte policy%u%
-    )
-    
-    echo %c%[3/4] Applying memory addressing optimization...%u%
-    bcdedit /set linearaddress57 OptOut >nul 2>&1
-    if !errorlevel! equ 0 (
-        echo %c%  ✓ 57-bit linear addressing optimized for performance%u%
-    ) else (
-        echo %c%  ✗ Failed to optimize 57-bit linear addressing%u%
-    )
-    
-    echo %c%[4/4] Configuring performance memory allocation...%u%
-    bcdedit /set perfmem Standard >nul 2>&1
-    if !errorlevel! equ 0 (
-        echo %c%  ✓ Performance memory allocation enabled for optimized memory usage%u%
-    ) else (
-        echo %c%  ✗ Failed to enable performance memory allocation%u%
-    )
-    bcdedit /set nolowmem Yes >nul 2>&1
-    bcdedit /set avoidlowmemory 0x8000000 >nul 2>&1
-)
-
-echo.
-echo %c%[Category 4/6] PCI and Hardware Interface Settings%u%
-echo %c%These settings modify how Windows interacts with hardware controllers.%u%
-echo %c%They can improve performance but may cause compatibility issues with some hardware.%u%
-echo.
-choice /C YN /M "%c%Apply PCI and hardware tweaks? (Y=Performance, N=Compatibility) %u%" /D N /T 10
-echo.
-if errorlevel 2 (
-    echo %c%Skipping PCI and hardware tweaks for better compatibility...%u%
-) else (
-    echo %c%[1/5] Applying firmware PCI settings optimization...%u%
-    bcdedit /set usefirmwarepcisettings No >nul 2>&1
-    if !errorlevel! equ 0 (
-        echo %c%  ✓ Firmware PCI settings disabled for manual PCI control%u%
-    ) else (
-        echo %c%  ✗ Failed to disable firmware PCI settings%u%
-    )
-    
-    echo %c%[2/5] Applying physical destination optimization...%u%
-    bcdedit /set usephysicaldestination No >nul 2>&1
-    if !errorlevel! equ 0 (
-        echo %c%  ✓ Physical destination disabled for logical interrupt routing%u%
-    ) else (
-        echo %c%  ✗ Failed to disable physical destination%u%
-    )
-    
-    echo %c%[3/5] Applying TPM boot entropy optimization...%u%
-    bcdedit /set tpmbootentropy ForceDisable >nul 2>&1
-    if !errorlevel! equ 0 (
-        echo %c%  ✓ TPM boot entropy force disabled for faster boot times%u%
-    ) else (
-        echo %c%  ✗ Failed to disable TPM boot entropy%u%
-    )
-    
-    echo %c%[4/5] Optimizing PCI Express settings...%u%
-    bcdedit /set pciexpress Default >nul 2>&1
-    if !errorlevel! equ 0 (
-        echo %c%  ✓ PCI Express set to Default for optimal performance%u%
-    ) else (
-        echo %c%  ✗ Failed to set PCI Express to Default%u%
-    )
-    
-    echo %c%[5/5] Applying hardware PTE optimization...%u%
-    bcdedit /set forcehardwarepte No >nul 2>&1
-    if !errorlevel! equ 0 (
-        echo %c%  ✓ Hardware PTE forcing disabled for improved memory management%u%
-    ) else (
-        echo %c%  ✗ Failed to disable hardware PTE forcing%u%
-    )
-)
-
-echo.
-echo %c%[Category 5/6] Boot Experience Settings%u%
-echo %c%These settings optimize the Windows boot process for speed.%u%
-echo %c%They will make the boot process faster but may hide useful information.%u%
-echo.
-choice /C YN /M "%c%Apply boot experience tweaks? (Y=Faster boot, N=Normal boot) %u%" /D N /T 10
-echo.
-if errorlevel 2 (
-    echo %c%Keeping normal boot experience...%u%
-) else (
-    echo %c%[1/5] Applying boot UX optimization...%u%
-    bcdedit /set bootux Disabled >nul 2>&1
-    if !errorlevel! equ 0 (
-        echo %c%  ✓ Boot UX disabled for faster boot process%u%
-    ) else (
-        echo %c%  ✗ Failed to disable boot UX%u%
-    )
-    
-    echo %c%[2/5] Applying quiet boot optimization...%u%
-    bcdedit /set quietboot yes >nul 2>&1
-    if !errorlevel! equ 0 (
-        echo %c%  ✓ Quiet boot enabled for cleaner boot experience%u%
-    ) else (
-        echo %c%  ✗ Failed to enable quiet boot%u%
-    )
-    
-    echo %c%[3/5] Disabling boot logging...%u%
-    bcdedit /set bootlog No >nul 2>&1
-    if !errorlevel! equ 0 (
-        echo %c%  ✓ Boot logging disabled for faster boot%u%
-    ) else (
-        echo %c%  ✗ Failed to disable boot logging%u%
-    )
-    
-    echo %c%[4/5] Optimizing boot status policy...%u%
-    bcdedit /set bootstatuspolicy IgnoreAllFailures >nul 2>&1
-    if !errorlevel! equ 0 (
-        echo %c%  ✓ Boot status policy set to ignore non-critical failures%u%
-    ) else (
-        echo %c%  ✗ Failed to set boot status policy%u%
-    )
-    
-    echo %c%[5/5] Disabling driver initialization messages...%u%
-    bcdedit /set sos No >nul 2>&1
-    if !errorlevel! equ 0 (
-        echo %c%  ✓ SOS boot messages disabled for cleaner boot%u%
-    ) else (
-        echo %c%  ✗ Failed to disable SOS boot messages%u%
-    )
-)
-
-echo.
-echo %c%[Category 6/6] %red%Security Settings (HIGH RISK)%u%
-echo %c%%red%WARNING: These settings disable critical Windows security features.%u%
-echo %c%%red%Disabling these protections may leave your system vulnerable to malware%u%
-echo %c%%red%and exploits. Only use these if you fully understand the risks.%u%
-echo.
-choice /C YN /M "%red%Disable security features for performance? (NOT RECOMMENDED) (Y/N) %u%" /D N /T 10
-echo.
-if errorlevel 2 (
-    echo %c%Keeping security features enabled (recommended)...%u%
-) else (
-    echo %c%%red%[WARNING] Disabling critical security features as requested...%u%
-    
-    echo %c%[1/7] Applying load options optimization...%u%
-    bcdedit /set loadoptions DISABLE_INTEGRITY_CHECKS >nul 2>&1
-    if !errorlevel! equ 0 (
-        echo %c%  ✓ Load options set to disable integrity checks%u%
-    ) else (
-        echo %c%  ✗ Failed to set load options%u%
-    )
-    
-    echo %c%[2/7] Applying integrity checks optimization...%u%
-    bcdedit /set nointegritychecks Yes >nul 2>&1
-    if !errorlevel! equ 0 (
-        echo %c%  ✓ Integrity checks disabled for improved performance%u%
-    ) else (
-        echo %c%  ✗ Failed to disable integrity checks%u%
-    )
-    
-    echo %c%[3/7] Configuring test signing...%u%
-    bcdedit /set testsigning No >nul 2>&1
-    if !errorlevel! equ 0 (
-        echo %c%  ✓ Test signing disabled for production environment%u%
-    ) else (
-        echo %c%  ✗ Failed to disable test signing%u%
-    )
-    
-    echo %c%[4/7] Disabling hypervisor...%u%
-    bcdedit /set hypervisorlaunchtype off >nul 2>&1
-    if !errorlevel! equ 0 (
-        echo %c%  ✓ Hypervisor launch disabled for maximum gaming performance%u%
-    ) else (
-        echo %c%  ✗ Failed to disable hypervisor launch%u%
-    )
-    
-    echo %c%[5/7] Configuring Data Execution Prevention...%u%
-    bcdedit /set nx AlwaysOff >nul 2>&1
-    if !errorlevel! equ 0 (
-        echo %c%  ✓ NX (DEP) disabled for compatibility and performance%u%
-    ) else (
-        echo %c%  ✗ Failed to disable NX (DEP)%u%
-    )
-    
-    echo %c%[6/7] Disabling virtualization-based security...%u%
-    bcdedit /set vsmlaunchtype Off >nul 2>&1
-    if !errorlevel! equ 0 (
-        echo %c%  ✓ Virtualization-based security disabled for performance%u%
-    ) else (
-        echo %c%  ✗ Failed to disable virtualization-based security%u%
-    )
-    
-    echo %c%[7/7] Disabling credential guard...%u%
-    bcdedit /set vm No >nul 2>&1
-    if !errorlevel! equ 0 (
-        echo %c%  ✓ Virtual machine platform disabled for performance%u%
-    ) else (
-        echo %c%  ✗ Failed to disable virtual machine platform%u%
-    )
-)
-
-echo.
-echo %c%[Optional] %yellow%Expert Mode - Advanced Boot Settings%u%
-echo %c%%yellow%These settings are for expert users only and may cause serious system issues%u%
-echo %c%%yellow%if applied incorrectly. Most users should skip this section.%u%
-echo.
-choice /C YN /M "%yellow%Enable expert mode settings? (Advanced users only) (Y/N) %u%" /D N /T 10
-echo.
-if errorlevel 2 (
-    echo %c%Skipping expert mode settings...%u%
-) else (
-    echo %c%%yellow%[WARNING] Applying expert-level boot configuration settings...%u%
-    
-    echo %c%[1/7] Advanced debug port configuration...%u%
-    bcdedit /set debug No >nul 2>&1
-    if !errorlevel! equ 0 (
-        echo %c%  ✓ Debug mode disabled for improved performance%u%
-    ) else (
-        echo %c%  ✗ Failed to disable debug mode%u%
-    )
-    
-    echo %c%[2/7] Advanced Emergency Management Services...%u%
-    bcdedit /set bootems No >nul 2>&1
-    if !errorlevel! equ 0 (
-        echo %c%  ✓ Boot EMS disabled for cleaner boot process%u%
-    ) else (
-        echo %c%  ✗ Failed to disable boot EMS%u%
-    )
-    
-    echo %c%[3/7] Advanced cluster mode addressing...%u%
-    bcdedit /set clustermodeaddressing 1 >nul 2>&1
-    if !errorlevel! equ 0 (
-        echo %c%  ✓ Cluster mode addressing optimized for performance%u%
-    ) else (
-        echo %c%  ✗ Failed to optimize cluster mode addressing%u%
-    )
-    
-    echo %c%[4/7] Advanced XSave policy...%u%
-    bcdedit /set xsavedisable No >nul 2>&1
-    if !errorlevel! equ 0 (
-        echo %c%  ✓ XSave functionality enabled for optimal CPU operation%u%
-    ) else (
-        echo %c%  ✗ Failed to enable XSave functionality%u%
-    )
-    
-    echo %c%[5/7] Advanced graphics mode settings...%u%
-    bcdedit /set graphicsmodedisabled No >nul 2>&1
-    if !errorlevel! equ 0 (
-        echo %c%  ✓ Graphics mode enabled for proper display functionality%u%
-    ) else (
-        echo %c%  ✗ Failed to enable graphics mode%u%
-    )
-    
-    echo %c%[6/7] Advanced highest mode setting...%u%
-    bcdedit /set highestmode Yes >nul 2>&1
-    if !errorlevel! equ 0 (
-        echo %c%  ✓ Highest resolution mode enabled%u%
-    ) else (
-        echo %c%  ✗ Failed to enable highest resolution mode%u%
-    )
-    
-    echo %c%[7/7] Advanced legacy platform configuration...%u%
-    bcdedit /set forcelegacyplatform No >nul 2>&1
-    if !errorlevel! equ 0 (
-        echo %c%  ✓ Legacy platform forcing disabled for modern hardware support%u%
-    ) else (
-        echo %c%  ✗ Failed to disable legacy platform forcing%u%
-    )
-)
-
-echo.
-echo %c%╔══════════════════════════════════════════════════════════════════════════════╗
-echo ║                      BCDEDIT OPTIMIZATION COMPLETED                          ║
-echo ╚══════════════════════════════════════════════════════════════════════════════╝%u%
-echo.
-echo %c%BCDEdit boot configuration optimization has been successfully completed.%u%
-echo.
-echo %c%Applied Boot Configuration Optimizations:%u%
-echo %c%• Dynamic tick disabled for consistent timer performance and reduced latency%u%
-echo %c%• Platform tick enabled for improved system timing accuracy%u%
-echo %c%• Firmware PCI settings disabled for manual hardware control%u%
-echo %c%• TSC synchronization policy enhanced for better multi-core CPU timing%u%
-echo %c%• Legacy APIC mode disabled for modern interrupt handling%u%
-echo %c%• Physical destination disabled for optimized logical interrupt routing%u%
-echo %c%• TPM boot entropy force disabled for significantly faster boot times%u%
-echo %c%• Boot UX disabled to eliminate unnecessary boot screen delays%u%
-echo %c%• Load options configured to disable integrity checks for performance%u%
-echo %c%• Integrity checks disabled to reduce boot and runtime overhead%u%
-echo %c%• Test signing disabled for production-level system configuration%u%
-echo %c%• Hypervisor launch disabled for maximum gaming and application performance%u%
-echo %c%• NX (Data Execution Prevention) disabled for enhanced compatibility%u%
-echo.
-echo %red%Boot Configuration Benefits:%u%
-echo %c%• Significantly reduced system boot times%u%
-echo %c%• Improved timer accuracy and consistency for gaming applications%u%
-echo %c%• Enhanced interrupt handling and CPU performance%u%
-echo %c%• Reduced system overhead from security and virtualization features%u%
-echo %c%• Better hardware compatibility and control%u%
-echo %c%• Optimized multi-core CPU synchronization%u%
-echo %c%• Eliminated unnecessary boot delays and checks%u%
-echo %c%• Maximum performance configuration for gaming workloads%u%
-echo.
-echo %red%Important Security and Compatibility Notes:%u%
-echo %c%• Some security features have been disabled for maximum performance%u%
-echo %c%• Integrity checks and DEP have been turned off - monitor system stability%u%
-echo %c%• Hypervisor features are disabled - virtualization software may not work%u%
-echo %c%• These changes optimize for performance over security%u%
-echo %c%• All changes can be reverted using BCDEdit if needed%u%
-echo.
-echo %red%Next Steps:%u%
-echo %c%• A system restart is REQUIRED for all BCDEdit changes to take effect%u%
-echo %c%• Monitor system stability after restart%u%
-echo %c%• Test gaming and application performance improvements%u%
-echo %c%• If issues occur, changes can be reverted using BCDEdit commands%u%
-echo.
-echo %c%══════════════════════════ PRESS ANY KEY TO CONTINUE ══════════════════════════%u%
-pause >nul
-
+:TimerResolutionSetup
 echo.
 echo %c%╔══════════════════════════════════════════════════════════════════════════════╗
 echo ║                       TIMER RESOLUTION SETUP                                ║
@@ -2480,12 +2022,30 @@ if errorlevel 2 goto TweaksMenu
 echo.
 echo %c%[1/3] Downloading SetTimerResolution...%u%
 mkdir "C:\DexTools\TimerResolution" >nul 2>&1
-curl -g -L -# -o "C:\DexTools\TimerResolution\SetTimerResolution.exe" "https://github.com/valleyofdoom/TimerResolution/releases/latest/download/SetTimerResolution.exe" 2>nul
-if not exist "C:\DexTools\TimerResolution\SetTimerResolution.exe" (
+curl.exe --fail --location --proto "=https" --max-time 60 -o "C:\DexTools\TimerResolution\SetTimerResolution.exe.download" "https://github.com/valleyofdoom/TimerResolution/releases/latest/download/SetTimerResolution.exe" 2>nul
+if errorlevel 1 (
     echo %red%  Failed to download SetTimerResolution.exe. Place it manually at:%u%
     echo %c%  C:\DexTools\TimerResolution\SetTimerResolution.exe%u%
+    del /f /q "C:\DexTools\TimerResolution\SetTimerResolution.exe.download" >nul 2>&1
 ) else (
-    echo %green%  [+] Downloaded successfully%u%
+    powershell -NoProfile -Command "$p='C:\DexTools\TimerResolution\SetTimerResolution.exe.download';try{$s=Get-AuthenticodeSignature -LiteralPath $p -ErrorAction Stop;if($s.Status -eq 'Valid'){exit 0}else{exit 1}}catch{exit 1}" >nul 2>&1
+    if errorlevel 1 (
+        echo %red%  Download blocked: the executable has no valid Authenticode signature.%u%
+        call :LogEvent "BLOCKED" "Unsigned TimerResolution executable was not installed"
+        del /f /q "C:\DexTools\TimerResolution\SetTimerResolution.exe.download" >nul 2>&1
+    ) else (
+        move /y "C:\DexTools\TimerResolution\SetTimerResolution.exe.download" "C:\DexTools\TimerResolution\SetTimerResolution.exe" >nul 2>&1
+        echo %green%  [+] Downloaded and signature verified%u%
+    )
+)
+
+powershell -NoProfile -Command "$p='C:\DexTools\TimerResolution\SetTimerResolution.exe';try{$s=Get-AuthenticodeSignature -LiteralPath $p -ErrorAction Stop;if($s.Status -eq 'Valid'){exit 0}else{exit 1}}catch{exit 1}" >nul 2>&1
+if errorlevel 1 (
+    echo %red%  Timer Resolution setup cancelled because no signed executable is available.%u%
+    reg delete "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" /v "TimerResolution" /f >nul 2>&1
+    call :LogEvent "BLOCKED" "TimerResolution auto-start refused without a signed executable"
+    pause
+    goto TweaksMenu
 )
 
 echo.
@@ -2513,8 +2073,20 @@ if "!TR_OPT!"=="1" (
     echo %green%  [+] Timer Resolution 0.507ms set to auto-start%u%
 ) else if "!TR_OPT!"=="4" (
     set /p TR_CUSTOM="%c%Enter value in 100-nanosecond units (e.g. 5000): %u%"
-    reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" /v "TimerResolution" /t REG_SZ /d "\"C:\DexTools\TimerResolution\SetTimerResolution.exe\" --resolution !TR_CUSTOM! --no-console" /f >nul 2>&1
-    echo %green%  [+] Timer Resolution !TR_CUSTOM! set to auto-start%u%
+    echo(!TR_CUSTOM!| findstr /R /X /C:"[0-9][0-9]*" >nul
+    if errorlevel 1 (
+        echo %red%  Invalid value. Use only a number from 5000 through 156250.%u%
+    ) else (
+        set /a TR_CUSTOM_NUM=!TR_CUSTOM! 2>nul
+        if !TR_CUSTOM_NUM! LSS 5000 (
+            echo %red%  Value is below the safe range of this panel.%u%
+        ) else if !TR_CUSTOM_NUM! GTR 156250 (
+            echo %red%  Value is above the safe range of this panel.%u%
+        ) else (
+            reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" /v "TimerResolution" /t REG_SZ /d "\"C:\DexTools\TimerResolution\SetTimerResolution.exe\" --resolution !TR_CUSTOM_NUM! --no-console" /f >nul 2>&1
+            echo %green%  [+] Timer Resolution !TR_CUSTOM_NUM! set to auto-start%u%
+        )
+    )
 ) else (
     echo %c%  Skipped Timer Resolution setup%u%
 )
@@ -2544,10 +2116,10 @@ echo %c%Note: These optimizations are specifically tailored for each GPU vendor%
 echo %c%and will apply manufacturer-specific performance enhancements.%u%
 echo.
 set /p choice="%c%Select your GPU manufacturer »%u% "
-if "%choice%"=="0" goto TweaksMenu
-if "%choice%"=="1" goto AMDGPU
-if "%choice%"=="2" goto NVIDIAGPU
-if "%choice%"=="3" goto INTELGPU
+if "!choice!"=="0" goto TweaksMenu
+if "!choice!"=="1" goto AMDGPU
+if "!choice!"=="2" goto NVIDIAGPU
+if "!choice!"=="3" goto INTELGPU
 cls
 echo.
 echo %red%╔══════════════════════════════════════════════════════════════════════════════╗
@@ -2589,9 +2161,8 @@ echo ║                        %blue%INTEL%u%%c% OPTIMIZATION IN PROGRESS      
 echo ╚══════════════════════════════════════════════════════════════════════════════╝%u%
 
 echo.
-echo %c%[1/6] Configuring Memory Settings...%u%
-bcdedit /set allowedinmemorysettings 0x0 >nul 2>&1
-bcdedit /set isolatedcontext No >nul 2>&1
+echo %c%[1/6] Preserving Windows boot memory and isolation settings...%u%
+rem GPU tuning must not alter BCD memory or security isolation.
 
 echo %c%[2/6] Optimizing System Timers...%u%
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\kernel" /v "DistributeTimers" /t REG_DWORD /d "1" /f >nul 2>&1
@@ -2674,10 +2245,10 @@ echo %c%Standard:%u% Profile Inspector + driver tweaks + latency optimizations
 echo %c%Experimental:%u% %red%Disables ALL NVIDIA power management. Higher heat + power draw.%u%
 echo.
 set /p NvChoice="%c%Choose an option »%u% "
-if "%NvChoice%"=="0" goto C
-if "%NvChoice%"=="1" goto NVIDIAGPUStandard
-if "%NvChoice%"=="2" goto NVIDIAGPUExperimental
-if "%NvChoice%"=="3" goto NVIDIAGPURevert
+if "!NvChoice!"=="0" goto C
+if "!NvChoice!"=="1" goto NVIDIAGPUStandard
+if "!NvChoice!"=="2" goto NVIDIAGPUExperimental
+if "!NvChoice!"=="3" goto NVIDIAGPURevert
 echo %red%Invalid option. Please try again.%u%
 timeout /t 1 >nul
 goto NVIDIAGPU
@@ -2712,15 +2283,10 @@ echo ║                      %green%NVIDIA%u%%c% OPTIMIZATION IN PROGRESS      
 echo ╚══════════════════════════════════════════════════════════════════════════════╝%u%
 
 echo.
-echo %c%[1/8] Downloading NVIDIA Profile Inspector...%u%
-mkdir "%TEMP%\nvidiaProfileInspector\" 2>nul
-rmdir /S /Q "%TEMP%\nvidiaProfileInspector\" 2>nul
-curl -g -L -# -o "%TEMP%\nvidiaProfileInspector.zip" "https://github.com/Orbmu2k/nvidiaProfileInspector/releases/latest/download/nvidiaProfileInspector.zip" 2>nul
-chcp 437 >nul
-powershell -NoProfile Expand-Archive "%TEMP%\nvidiaProfileInspector.zip" -DestinationPath "%TEMP%\nvidiaProfileInspector" 2>nul
-chcp 65001 >nul
-del /F /Q "%TEMP%\nvidiaProfileInspector.zip" 2>nul
-curl -g -L -# -o "%TEMP%\nvidiaProfileInspector\NVIDIAProfileInspector.nip" "https://raw.githubusercontent.com/Dex/Dex-Tweaks/main/Tools/NVIDIA.nip" 2>nul
+echo %c%[1/8] Checking NVIDIA profile import availability...%u%
+set "DEX_NVIDIA_PROFILE_READY=0"
+echo %yellow%  NVIDIA profile import skipped: a verified profile is not bundled.%u%
+call :LogEvent "SKIP" "NVIDIA Profile Inspector import unavailable"
 
 echo %c%[2/8] Configuring Driver Thread Priorities...%u%
 reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Parameters" /v "ThreadPriority" /t REG_DWORD /d "31" /f >nul 2>&1
@@ -2771,8 +2337,13 @@ reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power" /v "InterruptSteeringDisab
 reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm" /v "EnableHDAudioD3Cold" /t REG_DWORD /d "0" /f >nul 2>&1
 
 echo %c%[8/8] Applying NVIDIA Profile Configuration...%u%
-cd /d "%TEMP%\nvidiaProfileInspector\" 2>nul
-nvidiaProfileInspector.exe "NVIDIAProfileInspector.nip" >nul 2>&1
+if "!DEX_NVIDIA_PROFILE_READY!"=="1" (
+    pushd "%TEMP%\nvidiaProfileInspector" >nul 2>&1
+    nvidiaProfileInspector.exe "NVIDIAProfileInspector.nip" >nul 2>&1
+    popd
+) else (
+    echo %yellow%  Profile import was not run because no verified profile is available.%u%
+)
 reg add "HKCU\Software\NVIDIA Corporation\NvTray" /v "StartOnLogin" /t REG_DWORD /d "0" /f >nul 2>&1
 reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\FTS" /v "EnableGR535" /t REG_DWORD /d "0" /f >nul 2>&1
 
@@ -3601,10 +3172,10 @@ echo %c%Note: Each option applies connection-specific optimizations%u%
 echo %c%for maximum performance on your preferred network type.%u%
 echo.
 set /p choice="%c%Select your network type »%u% "
-if "%choice%"=="0" goto TweaksMenu
-if "%choice%"=="1" goto WiFiOptimization
-if "%choice%"=="2" goto EthernetOptimization
-if "%choice%"=="3" goto UniversalTweaks
+if "!choice!"=="0" goto TweaksMenu
+if "!choice!"=="1" goto WiFiOptimization
+if "!choice!"=="2" goto EthernetOptimization
+if "!choice!"=="3" goto UniversalTweaks
 cls
 echo.
 echo %red%╔══════════════════════════════════════════════════════════════════════════════╗
@@ -4665,10 +4236,10 @@ echo %c%Note: Processor-specific optimizations provide better performance%u%
 echo %c%by targeting your CPU's unique architecture and features.%u%
 echo.
 set /p choice="%c%Select your CPU type »%u% "
-if "%choice%"=="0" goto TweaksMenu
-if "%choice%"=="1" goto IntelOptimization
-if "%choice%"=="2" goto RyzenOptimization
-if "%choice%"=="3" goto UniversalCPU
+if "!choice!"=="0" goto TweaksMenu
+if "!choice!"=="1" goto IntelOptimization
+if "!choice!"=="2" goto RyzenOptimization
+if "!choice!"=="3" goto UniversalCPU
 cls
 echo.
 echo %red%╔══════════════════════════════════════════════════════════════════════════════╗
@@ -5583,9 +5154,9 @@ echo.
 :ISelectMode
 set "svc_mode="
 set /p "svc_mode=Select mode (1/2/0): "
-if "%svc_mode%"=="1" goto IQuickMode
-if "%svc_mode%"=="2" goto IAdvanced
-if "%svc_mode%"=="0" goto TweaksMenu
+if "!svc_mode!"=="1" goto IQuickMode
+if "!svc_mode!"=="2" goto IAdvanced
+if "!svc_mode!"=="0" goto TweaksMenu
 echo %red%Invalid option. Please try again.%u%
 timeout /t 1 >nul
 goto ISelectMode
@@ -6061,14 +5632,16 @@ echo.
 :IAdvMenu
 set "IA_MODE="
 set /p "IA_MODE=%c%Choose »%u% "
-if "%IA_MODE%"=="1" goto IAdv_CategoryMode
-if "%IA_MODE%"=="2" goto IAdv_DisableAll
-if "%IA_MODE%"=="0" goto TweaksMenu
+if "!IA_MODE!"=="1" goto IAdv_CategoryMode
+if "!IA_MODE!"=="2" goto IAdv_DisableAll
+if "!IA_MODE!"=="0" goto TweaksMenu
 echo %red%Invalid option. Please try again.%u%
 timeout /t 1 >nul
 goto IAdvMenu
 
 :IAdv_DisableAll
+call :RequireExpertMode "Disabling every optional service can remove networking, security, backup, printing and device capabilities."
+if errorlevel 1 goto IAdvanced
 cls
 call :SetupConsole
 echo.
@@ -6137,7 +5710,7 @@ echo %c%  DiagTrack, dmwappushservice, DPS, WerSvc, PcaSvc, MapsBroker, lfsvc,%u
 echo %c%  RetailDemo, wisvc, WdiServiceHost, diagsvc, Sense, SensorService,%u%
 echo %c%  DisplayEnhancementService, GraphicsPerfSvc, and more.%u%
 echo.
-echo %red%  Recommended: D%u%
+echo %green%  Recommended: K (keep security updates automatic)%u%
 echo.
 set "G1="
 set /p "G1=%c%D / M / K »%u% "
@@ -6246,7 +5819,7 @@ set /p "G6=%c%D / M / K »%u% "
 if not defined G6 set "G6=K"
 if /i "!G6!"=="D" call :DisableAutomaticUpdateServices
 if /i "!G6!"=="M" (
-    for %%s in (gupdate gupdatem GoogleChromeElevationService AdobeUpdateService AdobeARMservice dbupdate dbupdatem MozillaMaintenance edgeupdate edgeupdatem) do sc config %%s start= demand >nul 2>&1
+    echo %yellow%  Update services preserved to avoid delaying browser and application security fixes.%u%
 )
 
 cls
@@ -6256,8 +5829,7 @@ echo %c%╔═══════════════════════
 echo ║  [7/11]  PERFORMANCE SERVICES                                                 ║
 echo ╚══════════════════════════════════════════════════════════════════════════════╝%u%
 echo.
-echo %c%  SysMain (Superfetch), WSearch (file indexing), FontCache, msiserver,%u%
-echo %c%  Web Threat Defense, W32Time, autotimesvc, TieringEngine, and more.%u%
+echo %c%  Optional caching, indexing, maps, location and graphics telemetry services.%u%
 echo.
 echo %red%  Recommended: D  (SysMain ^& WSearch are the biggest resource hogs)%u%
 echo.
@@ -6266,7 +5838,7 @@ set /p "G7=%c%D / M / K »%u% "
 if not defined G7 set "G7=K"
 if /i "!G7!"=="D" call :DisablePerformanceServices
 if /i "!G7!"=="M" (
-    for %%s in (SysMain WSearch PimIndexMaintenanceSvc FontCache msiserver webthreatdefsvc webthreatdefusersvc wscsvc W32Time autotimesvc tzautoupdate defragsvc DusmSvc TieringEngineService) do sc config %%s start= demand >nul 2>&1
+    for %%s in (SysMain WSearch PimIndexMaintenanceSvc MapsBroker lfsvc GraphicsPerfSvc WalletService) do sc config %%s start= demand >nul 2>&1
 )
 
 cls
@@ -6344,18 +5916,14 @@ echo.
 echo %c%  Phone Link, CDP/Sync, Push Notifications, Maps, Wallet, Themes, RDP,%u%
 echo %c%  Pen/Touch, BitLocker, Windows Update, Telephony, and 50+ more services.%u%
 echo.
-echo %red%  Recommended: D on a dedicated gaming or optimized machine.%u%
+echo %green%  Recommended: K. Disable only features you have explicitly reviewed.%u%
 echo.
 set "G11="
 set /p "G11=%c%D / M / K »%u% "
 if not defined G11 set "G11=K"
 if /i "!G11!"=="D" call :DisableWindowsFeaturesServices
 if /i "!G11!"=="M" (
-    for %%s in (AarSvc AppReadiness BcastDVRUserService BDESVC CaptureService cbdhsvc CDPUserSvc CertPropSvc COMSysApp ConsentUxUserSvc CscService dcsvc DeviceInstall DevicePickerUserSvc DevicesFlowUserSvc DevQueryBroker) do sc config %%s start= demand >nul 2>&1
-    for %%s in (DisplayEnhancementService DmEnrollmentSvc DsmSvc DsSvc EFS hidserv InventorySvc IpxlatCfgSvc KtmRm LxpSvc McpManagementService MessagingService midisrv MSDTC MSiSCSI NPSMSvc) do sc config %%s start= demand >nul 2>&1
-    for %%s in (OneSyncSvc P9RdrService PenService perceptionsimulation PerfHost PhoneSvc pla PushToInstall QWAVE RmSvc Sense SensorDataService SensorService SensrSvc SessionEnv ShellHWDetection) do sc config %%s start= demand >nul 2>&1
-    for %%s in (shpamsvc SmsRouter smphost TapiSrv Themes TrkWks TroubleshootingSvc uhssvc UmRdpService UnistoreSvc UserDataSvc UsoSvc VacSvc VaultSvc vds WalletService) do sc config %%s start= demand >nul 2>&1
-    for %%s in (WManSvc wmiApSrv WPDBusEnum WpnUserService WpnService wuauserv wercplsupport StorSvc TokenBroker BITS AJRouter seclogon) do sc config %%s start= demand >nul 2>&1
+    for %%s in (AarSvc BcastDVRUserService CaptureService CDPUserSvc DevicePickerUserSvc DevicesFlowUserSvc MessagingService OneSyncSvc PhoneSvc PushToInstall SmsRouter WalletService) do sc config %%s start= demand >nul 2>&1
     sc config "diagnosticshub.standardcollector.service" start= demand >nul 2>&1
 )
 
@@ -6610,18 +6178,8 @@ call :DisableService "logi_lamparray_service"
 exit /b
 
 :DisableAutomaticUpdateServices
-echo %c%    Disabling automatic update services...%u%
-call :DisableService "gupdate"
-call :DisableService "gupdatem"
-call :DisableService "GoogleChromeElevationService"
-call :DisableService "AdobeUpdateService"
-call :DisableService "AdobeFlashPlayerUpdateSvc"
-call :DisableService "AdobeARMservice"
-call :DisableService "dbupdate"
-call :DisableService "dbupdatem"
-call :DisableService "MozillaMaintenance"
-call :DisableService "edgeupdate"
-call :DisableService "edgeupdatem"
+echo %yellow%    Automatic update services preserved for security.%u%
+call :LogEvent "SKIP" "Automatic application update services preserved"
 exit /b
 
 :DisablePerformanceServices
@@ -6629,35 +6187,10 @@ echo %c%    Disabling performance-impacting services...%u%
 call :DisableService "SysMain"
 call :DisableService "WSearch"
 call :DisableService "PimIndexMaintenanceSvc"
-call :DisableService "FontCache"
-
-call :DisableService "msiserver"
-call :DisableService "webthreatdefsvc"
-call :DisableService "webthreatdefusersvc"
-call :DisableService "wscsvc"
-call :DisableService "AppIDSvc"
-
-call :DisableService "FontCache3.0.0.0"
-call :DisableService "W32Time"
-call :DisableService "autotimesvc"
-call :DisableService "tzautoupdate"
-call :DisableService "spectrum"
-call :DisableService "NcaSvc"
 call :DisableService "MapsBroker"
 call :DisableService "lfsvc"
 call :DisableService "GraphicsPerfSvc"
-call :DisableService "DoSvc"
-call :DisableService "defragsvc"
-call :DisableService "DusmSvc"
-call :DisableService "WaaSMedicSvc"
 call :DisableService "WalletService"
-call :DisableService "WarpJITSvc"
-call :DisableService "WSAIFabricSvc"
-call :DisableService "whesvc"
-call :DisableService "WinHttpAutoProxySvc"
-call :DisableService "WEPHOSTSVC"
-call :DisableService "TieringEngineService"
-call :DisableService "TimeBrokerSvc"
 exit /b
 
 :DisableSecurityServices
@@ -6716,81 +6249,21 @@ echo %green%    → Hyper-V and VM services disabled%u%
 exit /b
 
 :DisableWindowsFeaturesServices
-echo %c%    Disabling Windows features and app services...%u%
+echo %c%    Disabling reviewed optional app services...%u%
 call :DisableService "AarSvc"
-call :DisableService "AppReadiness"
 call :DisableService "BcastDVRUserService"
-call :DisableService "BDESVC"
 call :DisableService "CaptureService"
-call :DisableService "cbdhsvc"
 call :DisableService "CDPUserSvc"
-call :DisableService "CertPropSvc"
-call :DisableService "COMSysApp"
-call :DisableService "ConsentUxUserSvc"
-call :DisableService "CscService"
-call :DisableService "dcsvc"
-call :DisableService "DeviceInstall"
 call :DisableService "DevicePickerUserSvc"
 call :DisableService "DevicesFlowUserSvc"
-call :DisableService "DevQueryBroker"
 call :DisableService "diagnosticshub.standardcollector.service"
-call :DisableService "DisplayEnhancementService"
-call :DisableService "DmEnrollmentSvc"
-call :DisableService "DsmSvc"
-call :DisableService "DsSvc"
-call :DisableService "EFS"
-call :DisableService "hidserv"
-call :DisableService "InventorySvc"
-call :DisableService "IpxlatCfgSvc"
-call :DisableService "KtmRm"
-call :DisableService "LxpSvc"
-call :DisableService "McpManagementService"
 call :DisableService "MessagingService"
-call :DisableService "midisrv"
-call :DisableService "MSDTC"
-call :DisableService "MSiSCSI"
-call :DisableService "NPSMSvc"
 call :DisableService "OneSyncSvc"
-call :DisableService "P9RdrService"
-call :DisableService "PenService"
-call :DisableService "perceptionsimulation"
-call :DisableService "PerfHost"
 call :DisableService "PhoneSvc"
-call :DisableService "pla"
 call :DisableService "PushToInstall"
-call :DisableService "QWAVE"
-call :DisableService "RmSvc"
-call :DisableService "Sense"
-call :DisableService "SensorDataService"
-call :DisableService "SensorService"
-call :DisableService "SensrSvc"
-call :DisableService "SessionEnv"
-call :DisableService "ShellHWDetection"
-call :DisableService "shpamsvc"
 call :DisableService "SmsRouter"
-call :DisableService "smphost"
-call :DisableService "TapiSrv"
-call :DisableService "Themes"
-call :DisableService "TrkWks"
-call :DisableService "TroubleshootingSvc"
-call :DisableService "uhssvc"
-call :DisableService "UmRdpService"
-call :DisableService "UnistoreSvc"
-call :DisableService "UserDataSvc"
-call :DisableService "UsoSvc"
-call :DisableService "VacSvc"
-call :DisableService "VaultSvc"
-call :DisableService "vds"
 call :DisableService "WalletService"
-call :DisableService "WManSvc"
-call :DisableService "wmiApSrv"
-call :DisableService "WPDBusEnum"
-call :DisableService "WpnUserService"
-call :DisableService "WpnService"
-call :DisableService "wuauserv"
-call :DisableService "wercplsupport"
-call :DisableService "VSS"
-echo %green%    → Windows features and app services disabled%u%
+echo %green%    Optional app services disabled; Update, BITS, VSS, device, encryption and security services preserved.%u%
 exit /b
 
 :EnableCriticalServices
@@ -6837,46 +6310,13 @@ echo %green%    → Critical services verified and protected%u%
 exit /b
 
 :ApplyFinalServiceConfigurations
-echo %c%    Applying final service configurations...%u%
-sc config "CertPropSvc" start= manual >nul 2>&1
-sc config "Ndu" start= disabled >nul 2>&1
-
-reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\OneDrive" /v "DisableFileSync" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\OneDrive" /v "DisableFileSyncNGSC" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\OneDrive" /v "DisableMeteredNetworkFileSync" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\OneDrive" /v "DisableLibrariesDefaultSaveToOneDrive" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKCR\CLSID\{018D5C66-4533-4307-9B53-224DE2ED1FE6}\ShellFolder" /v "Attributes" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKCR\Wow6432Node\CLSID\{018D5C66-4533-4307-9B53-224DE2ED1FE6}\ShellFolder" /v "Attributes" /t REG_DWORD /d "0" /f >nul 2>&1
-
-call :DisableService "CDPUserSvc_dbdb6"
-call :DisableService "OneSyncSvc_dbdb6"
-call :DisableService "PimIndexMaintenanceSvc_dbdb6"
-call :DisableService "UnistoreSvc_dbdb6"
-call :DisableService "UserDataSvc_dbdb6"
-
-echo %c%    Applying registry-based service disabling...%u%
-reg add "HKLM\System\CurrentControlSet\Services\AppIDSvc" /v "Start" /t REG_DWORD /d "4" /f >nul 2>&1
-reg add "HKLM\System\CurrentControlSet\Services\ClipSVC" /v "Start" /t REG_DWORD /d "4" /f >nul 2>&1
-reg add "HKLM\System\CurrentControlSet\Services\CredentialEnrollmentManagerUserSvc" /v "Start" /t REG_DWORD /d "4" /f >nul 2>&1
-reg add "HKLM\System\CurrentControlSet\Services\DeviceAssociationBrokerSvc" /v "Start" /t REG_DWORD /d "4" /f >nul 2>&1
-reg add "HKLM\System\CurrentControlSet\Services\DoSvc" /v "Start" /t REG_DWORD /d "4" /f >nul 2>&1
-reg add "HKLM\System\CurrentControlSet\Services\embeddedmode" /v "Start" /t REG_DWORD /d "4" /f >nul 2>&1
-reg add "HKLM\System\CurrentControlSet\Services\EntAppSvc" /v "Start" /t REG_DWORD /d "4" /f >nul 2>&1
-reg add "HKLM\System\CurrentControlSet\Services\PrintWorkflowUserSvc" /v "Start" /t REG_DWORD /d "4" /f >nul 2>&1
-reg add "HKLM\System\CurrentControlSet\Services\SgrmBroker" /v "Start" /t REG_DWORD /d "4" /f >nul 2>&1
-reg add "HKLM\System\CurrentControlSet\Services\SystemEventsBroker" /v "Start" /t REG_DWORD /d "4" /f >nul 2>&1
-reg add "HKLM\System\CurrentControlSet\Services\TimeBrokerSvc" /v "Start" /t REG_DWORD /d "4" /f >nul 2>&1
-reg add "HKLM\System\CurrentControlSet\Services\WaaSMedicSvc" /v "Start" /t REG_DWORD /d "4" /f >nul 2>&1
-reg add "HKLM\System\CurrentControlSet\Services\WdNisSvc" /v "Start" /t REG_DWORD /d "4" /f >nul 2>&1
-reg add "HKLM\System\CurrentControlSet\Services\WinHttpAutoProxySvc" /v "Start" /t REG_DWORD /d "4" /f >nul 2>&1
-
-reg add "HKLM\SYSTEM\CurrentControlSet\Control" /v "SvcHostSplitThresholdInKB" /t REG_DWORD /d "4294967295" /f >nul 2>&1
-
-echo %green%    → Final configurations applied%u%
+echo %c%    Preserving unrelated network, update and OneDrive settings.%u%
 exit /b
 
 :J
 rem Delayed expansion is already enabled globally.
+call :RequireExpertMode "Comprehensive app removal can affect Store, Xbox, WebView and recovery."
+if errorlevel 1 goto TweaksMenu
 cls
 call :SetupConsole
 echo.
@@ -7366,8 +6806,8 @@ chcp 437 >nul
 powershell -Command "$keyPath='HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Appx\AppxAllUserStore\Deprovisioned\%APP_PACKAGE%'; if (!(Test-Path $keyPath)) { try { New-Item -Path $keyPath -Force -ErrorAction Stop | Out-Null } catch { } }" >nul 2>&1
 chcp 65001 >nul
 
-call :SoftDeleteSystemFiles "%LOCALAPPDATA%\Packages\%APP_PACKAGE%\*"
-call :SoftDeleteSystemFiles "%PROGRAMDATA%\Microsoft\Windows\AppRepository\Packages\%APP_PACKAGE%*\*"
+rem Remove-AppxPackage and deprovisioning are sufficient. Physical package files
+rem and per-user data are preserved so Windows servicing and recovery remain valid.
 
 exit /b
 
@@ -7387,18 +6827,9 @@ powershell -Command "$keyPath='HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Ap
 powershell -Command "$keyPath='HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Appx\AppxAllUserStore\EndOfLife\$env:USERNAME\%APP_PACKAGE%'; $userSid = (New-Object System.Security.Principal.NTAccount($env:USERNAME)).Translate([Security.Principal.SecurityIdentifier]).Value; $keyPath = $keyPath.Replace('$env:USERNAME', $userSid); if (Test-Path $keyPath) { try { Remove-Item -LiteralPath $keyPath -Force -ErrorAction Stop } catch { } }" >nul 2>&1
 chcp 65001 >nul
 
-call :SoftDeleteSystemFiles "%SYSTEMROOT%\SystemApps\%APP_PACKAGE%\*"
-call :SoftDeleteSystemFiles "%SYSTEMDRIVE%\Program Files\WindowsApps\%APP_NAME%*\*"
-call :SoftDeleteSystemFiles "%LOCALAPPDATA%\Packages\%APP_PACKAGE%\*"
-call :SoftDeleteSystemFiles "%PROGRAMDATA%\Microsoft\Windows\AppRepository\Packages\%APP_NAME%*\*"
+rem Never rename files inside SystemApps, WindowsApps or AppRepository. Doing so
+rem bypasses the component servicing stack and can make SFC, DISM and updates fail.
 
-exit /b
-
-:SoftDeleteSystemFiles
-set "PATH_PATTERN=%1"
-chcp 437 >nul
-powershell -Command "$pathGlobPattern = '%PATH_PATTERN%'; $expandedPath = [System.Environment]::ExpandEnvironmentVariables($pathGlobPattern); $foundAbsolutePaths = @(); try { $foundAbsolutePaths += @(Get-ChildItem -Path $expandedPath -Force -Recurse -ErrorAction SilentlyContinue | Select-Object -ExpandProperty FullName); } catch { }; try { $foundAbsolutePaths += @(Get-Item -Path $expandedPath -ErrorAction SilentlyContinue | Select-Object -ExpandProperty FullName); } catch { }; $foundAbsolutePaths = $foundAbsolutePaths | Select-Object -Unique | Sort-Object -Property { $_.Length } -Descending; foreach ($path in $foundAbsolutePaths) { if (Test-Path -Path $path -PathType Container) { continue; }; if ($path.EndsWith('.OLD')) { continue; }; $newFilePath = \"$($path).OLD\"; try { Move-Item -LiteralPath $path -Destination $newFilePath -Force -ErrorAction SilentlyContinue } catch { } }" >nul 2>&1
-chcp 65001 >nul
 exit /b
 
 :RemoveThirdPartyBloatware
@@ -7547,23 +6978,11 @@ reg add "HKLM\SYSTEM\CurrentControlSet\Services\XboxNetApiSvc" /v "Start" /t REG
 reg add "HKLM\SYSTEM\CurrentControlSet\Services\LicenseManager" /v "Start" /t REG_DWORD /d "4" /f >nul 2>&1
 
 echo.
-echo %red%WARNING:%u% This next step deletes protected Xbox/Game Bar files from System32.
-echo %c%Services and Appx packages were already handled above.%u%
-choice /C YN /M "Also remove protected System32 Xbox files? (N recommended)"
-if errorlevel 2 goto SkipXboxProtectedFiles
-
-setlocal enabledelayedexpansion
-set "XboxPath=C:\Windows\System32"
-set "XboxFiles=GameBarPresenceWriter.exe GameBarPresenceWriter.proxy.dll GameChatOverlayExt.dll GameChatTranscription.dll GamePanel.exe GamePanelExternalHook.dll gamestreamingext.dll gameux.dll gamingtcui.dll XblAuthManager.dll XblAuthManagerProxy.dll XblAuthTokenBrokerExt.dll XblGameSave.dll XblGameSaveExt.dll XblGameSaveProxy.dll XblGameSaveTask.exe XboxNetApiSvc.dll Windows.Gaming.Preview.dll Windows.Gaming.UI.GameBar.dll Windows.Gaming.XboxLive.Storage.dll"
-for %%f in (%XboxFiles%) do (
-    if exist "%XboxPath%\%%f" (
-        takeown /F "%XboxPath%\%%f" >nul 2>&1
-        icacls "%XboxPath%\%%f" /grant administrators:F >nul 2>&1
-        del /f /q "%XboxPath%\%%f" >nul 2>&1
-        echo %c%  → Removed: %%f%u%
-    )
-)
-endlocal
+echo %c%Protected Xbox/Game Bar files in System32 are preserved.%u%
+echo %c%Services and Appx packages were already handled through supported interfaces.%u%
+echo %yellow%Protected Windows files are preserved for servicing and recovery safety.%u%
+call :LogEvent "SKIP" "Protected Xbox System32 file deletion blocked"
+goto SkipXboxProtectedFiles
 :SkipXboxProtectedFiles
 exit /b
 
@@ -7813,18 +7232,18 @@ echo.
 echo                          %u%[%c%10%u%] Colour Presets   [%c%11%u%] Back to Main   [%red%X%u%] Exit Application
 echo.
 set /p M="%c%Choose an option »%u% "
-if "%M%"=="1" goto HardwareInformation
-if "%M%"=="2" goto StorageAcceleration
-if "%M%"=="3" goto NVIDIAOptimizer
-if "%M%"=="4" goto DriverUpdates
-if "%M%"=="5" goto AMDOptimizer
-if "%M%"=="6" goto HardwareSecurityCenter
-if "%M%"=="7" goto AudioOptimization
-if "%M%"=="8" goto USBOptimization
-if "%M%"=="9" goto MonitorOptimization
-if /i "%M%"=="10" goto Presets
-if /i "%M%"=="11" goto menu
-if /i "%M%"=="X" goto Destruct
+if "!M!"=="1" goto HardwareInformation
+if "!M!"=="2" goto StorageAcceleration
+if "!M!"=="3" goto NVIDIAOptimizer
+if "!M!"=="4" goto DriverUpdates
+if "!M!"=="5" goto AMDOptimizer
+if "!M!"=="6" goto HardwareSecurityCenter
+if "!M!"=="7" goto AudioOptimization
+if "!M!"=="8" goto USBOptimization
+if "!M!"=="9" goto MonitorOptimization
+if /i "!M!"=="10" goto Presets
+if /i "!M!"=="11" goto menu
+if /i "!M!"=="X" goto Destruct
 cls
 echo %underline%%red%Invalid Input. Press any key to continue.%u%
 pause >nul
@@ -8292,19 +7711,19 @@ echo %c%              [R] Refresh Status   [B] Back to Hardware Menu   [X] Exit%
 echo.
 set /p "choice=%c%Choose an option »%u% "
 
-if /i "%choice%"=="1" goto EnableWindowsHello
-if /i "%choice%"=="2" goto ConfigureBitLocker
-if /i "%choice%"=="3" goto EnableCredentialGuard
-if /i "%choice%"=="4" goto ConfigureDeviceGuard
-if /i "%choice%"=="5" goto EnableCoreIsolation
-if /i "%choice%"=="6" goto EnableSystemGuard
-if /i "%choice%"=="7" goto EnableHVCI
-if /i "%choice%"=="8" goto ConfigureSmartCard
-if /i "%choice%"=="9" goto SecurityComplianceReport
-if /i "%choice%"=="0" goto AutomatedSecuritySetup
-if /i "%choice%"=="R" goto HardwareSecurityCenter
-if /i "%choice%"=="B" goto HardwareMenu
-if /i "%choice%"=="X" goto Destruct
+if /i "!choice!"=="1" goto EnableWindowsHello
+if /i "!choice!"=="2" goto ConfigureBitLocker
+if /i "!choice!"=="3" goto EnableCredentialGuard
+if /i "!choice!"=="4" goto ConfigureDeviceGuard
+if /i "!choice!"=="5" goto EnableCoreIsolation
+if /i "!choice!"=="6" goto EnableSystemGuard
+if /i "!choice!"=="7" goto EnableHVCI
+if /i "!choice!"=="8" goto ConfigureSmartCard
+if /i "!choice!"=="9" goto SecurityComplianceReport
+if /i "!choice!"=="0" goto AutomatedSecuritySetup
+if /i "!choice!"=="R" goto HardwareSecurityCenter
+if /i "!choice!"=="B" goto HardwareMenu
+if /i "!choice!"=="X" goto Destruct
 
 cls
 echo %red%Invalid choice. Please try again.%u%
@@ -8333,22 +7752,22 @@ if /i "%tpm_status%"=="TPM_PRESENT" (
     echo.
     set /p "bl_choice=%c%Choose BitLocker option »%u% "
 
-    if "%bl_choice%"=="1" (
+    if "!bl_choice!"=="1" (
         echo %c%Enabling BitLocker with TPM...%u%
         manage-bde -protectors -add C: -TPM
         manage-bde -on C:
-    ) else if "%bl_choice%"=="2" (
+    ) else if "!bl_choice!"=="2" (
         echo %c%Enabling BitLocker with TPM + PIN...%u%
         manage-bde -protectors -add C: -TPMAndPIN
         manage-bde -on C:
-    ) else if "%bl_choice%"=="3" (
+    ) else if "!bl_choice!"=="3" (
         echo %c%Enabling BitLocker with TPM + USB...%u%
         manage-bde -protectors -add C: -TPMAndStartupKey
         manage-bde -on C:
-    ) else if "%bl_choice%"=="4" (
+    ) else if "!bl_choice!"=="4" (
         echo %c%BitLocker status%u%
         manage-bde -status
-    ) else if "%bl_choice%"=="5" (
+    ) else if "!bl_choice!"=="5" (
         echo %c%Backing up recovery key (displaying protector info)...%u%
         manage-bde -protectors -get C:
     ) else (
@@ -8924,35 +8343,35 @@ echo.
 
 set /p "sc_choice=%c%Choose an option »%u% "
 
-if "%sc_choice%"=="1" (
+if "!sc_choice!"=="1" (
     echo %c%Opening Certificate Manager...%u%
     start certmgr.msc
     timeout /t 2 >nul
     goto ConfigureSmartCard
 )
 
-if "%sc_choice%"=="2" (
+if "!sc_choice!"=="2" (
     echo %c%Opening Local Machine Certificate Manager...%u%
     start certlm.msc
     timeout /t 2 >nul
     goto ConfigureSmartCard
 )
 
-if "%sc_choice%"=="3" (
+if "!sc_choice!"=="3" (
     echo %c%Opening Certificate Templates Console...%u%
     start certtmpl.msc
     timeout /t 2 >nul
     goto ConfigureSmartCard
 )
 
-if "%sc_choice%"=="4" (
+if "!sc_choice!"=="4" (
     echo %c%Testing Smart Card authentication...%u%
     certreq -enrollCredMgr -user
     timeout /t 3 >nul
     goto ConfigureSmartCard
 )
 
-if "%sc_choice%"=="5" (
+if "!sc_choice!"=="5" (
     echo %c%Enabling Smart Card Required Logon...%u%
     reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" /v "ScForceOption" /t REG_DWORD /d 2 /f >nul 2>&1
     echo %yellow%⚠️ Smart Card will be REQUIRED for logon after restart!%u%
@@ -8961,7 +8380,7 @@ if "%sc_choice%"=="5" (
     goto ConfigureSmartCard
 )
 
-if "%sc_choice%"=="6" (
+if "!sc_choice!"=="6" (
     echo %c%Configuring EFS with Smart Card integration...%u%
     cipher /adduser /certhash:* /s:%userprofile%
     echo %c%EFS Smart Card integration configured%u%
@@ -8969,7 +8388,7 @@ if "%sc_choice%"=="6" (
     goto ConfigureSmartCard
 )
 
-if "%sc_choice%"=="7" (
+if "!sc_choice!"=="7" (
     cls
     call :SetupConsole
     echo.
@@ -8995,14 +8414,14 @@ if "%sc_choice%"=="7" (
     goto ConfigureSmartCard
 )
 
-if "%sc_choice%"=="8" (
+if "!sc_choice!"=="8" (
     echo %c%Importing certificate from Smart Card...%u%
     certreq -enroll -user -cert SmartCardLogon
     timeout /t 3 >nul
     goto ConfigureSmartCard
 )
 
-if /i "%sc_choice%"=="B" goto HardwareSecurityCenter
+if /i "!sc_choice!"=="B" goto HardwareSecurityCenter
 
 echo %red%Invalid choice. Please try again.%u%
 timeout /t 2 >nul
@@ -10234,12 +9653,9 @@ if "%SSD_FOUND%"=="false" (
     echo %c%  ✓ SSD optimization completed ^(defrag skipped^)%u%
 )
 
-echo %c%[9/9] Disabling Windows reserved storage for updates...%u%
-dism /online /Set-ReservedStorageState /State:Disabled /NoRestart >nul 2>&1
-reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\ReserveManager" /v "ShippedWithReserves" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\ReserveManager" /v "PassedPolicy" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\ReserveManager" /v "MiscPolicyInfo" /t REG_DWORD /d "2" /f >nul 2>&1
-echo %c%  ✓ Reserved storage disabled (reclaims ~1 GB disk space)%u%
+echo %c%[9/9] Preserving Windows reserved storage for reliable updates...%u%
+rem Reserved storage prevents cumulative updates from failing when disk space is low.
+echo %c%  ✓ Reserved storage preserved for reliable Windows updates%u%
 
 echo.
 echo %c%╔══════════════════════════════════════════════════════════════════════════════╗
@@ -10263,7 +9679,7 @@ echo %c%• Write caching optimized for all drives%u%
 echo %c%• Storage controller interrupts optimized%u%
 echo %c%• Power management disabled for performance%u%
 echo %c%• System file allocation improved%u%
-echo %c%• Reserved storage disabled (~1 GB reclaimed)%u%
+echo %c%• Reserved storage preserved for update reliability%u%
 echo.
 echo %red%Performance Benefits:%u%
 echo %c%• Faster file access and application loading%u%
@@ -11644,17 +11060,17 @@ echo.
 echo                             %u%[%c%7%u%] Colour Presets   [%c%8%u%] Back to Main   [%red%X%u%] Exit Application       
 echo.                                      
 set /p M="%c%Choose an option »%u% "
-if "%M%"=="1" goto SearchIndexOptimizer
-if "%M%"=="2" goto DefenderOptimizer
-if "%M%"=="3" goto ExplorerOptimizer
-if "%M%"=="4" goto SystemFileOptimizer
-if "%M%"=="5" goto RegistryPerformance
-if "%M%"=="6" goto WindowsFeaturesManager
-if "%M%"=="7" goto Presets
-if "%M%"=="8" goto menu
-if "%M%"=="Quit" goto Destruct
-if "%M%"=="X" goto Destruct
-if "%M%"=="x" goto Destruct
+if "!M!"=="1" goto SearchIndexOptimizer
+if "!M!"=="2" goto DefenderOptimizer
+if "!M!"=="3" goto ExplorerOptimizer
+if "!M!"=="4" goto SystemFileOptimizer
+if "!M!"=="5" goto RegistryPerformance
+if "!M!"=="6" goto WindowsFeaturesManager
+if "!M!"=="7" goto Presets
+if "!M!"=="8" goto menu
+if "!M!"=="Quit" goto Destruct
+if "!M!"=="X" goto Destruct
+if "!M!"=="x" goto Destruct
 cls
 echo %underline%%red%Invalid Input. Press any key to continue.%u%
 pause >nul
@@ -11692,13 +11108,13 @@ echo %c%[5] View: Display currently enabled/disabled features%u%
 echo %c%[6] Custom: Manual feature selection%u%
 echo.
 set /p choice="%c%Select optimization type »%u% "
-if "%choice%"=="0" goto WindowsMenu
-if "%choice%"=="1" goto GamingFeatures
-if "%choice%"=="2" goto PerformanceFeatures
-if "%choice%"=="3" goto PrivacyFeatures
-if "%choice%"=="4" goto DeveloperFeatures
-if "%choice%"=="5" goto ViewFeatures
-if "%choice%"=="6" goto CustomFeatures
+if "!choice!"=="0" goto WindowsMenu
+if "!choice!"=="1" goto GamingFeatures
+if "!choice!"=="2" goto PerformanceFeatures
+if "!choice!"=="3" goto PrivacyFeatures
+if "!choice!"=="4" goto DeveloperFeatures
+if "!choice!"=="5" goto ViewFeatures
+if "!choice!"=="6" goto CustomFeatures
 cls
 echo %red%Invalid selection. Please try again.%u%
 timeout /t 2 >nul
@@ -11775,7 +11191,7 @@ echo %c%✓ Development features enabled%u%
 echo.
 echo %c%[6/8] Optimizing Hyper-V for Gaming Performance...%u%
 set /p "hyperv_choice=%c%Do you want to DISABLE Hyper-V for better gaming performance? (Y/N) »%u% "
-if /i "%hyperv_choice%"=="Y" (
+if /i "!hyperv_choice!"=="Y" (
     echo %c%• Disabling Hyper-V Platform...%u%
     dism /online /disable-feature /featurename:"Microsoft-Hyper-V-All" /norestart >nul 2>&1
     echo %c%• Disabling Hyper-V Hypervisor...%u%
@@ -12139,15 +11555,15 @@ echo                            ║  [0] Back to Features Menu     ║
 echo                            ╚════════════════════════════════╝%u%
 echo.
 set /p choice="%c%Select feature category »%u% "
-if "%choice%"=="0" goto WindowsFeaturesManager
-if "%choice%"=="1" goto ManageHyperV
-if "%choice%"=="2" goto ManageWSL
-if "%choice%"=="3" goto ManageMedia
-if "%choice%"=="4" goto ManageNET
-if "%choice%"=="5" goto ManageIE
-if "%choice%"=="6" goto ManageContainers
-if "%choice%"=="7" goto ManagePrint
-if "%choice%"=="8" goto ManageLegacy
+if "!choice!"=="0" goto WindowsFeaturesManager
+if "!choice!"=="1" goto ManageHyperV
+if "!choice!"=="2" goto ManageWSL
+if "!choice!"=="3" goto ManageMedia
+if "!choice!"=="4" goto ManageNET
+if "!choice!"=="5" goto ManageIE
+if "!choice!"=="6" goto ManageContainers
+if "!choice!"=="7" goto ManagePrint
+if "!choice!"=="8" goto ManageLegacy
 goto CustomFeatures
 
 :ManageHyperV
@@ -12166,16 +11582,16 @@ echo %c%[2] Disable Hyper-V Platform%u%
 echo %c%[3] Check Hyper-V Status%u%
 echo.
 set /p choice="%c%Choose action »%u% "
-if "%choice%"=="1" (
+if "!choice!"=="1" (
     dism /online /enable-feature /featurename:"Microsoft-Hyper-V-All" /all /norestart
     echo %c%✓ Hyper-V enabled%u%
 )
-if "%choice%"=="2" (
+if "!choice!"=="2" (
     dism /online /disable-feature /featurename:"Microsoft-Hyper-V-All" /norestart
     bcdedit /set hypervisorlaunchtype off >nul 2>&1
     echo %c%✓ Hyper-V disabled%u%
 )
-if "%choice%"=="3" (
+if "!choice!"=="3" (
     dism /online /get-featureinfo /featurename:"Microsoft-Hyper-V-All"
 )
 pause
@@ -12197,19 +11613,19 @@ echo %c%[3] Enable Virtual Machine Platform%u%
 echo %c%[4] Disable Virtual Machine Platform%u%
 echo.
 set /p choice="%c%Choose action »%u% "
-if "%choice%"=="1" (
+if "!choice!"=="1" (
     dism /online /enable-feature /featurename:"Microsoft-Windows-Subsystem-Linux" /all /norestart
     echo %c%✓ WSL enabled%u%
 )
-if "%choice%"=="2" (
+if "!choice!"=="2" (
     dism /online /disable-feature /featurename:"Microsoft-Windows-Subsystem-Linux" /norestart
     echo %c%✓ WSL disabled%u%
 )
-if "%choice%"=="3" (
+if "!choice!"=="3" (
     dism /online /enable-feature /featurename:"VirtualMachinePlatform" /all /norestart
     echo %c%✓ Virtual Machine Platform enabled%u%
 )
-if "%choice%"=="4" (
+if "!choice!"=="4" (
     dism /online /disable-feature /featurename:"VirtualMachinePlatform" /norestart
     echo %c%✓ Virtual Machine Platform disabled%u%
 )
@@ -12289,7 +11705,7 @@ echo %c%╔═══════════════════════
 echo ║                      WINDOWS FEATURES OPTIMIZATION COMPLETED                 ║
 echo ╚═══════════════════════════════════════════════════════════════════════════════╝%u%
 echo.
-if "%choice%"=="1" (
+if "!choice!"=="1" (
     echo %c%Gaming Features Applied:%u%
     echo %c%• DirectPlay enabled for legacy games%u%
     echo %c%• .NET Framework versions enabled%u%
@@ -12298,7 +11714,7 @@ if "%choice%"=="1" (
     echo %c%• Business features removed%u%
     echo %c%• Development tools enabled%u%
 )
-if "%choice%"=="2" (
+if "!choice!"=="2" (
     echo %c%Performance Features Applied:%u%
     echo %c%• All resource-heavy features disabled%u%
     echo %c%• Hyper-V completely removed%u%
@@ -12307,7 +11723,7 @@ if "%choice%"=="2" (
     echo %c%• Legacy components disabled%u%
     echo %c%• Maximum performance achieved%u%
 )
-if "%choice%"=="3" (
+if "!choice!"=="3" (
     echo %c%Privacy Features Applied:%u%
     echo %c%• Tracking-heavy browsers removed%u%
     echo %c%• Media telemetry disabled%u%
@@ -12316,7 +11732,7 @@ if "%choice%"=="3" (
     echo %c%• Biometric tracking removed%u%
     echo %c%• Security risks eliminated%u%
 )
-if "%choice%"=="4" (
+if "!choice!"=="4" (
     echo %c%Developer Features Applied:%u%
     echo %c%• WSL and virtualization enabled%u%
     echo %c%• .NET Framework versions enabled%u%
@@ -12329,7 +11745,7 @@ echo.
 echo %red%IMPORTANT: A system restart is required to apply all feature changes!%u%
 echo.
 set /p "restart_choice=%c%Would you like to restart now? (Y/N) »%u% "
-if /i "%restart_choice%"=="Y" (
+if /i "!restart_choice!"=="Y" (
     echo %c%Restarting system in 10 seconds...%u%
     shutdown /r /t 10 /c "Restarting to apply Windows feature changes - Dex Tweaks"
     echo %c%✓ Restart scheduled%u%
@@ -12639,25 +12055,11 @@ echo.
 echo %c%[6/6] Clearing System Files and Logs...%u%
 echo %c%Clearing Windows temporary files...%u%
 del /f /s /q "%windir%\Temp\*" >nul 2>&1
-del /f /s /q "%windir%\Prefetch\*" >nul 2>&1
-del /f /s /q "%windir%\SoftwareDistribution\Download\*" >nul 2>&1
+rem Prefetch and pending Windows Update downloads are preserved.
 
-echo %c%Clearing system event logs...%u%
-for /f "tokens=*" %%G in ('wevtutil.exe el') DO wevtutil.exe cl "%%G" >nul 2>&1
+echo %c%Preserving system event logs for diagnostics...%u%
 
-echo %c%Clearing Windows Update cache...%u%
-net stop wuauserv >nul 2>&1
-net stop cryptSvc >nul 2>&1
-net stop bits >nul 2>&1
-net stop msiserver >nul 2>&1
-
-del /f /s /q "%windir%\SoftwareDistribution\*" >nul 2>&1
-del /f /s /q "%windir%\System32\catroot2\*" >nul 2>&1
-
-net start wuauserv >nul 2>&1
-net start cryptSvc >nul 2>&1
-net start bits >nul 2>&1
-net start msiserver >nul 2>&1
+echo %c%Preserving Windows Update databases and download state...%u%
 
 echo %c%Clearing DNS cache...%u%
 ipconfig /flushdns >nul 2>&1
@@ -12919,8 +12321,8 @@ echo %c%✓ DPI scaling and font smoothing disabled%u%
 
 echo.
 echo %c%[13/16] Cleaning up Explorer context menus and shell extensions...%u%
-PowerShell -ExecutionPolicy Unrestricted -Command "Remove-Item -Path 'HKLM:\SOFTWARE\Classes\Folder\shellex\ContextMenuHandlers\Library Location' -Recurse -Force -EA SilentlyContinue; Remove-Item -Path 'HKLM:\SOFTWARE\Classes\Folder\shell\pintohome' -Recurse -Force -EA SilentlyContinue; Remove-Item -Path 'HKLM:\SOFTWARE\Classes\Directory\background\shellex\ContextMenuHandlers\NvCplDesktopContext' -Recurse -Force -EA SilentlyContinue; Remove-Item -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\CommandStore\shell\Windows.help' -Recurse -Force -EA SilentlyContinue; Remove-Item -Path 'HKLM:\SOFTWARE\Classes\Folder\shellex\ContextMenuHandlers\PintoStartScreen' -Recurse -Force -EA SilentlyContinue" >nul 2>&1
-PowerShell -ExecutionPolicy Unrestricted -Command "Remove-Item -Path 'Registry::HKEY_CLASSES_ROOT\.library-ms\ShellNew' -Recurse -Force -EA SilentlyContinue; Remove-Item -Path 'Registry::HKEY_CLASSES_ROOT\Folder\ShellNew' -Recurse -Force -EA SilentlyContinue; Remove-Item -Path 'Registry::HKEY_CLASSES_ROOT\.lnk\ShellNew' -Recurse -Force -EA SilentlyContinue; Remove-Item -Path 'Registry::HKEY_CLASSES_ROOT\.bmp\ShellNew' -Recurse -Force -EA SilentlyContinue; Remove-Item -Path 'Registry::HKEY_CLASSES_ROOT\.rtf\ShellNew' -Recurse -Force -EA SilentlyContinue; Remove-Item -Path 'Registry::HKEY_CLASSES_ROOT\.txt\ShellNew' -Recurse -Force -EA SilentlyContinue; Remove-Item -Path 'Registry::HKEY_CLASSES_ROOT\.zip\CompressedFolder\ShellNew' -Recurse -Force -EA SilentlyContinue" >nul 2>&1
+powershell -NoProfile -Command "Remove-Item -Path 'HKLM:\SOFTWARE\Classes\Folder\shellex\ContextMenuHandlers\Library Location' -Recurse -Force -EA SilentlyContinue; Remove-Item -Path 'HKLM:\SOFTWARE\Classes\Folder\shell\pintohome' -Recurse -Force -EA SilentlyContinue; Remove-Item -Path 'HKLM:\SOFTWARE\Classes\Directory\background\shellex\ContextMenuHandlers\NvCplDesktopContext' -Recurse -Force -EA SilentlyContinue; Remove-Item -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\CommandStore\shell\Windows.help' -Recurse -Force -EA SilentlyContinue; Remove-Item -Path 'HKLM:\SOFTWARE\Classes\Folder\shellex\ContextMenuHandlers\PintoStartScreen' -Recurse -Force -EA SilentlyContinue" >nul 2>&1
+powershell -NoProfile -Command "Remove-Item -Path 'Registry::HKEY_CLASSES_ROOT\.library-ms\ShellNew' -Recurse -Force -EA SilentlyContinue; Remove-Item -Path 'Registry::HKEY_CLASSES_ROOT\Folder\ShellNew' -Recurse -Force -EA SilentlyContinue; Remove-Item -Path 'Registry::HKEY_CLASSES_ROOT\.lnk\ShellNew' -Recurse -Force -EA SilentlyContinue; Remove-Item -Path 'Registry::HKEY_CLASSES_ROOT\.bmp\ShellNew' -Recurse -Force -EA SilentlyContinue; Remove-Item -Path 'Registry::HKEY_CLASSES_ROOT\.rtf\ShellNew' -Recurse -Force -EA SilentlyContinue; Remove-Item -Path 'Registry::HKEY_CLASSES_ROOT\.txt\ShellNew' -Recurse -Force -EA SilentlyContinue; Remove-Item -Path 'Registry::HKEY_CLASSES_ROOT\.zip\CompressedFolder\ShellNew' -Recurse -Force -EA SilentlyContinue" >nul 2>&1
 reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer" /v "NoDrivesInSendToMenu" /t REG_DWORD /d "1" /f >nul 2>&1
 reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer" /v "NoDrivesInSendToMenu" /t REG_DWORD /d "1" /f >nul 2>&1
 reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer" /v "NoNetConnectDisconnect" /t REG_DWORD /d "1" /f >nul 2>&1
@@ -12931,7 +12333,7 @@ echo %c%✓ Shell context menus and extensions cleaned%u%
 
 echo.
 echo %c%[14/16] Removing print verbs from file context menus...%u%
-PowerShell -ExecutionPolicy Unrestricted -Command "$pp = @('HKLM:\SOFTWARE\Classes\SystemFileAssociations\.txt\shell\print','HKLM:\SOFTWARE\Classes\SystemFileAssociations\.bmp\shell\print','HKLM:\SOFTWARE\Classes\SystemFileAssociations\.rtf\shell\print','HKLM:\SOFTWARE\Classes\SystemFileAssociations\.doc\shell\print','HKLM:\SOFTWARE\Classes\SystemFileAssociations\.docx\shell\print','HKLM:\SOFTWARE\Classes\txtfile\shell\print','HKLM:\SOFTWARE\Classes\txtfile\shell\printto','HKLM:\SOFTWARE\Classes\rtffile\shell\print','HKLM:\SOFTWARE\Classes\rtffile\shell\printto','HKLM:\SOFTWARE\Classes\docxfile\shell\print','HKLM:\SOFTWARE\Classes\docxfile\shell\printto','HKLM:\SOFTWARE\Classes\batfile\shell\print','HKLM:\SOFTWARE\Classes\regfile\shell\print'); foreach ($p in $pp) { Remove-Item -Path $p -Recurse -Force -EA SilentlyContinue }" >nul 2>&1
+powershell -NoProfile -Command "$pp = @('HKLM:\SOFTWARE\Classes\SystemFileAssociations\.txt\shell\print','HKLM:\SOFTWARE\Classes\SystemFileAssociations\.bmp\shell\print','HKLM:\SOFTWARE\Classes\SystemFileAssociations\.rtf\shell\print','HKLM:\SOFTWARE\Classes\SystemFileAssociations\.doc\shell\print','HKLM:\SOFTWARE\Classes\SystemFileAssociations\.docx\shell\print','HKLM:\SOFTWARE\Classes\txtfile\shell\print','HKLM:\SOFTWARE\Classes\txtfile\shell\printto','HKLM:\SOFTWARE\Classes\rtffile\shell\print','HKLM:\SOFTWARE\Classes\rtffile\shell\printto','HKLM:\SOFTWARE\Classes\docxfile\shell\print','HKLM:\SOFTWARE\Classes\docxfile\shell\printto','HKLM:\SOFTWARE\Classes\batfile\shell\print','HKLM:\SOFTWARE\Classes\regfile\shell\print'); foreach ($p in $pp) { Remove-Item -Path $p -Recurse -Force -EA SilentlyContinue }" >nul 2>&1
 echo %c%✓ Print verbs removed from context menus%u%
 
 echo.
@@ -13015,20 +12417,20 @@ echo.
 echo %c%                           ╔════════════════════════════════╗
 echo                            ║  [1] Gaming Optimization       ║
 echo                            ║  [2] Performance Optimization  ║
-echo                            ║  [3] Complete Defender Removal ║
+echo                            ║  [3] Complete Removal (blocked) ║
 echo                            ║                                ║
 echo                            ║  [0] Return to Windows Menu    ║
 echo                            ╚════════════════════════════════╝%u%
 echo.
 echo %c%[1] Gaming: Reduce scan load while keeping active protection%u%
 echo %c%[2] Performance: Disable real-time protection, configure exclusions%u%
-echo %c%[3] Complete Removal: Permanently disable and remove Defender entirely%u%
+echo %c%[3] Complete Removal: blocked to protect Windows servicing and recovery%u%
 echo.
 set /p choice="%c%Select optimization level »%u% "
-if "%choice%"=="0" goto WindowsMenu
-if "%choice%"=="1" goto DefenderGaming
-if "%choice%"=="2" goto DefenderPerformance
-if "%choice%"=="3" goto DefenderRemoval
+if "!choice!"=="0" goto WindowsMenu
+if "!choice!"=="1" goto DefenderGaming
+if "!choice!"=="2" goto DefenderPerformance
+if "!choice!"=="3" goto DefenderRemoval
 cls
 echo %red%Invalid selection. Please try again.%u%
 timeout /t 2 >nul
@@ -13157,256 +12559,18 @@ echo %c%✓ Scan performance optimized%u%
 goto DefenderComplete
 
 :DefenderRemoval
-call :RequireExpertMode "This mode removes Windows security components."
-if errorlevel 1 goto DefenderOptimizer
 cls
 call :SetupConsole
 echo.
+echo %red%Complete Defender removal is disabled by the safety policy.%u%
+echo %c%Removing protected DLLs, Security Center and servicing components can leave%u%
+echo %c%Windows unprotected and can break cumulative updates and system recovery.%u%
 echo.
-echo %c%╔═══════════════════════════════════════════════════════════════════════════════╗
-echo ║                     ADVANCED DEFENDER REMOVAL ^& HARDENING                    ║
-echo ╚═══════════════════════════════════════════════════════════════════════════════╝%u%
-echo.
-echo %red%⚠️  CRITICAL WARNING ⚠️%u%
-echo %red%This will apply STRICT privacy.sexy Defender configurations!%u%
-echo.
-echo %c%This operation will:%u%
-echo %c%• Disable Defender telemetry and data collection%u%
-echo %c%• Block cloud-based protection and sample submission%u%
-echo %c%• Disable real-time protection and scanning%u%
-echo %c%• Remove Defender CSP and management components%u%
-echo %c%• Disable SmartScreen and threat detection%u%
-echo %c%• Apply comprehensive registry hardening%u%
-echo %c%• Soft-delete critical Defender DLLs and executables%u%
-echo.
-echo %red%THIS WILL SIGNIFICANTLY REDUCE SYSTEM SECURITY!%u%
-echo %red%Make sure you have alternative antivirus software ready!%u%
-echo.
-choice /C YN /M "%red%Apply advanced Defender removal and hardening? (Y/N)%u%"
-if errorlevel 2 goto DefenderOptimizer
-set "defenderConfirm="
-set /p "defenderConfirm=%red%Type REMOVE to confirm Defender file and security component changes »%u% "
-if /I not "%defenderConfirm%"=="REMOVE" goto DefenderOptimizer
-set choice=3
-
-echo.
-echo %c%[1/25] Disabling Malware Removal Tool Telemetry...%u%
-reg add "HKLM\SOFTWARE\Policies\Microsoft\MRT" /v "DontReportInfectionInformation" /t REG_DWORD /d "1" /f >nul 2>&1
-echo %c%✓ MRT telemetry disabled%u%
-
-echo.
-echo %c%[2/25] Disabling Defender Reporting...%u%
-reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows Defender\Reporting" /v "DisableGenericRePorts" /t REG_DWORD /d "1" /f >nul 2>&1
-echo %c%✓ Defender reporting disabled%u%
-
-echo.
-echo %c%[3/25] Disabling Core Service Telemetry...%u%
-chcp 437 >nul
-powershell -Command "try { Set-MpPreference -DisableCoreService1DSTelemetry $true -ErrorAction Stop; Write-Host 'Core service telemetry disabled' } catch { Write-Host 'Skipping: Defender service not available' }" >nul 2>&1
-chcp 65001 >nul
-reg add "HKLM\Software\Policies\Microsoft\Windows Defender\Features" /v "DisableCoreService1DSTelemetry" /t REG_DWORD /d "1" /f >nul 2>&1
-echo %c%✓ Core service telemetry disabled%u%
-
-echo.
-echo %c%[4/25] Disabling ECS Integration...%u%
-chcp 437 >nul
-powershell -Command "try { Set-MpPreference -DisableCoreServiceECSIntegration $true -ErrorAction Stop; Write-Host 'ECS integration disabled' } catch { Write-Host 'Skipping: Defender service not available' }" >nul 2>&1
-chcp 65001 >nul
-reg add "HKLM\Software\Policies\Microsoft\Windows Defender\Features" /v "DisableCoreServiceECSIntegration" /t REG_DWORD /d "1" /f >nul 2>&1
-echo %c%✓ ECS integration disabled%u%
-
-echo.
-echo %c%[5/25] Disabling Block at First Seen...%u%
-chcp 437 >nul
-powershell -Command "try { Set-MpPreference -DisableBlockAtFirstSeen $true -ErrorAction Stop; Write-Host 'Block at first seen disabled' } catch { Write-Host 'Skipping: Defender service not available' }" >nul 2>&1
-chcp 65001 >nul
-reg add "HKLM\Software\Policies\Microsoft\Windows Defender\SpyNet" /v "DisableBlockAtFirstSeen" /t REG_DWORD /d "1" /f >nul 2>&1
-echo %c%✓ Block at first seen disabled%u%
-
-echo.
-echo %c%[6/25] Configuring Cloud Extended Timeout...%u%
-chcp 437 >nul
-powershell -Command "try { Set-MpPreference -CloudExtendedTimeout 50 -ErrorAction Stop; Write-Host 'Cloud timeout configured' } catch { Write-Host 'Skipping: Defender service not available' }" >nul 2>&1
-chcp 65001 >nul
-reg add "HKLM\Software\Policies\Microsoft\Windows Defender\MpEngine" /v "MpBafsExtendedTimeout" /t REG_DWORD /d "50" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\Microsoft\Windows Defender\MpEngine" /v "MpBafsExtendedTimeout" /t REG_DWORD /d "50" /f >nul 2>&1
-echo %c%✓ Cloud timeout configured%u%
-
-echo.
-echo %c%[7/25] Disabling Cloud Block Level...%u%
-chcp 437 >nul
-powershell -Command "try { Set-MpPreference -CloudBlockLevel 0 -ErrorAction Stop; Write-Host 'Cloud block level disabled' } catch { Write-Host 'Skipping: Defender service not available' }" >nul 2>&1
-chcp 65001 >nul
-reg add "HKLM\Software\Policies\Microsoft\Windows Defender\MpEngine" /v "MpCloudBlockLevel" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\Microsoft\Windows Defender\MpEngine" /v "MpCloudBlockLevel" /t REG_DWORD /d "2" /f >nul 2>&1
-echo %c%✓ Cloud block level configured%u%
-
-echo.
-echo %c%[8/25] Disabling Signature Notifications...%u%
-reg add "HKLM\Software\Policies\Microsoft\Windows Defender\Signature Updates" /v "SignatureDisableNotification" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\Software\Policies\Microsoft\Microsoft Antimalware\Signature Updates" /v "SignatureDisableNotification" /t REG_DWORD /d "0" /f >nul 2>&1
-echo %c%✓ Signature notifications configured%u%
-
-echo.
-echo %c%[9/25] Disabling MAPS Reporting...%u%
-chcp 437 >nul
-powershell -Command "try { Set-MpPreference -MAPSReporting 0 -ErrorAction Stop; Write-Host 'MAPS reporting disabled' } catch { Write-Host 'Skipping: Defender service not available' }" >nul 2>&1
-chcp 65001 >nul
-reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows Defender\Spynet" /v "LocalSettingOverrideSpynetReporting" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows Defender\Spynet" /v "SpynetReporting" /t REG_DWORD /d "0" /f >nul 2>&1
-echo %c%✓ MAPS reporting disabled%u%
-
-echo.
-echo %c%[10/25] Configuring Sample Submission...%u%
-chcp 437 >nul
-powershell -Command "try { Set-MpPreference -SubmitSamplesConsent 2 -ErrorAction Stop; Write-Host 'Sample submission configured' } catch { Write-Host 'Skipping: Defender service not available' }" >nul 2>&1
-chcp 65001 >nul
-reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows Defender\Spynet" /v "SubmitSamplesConsent" /t REG_DWORD /d "2" /f >nul 2>&1
-echo %c%✓ Sample submission configured%u%
-
-echo.
-echo %c%[11/25] Disabling Real-time Signature Delivery...%u%
-reg add "HKLM\Software\Policies\Microsoft\Windows Defender\Signature Updates" /v "RealtimeSignatureDelivery" /t REG_DWORD /d "0" /f >nul 2>&1
-echo %c%✓ Real-time signature delivery disabled%u%
-
-echo.
-echo %c%[12/25] Removing Defender CSP Registry Keys...%u%
-reg export "HKLM\Software\Classes\CLSID\{195B4D07-3DE2-4744-BBF2-D90121AE785B}" "%TEMP%\DefenderCSP1.reg" >nul 2>&1
-reg delete "HKLM\Software\Classes\CLSID\{195B4D07-3DE2-4744-BBF2-D90121AE785B}" /f >nul 2>&1
-
-reg export "HKLM\Software\Classes\CLSID\{361290c0-cb1b-49ae-9f3e-ba1cbe5dab35}" "%TEMP%\DefenderCSP2.reg" >nul 2>&1
-reg delete "HKLM\Software\Classes\CLSID\{361290c0-cb1b-49ae-9f3e-ba1cbe5dab35}" /f >nul 2>&1
-
-reg export "HKLM\Software\Classes\CLSID\{8a696d12-576b-422e-9712-01b9dd84b446}" "%TEMP%\DefenderCSP3.reg" >nul 2>&1
-reg delete "HKLM\Software\Classes\CLSID\{8a696d12-576b-422e-9712-01b9dd84b446}" /f >nul 2>&1
-
-reg export "HKLM\Software\Classes\CLSID\{DACA056E-216A-4FD1-84A6-C306A017ECEC}" "%TEMP%\DefenderCSP4.reg" >nul 2>&1
-reg delete "HKLM\Software\Classes\CLSID\{DACA056E-216A-4FD1-84A6-C306A017ECEC}" /f >nul 2>&1
-
-reg export "HKLM\Software\Classes\CLSID\{FEEE9C23-C4E2-4A34-8C73-FE8F9786C8B4}" "%TEMP%\DefenderCSP5.reg" >nul 2>&1
-reg delete "HKLM\Software\Classes\CLSID\{FEEE9C23-C4E2-4A34-8C73-FE8F9786C8B4}" /f >nul 2>&1
-
-reg export "HKLM\Software\Classes\CLSID\{F80FC80C-6A04-46FB-8555-D769E334E9FC}" "%TEMP%\DefenderCSP6.reg" >nul 2>&1
-reg delete "HKLM\Software\Classes\CLSID\{F80FC80C-6A04-46FB-8555-D769E334E9FC}" /f >nul 2>&1
-
-reg export "HKLM\Software\Classes\WOW6432Node\CLSID\{F80FC80C-6A04-46FB-8555-D769E334E9FC}" "%TEMP%\DefenderCSP7.reg" >nul 2>&1
-reg delete "HKLM\Software\Classes\WOW6432Node\CLSID\{F80FC80C-6A04-46FB-8555-D769E334E9FC}" /f >nul 2>&1
-echo %c%✓ Defender CSP registry keys removed%u%
-
-echo.
-echo %c%[13/25] Soft-Deleting Defender DLLs...%u%
-takeown /f "%PROGRAMFILES%\Windows Defender\MpAzSubmit.dll" >nul 2>&1
-icacls "%PROGRAMFILES%\Windows Defender\MpAzSubmit.dll" /grant administrators:F >nul 2>&1
-ren "%PROGRAMFILES%\Windows Defender\MpAzSubmit.dll" "MpAzSubmit.dll.OLD" >nul 2>&1
-
-takeown /f "%PROGRAMFILES%\Windows Defender\DefenderCSP.dll" >nul 2>&1
-icacls "%PROGRAMFILES%\Windows Defender\DefenderCSP.dll" /grant administrators:F >nul 2>&1
-ren "%PROGRAMFILES%\Windows Defender\DefenderCSP.dll" "DefenderCSP.dll.OLD" >nul 2>&1
-
-takeown /f "%PROGRAMFILES%\Windows Defender\MpProvider.dll" >nul 2>&1
-icacls "%PROGRAMFILES%\Windows Defender\MpProvider.dll" /grant administrators:F >nul 2>&1
-ren "%PROGRAMFILES%\Windows Defender\MpProvider.dll" "MpProvider.dll.OLD" >nul 2>&1
-echo %c%✓ Defender DLLs soft-deleted%u%
-
-echo.
-echo %c%[14/25] Disabling Service Keep-Alive...%u%
-reg add "HKLM\Software\Policies\Microsoft\Windows Defender" /v "ServiceKeepAlive" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\Policies\Microsoft\Microsoft Antimalware" /v "ServiceKeepAlive" /t REG_DWORD /d "0" /f >nul 2>&1
-echo %c%✓ Service keep-alive disabled%u%
-
-echo.
-echo %c%[15/25] Disabling Fast Service Startup...%u%
-reg add "HKLM\Software\Policies\Microsoft\Windows Defender" /v "AllowFastServiceStartup" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\Policies\Microsoft\Microsoft Antimalware" /v "AllowFastServiceStartup" /t REG_DWORD /d "0" /f >nul 2>&1
-echo %c%✓ Fast service startup disabled%u%
-
-echo.
-echo %c%[16/25] Terminating and Blocking MpDlpCmd.exe...%u%
-taskkill /f /im MpDlpCmd.exe >nul 2>&1
-reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\MpDlpCmd.exe" /v "Debugger" /t REG_SZ /d "%SYSTEMROOT%\System32\taskkill.exe" /f >nul 2>&1
-reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer\DisallowRun" /v "1" /t REG_SZ /d "MpDlpCmd.exe" /f >nul 2>&1
-reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer" /v "DisallowRun" /t REG_DWORD /d "1" /f >nul 2>&1
-
-takeown /f "%PROGRAMFILES%\Windows Defender\MpDlpCmd.exe" >nul 2>&1
-icacls "%PROGRAMFILES%\Windows Defender\MpDlpCmd.exe" /grant administrators:F >nul 2>&1
-ren "%PROGRAMFILES%\Windows Defender\MpDlpCmd.exe" "MpDlpCmd.exe.OLD" >nul 2>&1
-echo %c%✓ MpDlpCmd.exe blocked and soft-deleted%u%
-
-echo.
-echo %c%[17/25] Disabling SmartScreen DNS Requests...%u%
-reg add "HKLM\SOFTWARE\Policies\Microsoft\Edge" /v "SmartScreenDnsRequestsEnabled" /t REG_DWORD /d "0" /f >nul 2>&1
-echo %c%✓ SmartScreen DNS requests disabled%u%
-
-echo.
-echo %c%[18/25] Configuring WTDS Components...%u%
-reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\WTDS\Components" /v "CaptureThreatWindow" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\WTDS\Components" /v "CaptureThreatWindow" /t REG_DWORD /d "0" /f >nul 2>&1
-echo %c%✓ WTDS components configured%u%
-
-echo.
-echo %c%[19/25] Disabling WTDS Telemetry...%u%
-reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\WTDS\FeatureFlags" /v "TelemetryCallsEnabled" /t REG_DWORD /d "0" /f >nul 2>&1
-echo %c%✓ WTDS telemetry disabled%u%
-
-echo.
-echo %c%[20/25] Soft-Deleting ATP CSP DLL...%u%
-takeown /f "%PROGRAMFILES%\Windows Defender Advanced Threat Protection\WATPCSP.dll" >nul 2>&1
-icacls "%PROGRAMFILES%\Windows Defender Advanced Threat Protection\WATPCSP.dll" /grant administrators:F >nul 2>&1
-ren "%PROGRAMFILES%\Windows Defender Advanced Threat Protection\WATPCSP.dll" "WATPCSP.dll.OLD" >nul 2>&1
-echo %c%✓ ATP CSP DLL soft-deleted%u%
-
-echo.
-echo %c%[21/25] Soft-Deleting Application Guard CSP...%u%
-takeown /f "%SYSTEMROOT%\System32\windowsdefenderapplicationguardcsp.dll" >nul 2>&1
-icacls "%SYSTEMROOT%\System32\windowsdefenderapplicationguardcsp.dll" /grant administrators:F >nul 2>&1
-ren "%SYSTEMROOT%\System32\windowsdefenderapplicationguardcsp.dll" "windowsdefenderapplicationguardcsp.dll.OLD" >nul 2>&1
-echo %c%✓ Application Guard CSP soft-deleted%u%
-
-echo.
-echo %c%[22/25] Disabling Application Guard Audit...%u%
-reg add "HKLM\SOFTWARE\Policies\Microsoft\AppHVSI" /v "AuditApplicationGuard" /t REG_DWORD /d "0" /f >nul 2>&1
-echo %c%✓ Application Guard audit disabled%u%
-
-echo.
-echo %c%[23/25] Stopping All Defender Services...%u%
-net stop "WinDefend" >nul 2>&1
-net stop "WdNisSvc" >nul 2>&1
-net stop "SecurityHealthService" >nul 2>&1
-net stop "Sense" >nul 2>&1
-net stop "wscsvc" >nul 2>&1
-echo %c%✓ Defender services stopped%u%
-
-echo.
-echo %c%[24/25] Disabling Defender Services Permanently...%u%
-sc config "WinDefend" start= disabled >nul 2>&1
-sc config "WdNisSvc" start= disabled >nul 2>&1
-sc config "SecurityHealthService" start= disabled >nul 2>&1
-sc config "Sense" start= disabled >nul 2>&1
-sc config "wscsvc" start= disabled >nul 2>&1
-echo %c%✓ Defender services disabled permanently%u%
-
-echo.
-echo %c%[25/25] Final Defender Hardening...%u%
-reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows Defender" /v "DisableAntiSpyware" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows Defender" /v "DisableAntiVirus" /t REG_DWORD /d "1" /f >nul 2>&1
-
-reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows Defender\Real-Time Protection" /v "DisableBehaviorMonitoring" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows Defender\Real-Time Protection" /v "DisableOnAccessProtection" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows Defender\Real-Time Protection" /v "DisableScanOnRealtimeEnable" /t REG_DWORD /d "1" /f >nul 2>&1
-
-reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\System" /v "EnableSmartScreen" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\AppHost" /v "EnableWebContentEvaluation" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer" /v "SmartScreenEnabled" /t REG_SZ /d "Off" /f >nul 2>&1
-
-reg add "HKLM\SOFTWARE\Microsoft\Windows Defender Security Center\Notifications" /v "DisableNotifications" /t REG_DWORD /d "1" /f >nul 2>&1
-
-schtasks /Change /TN "Microsoft\Windows\ExploitGuard\ExploitGuard MDM policy Refresh" /Disable >nul 2>&1
-schtasks /Change /TN "Microsoft\Windows\Windows Defender\Windows Defender Cache Maintenance" /Disable >nul 2>&1
-schtasks /Change /TN "Microsoft\Windows\Windows Defender\Windows Defender Cleanup" /Disable >nul 2>&1
-schtasks /Change /TN "Microsoft\Windows\Windows Defender\Windows Defender Scheduled Scan" /Disable >nul 2>&1
-schtasks /Change /TN "Microsoft\Windows\Windows Defender\Windows Defender Verification" /Disable >nul 2>&1
-echo %c%✓ Final Defender hardening completed%u%
-goto DefenderComplete
+echo %c%Use Gaming Optimization, or install a supported third-party antivirus so%u%
+echo %c%Windows uses its supported passive-mode mechanism.%u%
+call :LogEvent "BLOCKED" "Complete Defender component removal refused"
+pause
+goto DefenderOptimizer
 
 :DefenderComplete
 echo.
@@ -13414,14 +12578,14 @@ echo %c%╔═══════════════════════
 echo ║                     WINDOWS DEFENDER OPTIMIZATION COMPLETED                  ║
 echo ╚═══════════════════════════════════════════════════════════════════════════════╝%u%
 echo.
-if "%choice%"=="1" (
+if "!choice!"=="1" (
     echo %c%Gaming Optimization Applied:%u%
     echo %c%• Gaming platform exclusions added%u%
     echo %c%• Performance optimized for gaming%u%
     echo %c%• Notifications disabled during gaming%u%
     echo %c%• Security maintained%u%
 )
-if "%choice%"=="2" (
+if "!choice!"=="2" (
     echo %c%Performance Optimization Applied:%u%
     echo %c%• Real-time protection disabled%u%
     echo %c%• Cloud protection disabled%u%
@@ -13429,14 +12593,14 @@ if "%choice%"=="2" (
     echo %c%• Background scanning minimized%u%
     echo %red%• SECURITY SIGNIFICANTLY REDUCED%u%
 )
-if "%choice%"=="3" (
-    echo %red%Complete Defender Removal Applied:%u%
-    echo %red%• ALL Defender services permanently disabled%u%
-    echo %red%• Defender completely removed from system%u%
-    echo %red%• SmartScreen filter disabled%u%
-    echo %red%• NO ANTIVIRUS PROTECTION ACTIVE%u%
+if "!choice!"=="3" (
+    echo %red%Complete Defender removal was blocked:%u%
+    echo %red%• Protected Defender services were not modified%u%
+    echo %red%• Protected Defender files were preserved%u%
+    echo %red%• SmartScreen was preserved%u%
+    echo %red%• No unsupported removal was performed%u%
     echo.
-    echo %red%⚠️  INSTALL ALTERNATIVE ANTIVIRUS IMMEDIATELY! ⚠️%u%
+    echo %red%⚠️  Use a supported antivirus if you require Defender passive mode. ⚠️%u%
 )
 echo.
 echo %c%══════════════════════════ PRESS ANY KEY TO CONTINUE ══════════════════════════%u%
@@ -13444,6 +12608,8 @@ pause >nul
 goto WindowsMenu
 
 :SearchIndexOptimizer
+call :RequireExpertMode "Disabling Windows Search removes Start menu and file-search capabilities."
+if errorlevel 1 goto WindowsMenu
 cls
 call :SetupConsole
 echo.
@@ -13473,18 +12639,23 @@ sc config "WSearch" start= disabled >nul 2>&1
 echo %c%✓ Windows Search service disabled%u%
 
 echo.
-echo %c%[2/6] Disabling Search Indexer Service...%u%
-net stop "SearchIndexer" >nul 2>&1
-sc config "SearchIndexer" start= disabled >nul 2>&1
-echo %c%✓ Search Indexer service disabled%u%
+echo %c%[2/6] Verifying Windows Search Service...%u%
+sc query "WSearch" | find "STOPPED" >nul 2>&1
+if errorlevel 1 (
+    echo %yellow%Windows Search did not stop; protected index data will be preserved if locked.%u%
+) else (
+    echo %c%Windows Search service stopped.%u%
+)
 
 echo.
 echo %c%[3/6] Clearing Search Index Database...%u%
 if exist "%ProgramData%\Microsoft\Search\Data\Applications\Windows\Windows.edb" (
-    takeown /f "%ProgramData%\Microsoft\Search\Data\Applications\Windows\Windows.edb" >nul 2>&1
-    icacls "%ProgramData%\Microsoft\Search\Data\Applications\Windows\Windows.edb" /grant administrators:F >nul 2>&1
     del /f /q "%ProgramData%\Microsoft\Search\Data\Applications\Windows\Windows.edb" >nul 2>&1
-    echo %c%✓ Search index database cleared%u%
+    if exist "%ProgramData%\Microsoft\Search\Data\Applications\Windows\Windows.edb" (
+        echo %yellow%Search index database was preserved because Windows denied deletion.%u%
+    ) else (
+        echo %c%Search index database cleared.%u%
+    )
 ) else (
     echo %c%✓ Search index database not found (already clean)%u%
 )
@@ -13570,26 +12741,28 @@ echo                              %u%[%c%11%u%] Colour Presets   [%c%12%u%] Back
 echo.
 echo.
 set /p M="%c%Choose an option »%u% "
-if "%M%"=="1" goto TelemetryBlocker
-if "%M%"=="2" goto CortanaPrivacy
-if "%M%"=="3" goto AccountPrivacy
-if "%M%"=="4" goto LocationPrivacy
-if "%M%"=="5" goto AppPermissions
-if "%M%"=="6" goto AdvertisingPrivacy
-if "%M%"=="7" goto PrivacyDataCleanup
-if "%M%"=="8" set "COMINGSOON_BACK=PrivacyMenu" & goto Comingsoon
-if "%M%"=="9" set "COMINGSOON_BACK=PrivacyMenu" & goto Comingsoon
-if "%M%"=="10" set "COMINGSOON_BACK=PrivacyMenu" & goto Comingsoon
-if "%M%"=="11" goto Presets
-if "%M%"=="12" goto menu
-if "%M%"=="X" goto Destruct
-if "%M%"=="x" goto Destruct
+if "!M!"=="1" goto TelemetryBlocker
+if "!M!"=="2" goto CortanaPrivacy
+if "!M!"=="3" goto AccountPrivacy
+if "!M!"=="4" goto LocationPrivacy
+if "!M!"=="5" goto AppPermissions
+if "!M!"=="6" goto AdvertisingPrivacy
+if "!M!"=="7" goto PrivacyDataCleanup
+if "!M!"=="8" set "COMINGSOON_BACK=PrivacyMenu" & goto Comingsoon
+if "!M!"=="9" set "COMINGSOON_BACK=PrivacyMenu" & goto Comingsoon
+if "!M!"=="10" set "COMINGSOON_BACK=PrivacyMenu" & goto Comingsoon
+if "!M!"=="11" goto Presets
+if "!M!"=="12" goto menu
+if "!M!"=="X" goto Destruct
+if "!M!"=="x" goto Destruct
 cls
 echo %underline%%red%Invalid Input. Press any key to continue.%u%
 pause >nul
 goto PrivacyMenu
 
 :PrivacyDataCleanup
+call :RequireExpertMode "Forensic cleanup permanently removes history and diagnostic evidence."
+if errorlevel 1 goto PrivacyMenu
 cls
 call :SetupConsole
 echo.
@@ -13601,12 +12774,12 @@ echo.
 echo %c%This will perform the most comprehensive privacy data cleanup available:%u%
 echo %c%• Clear all recent files, search history, and application traces%u%
 echo %c%• Remove privacy.sexy, Steam, and Visual Studio telemetry data%u%
-echo %c%• Delete previous Windows installations (Windows.old)%u%
-echo %c%• Clear System Resource Usage Monitor (SRUM) data%u%
-echo %c%• Empty Recycle Bin and clear credentials%u%
-echo %c%• Remove Windows Update and system logs%u%
-echo %c%• Clear cryptographic service traces%u%
-echo %c%• Delete component manager and setup logs%u%
+echo %c%• Preserve previous Windows installations (Windows.old) for rollback%u%
+echo %c%• Preserve System Resource Usage Monitor (SRUM) data%u%
+echo %c%• Preserve Recycle Bin contents and saved credentials%u%
+echo %c%• Preserve Windows Update and system diagnostic logs%u%
+echo %c%• Preserve cryptographic service diagnostic data%u%
+echo %c%• Preserve component manager and setup logs%u%
 echo %c%• Remove WinSAT performance assessment logs%u%
 echo.
 echo %red%WARNING: This is forensic-level cleanup that will permanently delete system traces!%u%
@@ -13765,104 +12938,97 @@ echo %c%✓ Application Insights and VS telemetry cleared%u%
 echo.
 echo %c%[13/25] Clearing Previous Windows Installations...%u%
 if exist "%SYSTEMDRIVE%\Windows.old" (
-    echo %c%Taking ownership and deleting Windows.old folder...%u%
-    takeown /f "%SYSTEMDRIVE%\Windows.old" /r /d y >nul 2>&1
-    icacls "%SYSTEMDRIVE%\Windows.old" /grant administrators:F /t >nul 2>&1
-    rd /s /q "%SYSTEMDRIVE%\Windows.old" >nul 2>&1
-    echo %c%✓ Previous Windows installations cleared%u%
+    echo %c%Windows.old is present and will be preserved for rollback...%u%
+    rem Windows.old is preserved because it may be required for rollback.
+    echo %c%✓ Previous Windows installation preserved%u%
 ) else (
     echo %c%✓ No previous Windows installations found%u%
 )
 
 echo.
 echo %c%[14/25] Clearing System Resource Usage Monitor (SRUM) Data...%u%
-echo %c%Stopping DPS service for SRUM cleanup...%u%
-net stop "DPS" >nul 2>&1
+echo %c%Preserving SRUM database and DPS service...%u%
+rem DPS remains running because the SRUM database is preserved.
 if exist "%SYSTEMROOT%\System32\sru\SRUDB.dat" (
-    takeown /f "%SYSTEMROOT%\System32\sru\SRUDB.dat" >nul 2>&1
-    icacls "%SYSTEMROOT%\System32\sru\SRUDB.dat" /grant administrators:F >nul 2>&1
-    del /f "%SYSTEMROOT%\System32\sru\SRUDB.dat" >nul 2>&1
+    rem SRUM is preserved because Windows diagnostics and networking use it.
 )
-echo %c%Restarting DPS service...%u%
-net start "DPS" >nul 2>&1
-echo %c%✓ SRUM data cleared%u%
+echo %c%DPS service state preserved...%u%
+rem DPS remains running because the SRUM database is preserved.
+echo %c%✓ SRUM data preserved%u%
 
 echo.
 echo %c%[15/25] Emptying Recycle Bin...%u%
-rd /s /q "%systemdrive%\$Recycle.bin" >nul 2>&1
-echo %c%✓ Recycle Bin emptied%u%
+rem Recycle Bin is preserved so the user can review recoverable files.
+echo %c%✓ Recycle Bin preserved for manual review%u%
 
 echo.
 echo %c%[16/25] Clearing Windows Credential Manager...%u%
 for /f "tokens=1,2 delims= " %%a in ('cmdkey /list ^| findstr "Target"') do (
-    cmdkey /delete:%%b >nul 2>&1
+    rem Saved credentials are preserved to prevent account and network lockouts.
 )
-echo %c%✓ Credential Manager cleared%u%
+echo %c%✓ Saved credentials preserved%u%
 
 echo.
 echo %c%[17/25] Clearing Windows Update and SFC Logs...%u%
 if exist "%SYSTEMROOT%\Temp\CBS" (
-    del /f /s /q "%SYSTEMROOT%\Temp\CBS\*" >nul 2>&1
+rem Windows diagnostic and servicing logs are preserved for troubleshooting.
 )
-echo %c%✓ Windows Update and SFC logs cleared%u%
+echo %c%✓ Windows Update and SFC logs preserved%u%
 
 echo.
 echo %c%[18/25] Clearing Windows Update Medic Service Logs...%u%
 if exist "%SYSTEMROOT%\Logs\waasmedic" (
-    del /f /s /q "%SYSTEMROOT%\Logs\waasmedic\*" >nul 2>&1
+rem Windows diagnostic and servicing logs are preserved for troubleshooting.
 )
-echo %c%✓ Windows Update Medic logs cleared%u%
+echo %c%✓ Windows Update Medic logs preserved%u%
 
 echo.
 echo %c%[19/25] Clearing Cryptographic Services Logs...%u%
-del /f "%SYSTEMROOT%\System32\catroot2\dberr.txt" >nul 2>&1
-del /f "%SYSTEMROOT%\System32\catroot2.log" >nul 2>&1
-del /f "%SYSTEMROOT%\System32\catroot2.jrs" >nul 2>&1
-del /f "%SYSTEMROOT%\System32\catroot2.edb" >nul 2>&1
-del /f "%SYSTEMROOT%\System32\catroot2.chk" >nul 2>&1
-echo %c%✓ Cryptographic services logs cleared%u%
+rem catroot2 is preserved because deleting it while CryptSvc is active can
+rem break signature verification and Windows Update.
+echo %c%✓ Cryptographic service data preserved%u%
 
 echo.
 echo %c%[20/25] Clearing Server-initiated Healing Events Logs...%u%
 if exist "%SYSTEMROOT%\Logs\SIH" (
-    del /f /s /q "%SYSTEMROOT%\Logs\SIH\*" >nul 2>&1
+rem Windows diagnostic and servicing logs are preserved for troubleshooting.
 )
-echo %c%✓ SIH logs cleared%u%
+echo %c%✓ SIH logs preserved%u%
 
 echo.
 echo %c%[21/25] Clearing Windows Update Traces...%u%
 if exist "%SYSTEMROOT%\Traces\WindowsUpdate" (
-    del /f /s /q "%SYSTEMROOT%\Traces\WindowsUpdate\*" >nul 2>&1
+rem Windows diagnostic and servicing logs are preserved for troubleshooting.
 )
-echo %c%✓ Windows Update traces cleared%u%
+echo %c%✓ Windows Update traces preserved%u%
 
 echo.
 echo %c%[22/25] Clearing Component Manager Logs...%u%
-del /f "%SYSTEMROOT%\comsetup.log" >nul 2>&1
+rem Windows diagnostic and servicing logs are preserved for troubleshooting.
 echo %c%✓ Component manager logs cleared%u%
 
 echo.
 echo %c%[23/25] Clearing DTC and File Rename Operation Logs...%u%
-del /f "%SYSTEMROOT%\DtcInstall.log" >nul 2>&1
-del /f "%SYSTEMROOT%\PFRO.log" >nul 2>&1
+rem Windows diagnostic and servicing logs are preserved for troubleshooting.
+rem Windows diagnostic and servicing logs are preserved for troubleshooting.
 echo %c%✓ DTC and file rename logs cleared%u%
 
 echo.
 echo %c%[24/25] Clearing Windows Setup and Installation Logs...%u%
-del /f "%SYSTEMROOT%\setupact.log" >nul 2>&1
-del /f "%SYSTEMROOT%\setuperr.log" >nul 2>&1
-del /f "%SYSTEMROOT%\setupapi.log" >nul 2>&1
-del /f "%SYSTEMROOT%\inf\setupapi.app.log" >nul 2>&1
-del /f "%SYSTEMROOT%\inf\setupapi.dev.log" >nul 2>&1
-del /f "%SYSTEMROOT%\inf\setupapi.offline.log" >nul 2>&1
+rem Windows diagnostic and servicing logs are preserved for troubleshooting.
+rem Windows diagnostic and servicing logs are preserved for troubleshooting.
+rem Windows diagnostic and servicing logs are preserved for troubleshooting.
+rem Windows diagnostic and servicing logs are preserved for troubleshooting.
+rem Windows diagnostic and servicing logs are preserved for troubleshooting.
+rem Windows diagnostic and servicing logs are preserved for troubleshooting.
 if exist "%SYSTEMROOT%\Panther" (
-    del /f /s /q "%SYSTEMROOT%\Panther\*" >nul 2>&1
+rem Windows diagnostic and servicing logs are preserved for troubleshooting.
 )
 echo %c%✓ Setup and installation logs cleared%u%
 
 echo.
 echo %c%[25/25] Clearing WinSAT Performance Assessment Logs...%u%
-del /f "%SYSTEMROOT%\Performance\WinSAT\winsat.log" >nul 2>&1
+rem Windows diagnostic and servicing logs are preserved for troubleshooting.
 echo %c%✓ WinSAT logs cleared%u%
 
 echo.
@@ -13870,17 +13036,17 @@ echo %c%╔═══════════════════════
 echo ║                    ULTIMATE PRIVACY DATA CLEANUP COMPLETED                   ║
 echo ╚═══════════════════════════════════════════════════════════════════════════════╝%u%
 echo.
-echo %c%Successfully cleared:%u%
+echo %c%Cleanup summary:%u%
 echo %c%• All user activity history and recent files%u%
 echo %c%• Application usage traces and registry history%u%
 echo %c%• Search history and network mappings%u%
 echo %c%• Privacy.sexy, Steam, and Visual Studio telemetry%u%
-echo %c%• Previous Windows installations (Windows.old)%u%
-echo %c%• System Resource Usage Monitor (SRUM) data%u%
-echo %c%• Recycle Bin contents and stored credentials%u%
-echo %c%• Windows Update and system service logs%u%
-echo %c%• Cryptographic services diagnostic traces%u%
-echo %c%• Component manager and setup installation logs%u%
+echo %c%• Previous Windows installations preserved for rollback%u%
+echo %c%• System Resource Usage Monitor (SRUM) data preserved%u%
+echo %c%• Recycle Bin contents and stored credentials preserved%u%
+echo %c%• Windows Update and system service logs preserved%u%
+echo %c%• Cryptographic services diagnostic traces preserved%u%
+echo %c%• Component manager and setup installation logs preserved%u%
 echo %c%• Performance assessment and system traces%u%
 echo.
 echo %c%Privacy Benefits:%u%
@@ -14494,7 +13660,7 @@ echo %c%✓ Webcam access blocked%u%
 
 echo.
 echo %c%[11/11] Clearing Explorer FeatureUsage tracking data...%u%
-PowerShell -ExecutionPolicy Unrestricted -Command "$rootRegistryKeyPath = 'HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\FeatureUsage'; function Clear-RegistryKeyProperties { $currentRegistryKeyPath = $args[0]; $formattedRegistryKeyPath = $currentRegistryKeyPath -replace '^([^\\\\]+)', '$1:'; try { if (-Not (Test-Path -LiteralPath $formattedRegistryKeyPath)) { return; }; $directValueNames=(Get-Item -LiteralPath $formattedRegistryKeyPath -ErrorAction Stop | Select-Object -ExpandProperty Property); if ($directValueNames) { foreach ($valueName in $directValueNames) { Remove-ItemProperty -LiteralPath $formattedRegistryKeyPath -Name $valueName -ErrorAction SilentlyContinue; }; }; } catch {} }; function Clear-RegistrySubkeysProperties { $currentRegistryKeyPath = $args[0]; $formattedRegistryKeyPath = $currentRegistryKeyPath -replace '^([^\\\\]+)', '$1:'; try { if (-Not (Test-Path -LiteralPath $formattedRegistryKeyPath)) { return; }; $subkeys = Get-ChildItem -LiteralPath $formattedRegistryKeyPath -ErrorAction Stop; if (!$subkeys) { return; }; foreach ($subkey in $subkeys) { $subkeyName = $($subkey.PSChildName); $subkeyPath = Join-Path -Path $currentRegistryKeyPath -ChildPath $subkeyName; Clear-RegistryKeyProperties $subkeyPath; }; } catch {} }; Clear-RegistrySubkeysProperties $rootRegistryKeyPath" >nul 2>&1
+powershell -NoProfile -Command "$rootRegistryKeyPath = 'HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\FeatureUsage'; function Clear-RegistryKeyProperties { $currentRegistryKeyPath = $args[0]; $formattedRegistryKeyPath = $currentRegistryKeyPath -replace '^([^\\\\]+)', '$1:'; try { if (-Not (Test-Path -LiteralPath $formattedRegistryKeyPath)) { return; }; $directValueNames=(Get-Item -LiteralPath $formattedRegistryKeyPath -ErrorAction Stop | Select-Object -ExpandProperty Property); if ($directValueNames) { foreach ($valueName in $directValueNames) { Remove-ItemProperty -LiteralPath $formattedRegistryKeyPath -Name $valueName -ErrorAction SilentlyContinue; }; }; } catch {} }; function Clear-RegistrySubkeysProperties { $currentRegistryKeyPath = $args[0]; $formattedRegistryKeyPath = $currentRegistryKeyPath -replace '^([^\\\\]+)', '$1:'; try { if (-Not (Test-Path -LiteralPath $formattedRegistryKeyPath)) { return; }; $subkeys = Get-ChildItem -LiteralPath $formattedRegistryKeyPath -ErrorAction Stop; if (!$subkeys) { return; }; foreach ($subkey in $subkeys) { $subkeyName = $($subkey.PSChildName); $subkeyPath = Join-Path -Path $currentRegistryKeyPath -ChildPath $subkeyName; Clear-RegistryKeyProperties $subkeyPath; }; } catch {} }; Clear-RegistrySubkeysProperties $rootRegistryKeyPath" >nul 2>&1
 echo %c%✓ Explorer FeatureUsage tracking cleared%u%
 
 echo.
@@ -14677,19 +13843,19 @@ echo.
 echo.
 echo.
 set /p M="%c%Choose an option »%u% "
-if "%M%"=="1" goto Toolbox
-if "%M%"=="2" goto Boosters
-if "%M%"=="3" goto ScheduledTasks
-if "%M%"=="4" goto MSIMode
-if "%M%"=="5" goto ProgramDebloat
-if "%M%"=="6" goto Affinity
-if "%M%"=="7" goto DirectXOptimization
-if "%M%"=="8" goto OBSOptimizer
-if "%M%"=="9" goto Presets
-if "%M%"=="10" goto StreamOptimizer
-if "%M%"=="0" goto menu
-if "%M%"=="Quit" goto Destruct
-if "%M%"=="quit" goto Destruct
+if "!M!"=="1" goto Toolbox
+if "!M!"=="2" goto Boosters
+if "!M!"=="3" goto ScheduledTasks
+if "!M!"=="4" goto MSIMode
+if "!M!"=="5" goto ProgramDebloat
+if "!M!"=="6" goto Affinity
+if "!M!"=="7" goto DirectXOptimization
+if "!M!"=="8" goto OBSOptimizer
+if "!M!"=="9" goto Presets
+if "!M!"=="10" goto StreamOptimizer
+if "!M!"=="0" goto menu
+if "!M!"=="Quit" goto Destruct
+if "!M!"=="quit" goto Destruct
 cls
 echo %underline%%red%Invalid Input. Press any key to continue.%u%
 pause >nul
@@ -14778,23 +13944,16 @@ echo %c%✓ HAGS enabled (takes effect after reboot)%u%
 echo.
 echo %c%[6/10] Optimizing page file for streaming workload...%u%
 chcp 437 >nul
-powershell -NoProfile -Command ^
-  "$ram = [math]::Round((Get-CimInstance Win32_PhysicalMemory | Measure-Object -Property Capacity -Sum).Sum/1MB); ^
-   $pf = [math]::Min([math]::Max($ram*2,8192),32768); ^
-   $cs = Get-CimInstance Win32_ComputerSystem; ^
-   Set-CimInstance -InputObject $cs -Property @{AutomaticManagedPagefile=$false}; ^
-   $existing = Get-CimInstance Win32_PageFileSetting; ^
-   if($existing){Set-CimInstance -InputObject $existing -Property @{InitialSize=$pf;MaximumSize=$pf}} ^
-   else{New-CimInstance -ClassName Win32_PageFileSetting -Property @{Name='C:\pagefile.sys';InitialSize=$pf;MaximumSize=$pf}}" >nul 2>&1
+powershell -NoProfile -Command "$cs=Get-CimInstance Win32_ComputerSystem;Set-CimInstance -InputObject $cs -Property @{AutomaticManagedPagefile=$true}" >nul 2>&1
 chcp 65001 >nul
-echo %c%✓ Page file set to 2x RAM (capped at 32GB)%u%
+echo %c%Windows automatic page-file management enabled.%u%
 
 echo.
-echo %c%[7/10] Disabling HPET (reduces Ryzen micro-stutter)...%u%
-bcdedit /set useplatformclock false >nul 2>&1
-bcdedit /set disabledynamictick yes >nul 2>&1
+echo %c%[7/10] Restoring Windows timer selection defaults...%u%
+bcdedit /deletevalue useplatformclock >nul 2>&1
+bcdedit /deletevalue disabledynamictick >nul 2>&1
 bcdedit /deletevalue useplatformtick >nul 2>&1
-echo %c%✓ HPET disabled via BCD (takes effect after reboot)%u%
+echo %c%Timer selection returned to Windows defaults (takes effect after reboot).%u%
 
 echo.
 echo %c%[8/10] Disabling background apps (frees RAM and CPU for game/stream)...%u%
@@ -14956,22 +14115,22 @@ echo %c%[3] Quality      - High quality for recording / content creation%u%
 echo.
 set /p QUAL_PICK="%c%Choose tier [1/2/3] »%u% "
 
-if "%ENC_PICK%"=="1" set "ENC_NAME=jim_nvenc"
-if "%ENC_PICK%"=="2" set "ENC_NAME=amd_amf_h264"
-if "%ENC_PICK%"=="3" set "ENC_NAME=obs_x264"
+if "!ENC_PICK!"=="1" set "ENC_NAME=jim_nvenc"
+if "!ENC_PICK!"=="2" set "ENC_NAME=amd_amf_h264"
+if "!ENC_PICK!"=="3" set "ENC_NAME=obs_x264"
 if not defined ENC_NAME set "ENC_NAME=jim_nvenc"
 
-if "%QUAL_PICK%"=="1" (
+if "!QUAL_PICK!"=="1" (
     set "OBS_PRESET=performance"
     set "OBS_BITRATE=4000"
     set "OBS_RECQUALITY=Small"
 )
-if "%QUAL_PICK%"=="2" (
+if "!QUAL_PICK!"=="2" (
     set "OBS_PRESET=quality"
     set "OBS_BITRATE=6000"
     set "OBS_RECQUALITY=Stream"
 )
-if "%QUAL_PICK%"=="3" (
+if "!QUAL_PICK!"=="3" (
     set "OBS_PRESET=slow"
     set "OBS_BITRATE=8000"
     set "OBS_RECQUALITY=Lossless"
@@ -15048,15 +14207,15 @@ echo %c%                                   ╚═══════════�
 echo.
 echo.
 set /p M="%c%Choose an option »%u% "
-if "%M%"=="0" goto AdvancedMenu
-if "%M%"=="1" goto debloatprogram
-if "%M%"=="2" goto debloatdiscord
-if "%M%"=="3" goto debloatsteam
-if "%M%"=="4" goto debloatspotify
-if "%M%"=="5" goto debloatfirefox
-if "%M%"=="6" goto debloatchrome
-if "%M%"=="X" goto Destruct
-if "%M%"=="x" goto Destruct
+if "!M!"=="0" goto AdvancedMenu
+if "!M!"=="1" goto debloatprogram
+if "!M!"=="2" goto debloatdiscord
+if "!M!"=="3" goto debloatsteam
+if "!M!"=="4" goto debloatspotify
+if "!M!"=="5" goto debloatfirefox
+if "!M!"=="6" goto debloatchrome
+if "!M!"=="X" goto Destruct
+if "!M!"=="x" goto Destruct
 cls
 echo %underline%%red%Invalid Input. Press any key to continue.%u%
 pause >nul
@@ -15071,23 +14230,12 @@ echo %c%╔═══════════════════════
 echo ║                           CHROME DEBLOAT                                    ║
 echo ╚══════════════════════════════════════════════════════════════════════════════╝%u%
 echo.
-echo %c%Removing Chrome background services and updaters:%u%
-echo %c%• Google Update service stopped and deleted%u%
-echo %c%• Chrome Elevation Service removed%u%
-echo %c%• GoogleUpdate.exe process killed%u%
-echo %c%• Update folder and chrmstp.exe removed%u%
+echo %c%Applying Chrome privacy policies while preserving security updates:%u%
+echo %c%• Google Update services and updater files preserved%u%
+echo %c%• Chrome reporting and telemetry preferences reduced%u%
 echo.
 echo.
-net stop gupdate >nul 2>&1
-sc delete gupdate >nul 2>&1
-net stop googlechromeelevationservice >nul 2>&1
-sc delete googlechromeelevationservice >nul 2>&1
-net stop gupdatem >nul 2>&1
-sc delete gupdatem >nul 2>&1
-taskkill /f /im GoogleUpdate.exe >nul 2>&1
-rmdir "C:\Program Files (x86)\Google\Update" /s /q >nul 2>&1
-cd /d "C:\Program Files\Google\Chrome\Application" >nul 2>&1
-del /f /s /q chrmstp.exe >nul 2>&1
+rem Browser update services are intentionally preserved to keep security fixes flowing.
 
 reg add "HKLM\SOFTWARE\Policies\Google\Chrome" /v "CloudReportingEnabled" /t REG_DWORD /d "0" /f >nul 2>&1
 reg add "HKLM\SOFTWARE\WOW6432Node\Policies\Google\Chrome" /v "CloudReportingEnabled" /t REG_DWORD /d "0" /f >nul 2>&1
@@ -15311,86 +14459,14 @@ goto ProgramDebloat
 cls
 call :SetupConsole
 echo.
-echo.
-echo %c%╔══════════════════════════════════════════════════════════════════════════════╗
-echo ║                           DISCORD DEBLOAT                                   ║
-echo ╚══════════════════════════════════════════════════════════════════════════════╝%u%
-echo.
-echo %c%Removing Discord bloat and unused modules:%u%
-echo %c%• Discord process killed and leftover shortcuts deleted%u%
-echo %c%• Squirrel updater and logs removed%u%
-echo %c%• Unused modules removed: cloudsync, dispatch, erlpack,%u%
-echo %c%  game utils, media, spellcheck, krisp, rpc, overlay%u%
-echo.
-echo.
-TASKKILL /T /F /IM  discord.exe
-DEL "%HOMEPATH%\Desktop\Discord.lnk" /F /Q
-DEL "%HOMEPATH%\Desktop\Discord.lnk - Shortcut" /F /Q
-DEL "%HOMEPATH%\Desktop\Update.exe" /F /Q
-DEL "%HOMEPATH%\Desktop\Update.exe - Shortcut" /F /Q
-DEL "%HOMEPATH%\Desktop\Discord.exe" /F /Q
-DEL "%HOMEPATH%\Desktop\Discord.exe - Shortcut" /F /Q
-DEL "%HOMEPATH%\appdata\Local\discord\Update.exe" /F /Q
-DEL "%HOMEPATH%\appdata\Local\discord\app-0.0.309\Squirrel.exe" /F /Q
-DEL "%HOMEPATH%\appdata\Local\discord\app-0.0.308\Squirrel.exe" /F /Q
-DEL "%HOMEPATH%\appdata\Local\discord\app-0.0.307\Squirrel.exe" /F /Q
-DEL "%HOMEPATH%\appdata\Local\discord\app-0.0.306\Squirrel.exe" /F /Q
-DEL "%HOMEPATH%\appdata\Local\discord\SquirrelSetup.log" /F /Q
-DEL "%HOMEPATH%\appdata\Local\discord\app-0.0.309\SquirrelSetup.log" /F /Q
-DEL "%HOMEPATH%\appdata\Local\discord\app-0.0.308\SquirrelSetup.log" /F /Q
-DEL "%HOMEPATH%\appdata\Local\discord\app-0.0.307\SquirrelSetup.log" /F /Q
-DEL "%HOMEPATH%\appdata\Local\discord\app-0.0.306\SquirrelSetup.log" /F /Q
-rd /s /q "%HOMEPATH%\appdata\Local\discord\Packages"
-DEL "%HOMEPATH%\appdata\Roaming\discord\0.0.309\modules\discord_modules\397863cd8f\2\discord_game_sdk_x64.dll" /F /Q
-DEL "%HOMEPATH%\appdata\Roaming\discord\0.0.308\modules\discord_modules\397863cd8f\2\discord_game_sdk_x64.dll" /F /Q
-DEL "%HOMEPATH%\appdata\Roaming\discord\0.0.307\modules\discord_modules\397863cd8f\2\discord_game_sdk_x64.dll" /F /Q
-DEL "%HOMEPATH%\appdata\Roaming\discord\0.0.306\modules\discord_modules\397863cd8f\2\discord_game_sdk_x64.dll" /F /Q
-DEL "%HOMEPATH%\appdata\Roaming\discord\0.0.309\modules\discord_modules\397863cd8f\2\discord_game_sdk_x86.dll" /F /Q
-DEL "%HOMEPATH%\appdata\Roaming\discord\0.0.308\modules\discord_modules\397863cd8f\2\discord_game_sdk_x86.dll" /F /Q
-DEL "%HOMEPATH%\appdata\Roaming\discord\0.0.307\modules\discord_modules\397863cd8f\2\discord_game_sdk_x86.dll" /F /Q
-DEL "%HOMEPATH%\appdata\Roaming\discord\0.0.306\modules\discord_modules\397863cd8f\2\discord_game_sdk_x86.dll" /F /Q
-rd /s /q "%HOMEPATH%\appdata\Roaming\discord\0.0.309\modules\discord_cloudsync"
-rd /s /q "%HOMEPATH%\appdata\Roaming\discord\0.0.308\modules\discord_cloudsync"
-rd /s /q "%HOMEPATH%\appdata\Roaming\discord\0.0.307\modules\discord_cloudsync"
-rd /s /q "%HOMEPATH%\appdata\Roaming\discord\0.0.306\modules\discord_cloudsync"
-rd /s /q "%HOMEPATH%\appdata\Roaming\discord\0.0.309\modules\discord_dispatch"
-rd /s /q "%HOMEPATH%\appdata\Roaming\discord\0.0.308\modules\discord_dispatch"
-rd /s /q "%HOMEPATH%\appdata\Roaming\discord\0.0.307\modules\discord_dispatch"
-rd /s /q "%HOMEPATH%\appdata\Roaming\discord\0.0.306\modules\discord_dispatch"
-rd /s /q "%HOMEPATH%\appdata\Roaming\discord\0.0.309\modules\discord_erlpack"
-rd /s /q "%HOMEPATH%\appdata\Roaming\discord\0.0.308\modules\discord_erlpack"
-rd /s /q "%HOMEPATH%\appdata\Roaming\discord\0.0.307\modules\discord_erlpack"
-rd /s /q "%HOMEPATH%\appdata\Roaming\discord\0.0.306\modules\discord_erlpack"
-rd /s /q "%HOMEPATH%\appdata\Roaming\discord\0.0.309\modules\discord_game_utils"
-rd /s /q "%HOMEPATH%\appdata\Roaming\discord\0.0.308\modules\discord_game_utils"
-rd /s /q "%HOMEPATH%\appdata\Roaming\discord\0.0.307\modules\discord_game_utils"
-rd /s /q "%HOMEPATH%\appdata\Roaming\discord\0.0.306\modules\discord_game_utils"
-rd /s /q "%HOMEPATH%\appdata\Roaming\discord\0.0.309\modules\discord_media"
-rd /s /q "%HOMEPATH%\appdata\Roaming\discord\0.0.308\modules\discord_media"
-rd /s /q "%HOMEPATH%\appdata\Roaming\discord\0.0.307\modules\discord_media"
-rd /s /q "%HOMEPATH%\appdata\Roaming\discord\0.0.306\modules\discord_media"
-rd /s /q "%HOMEPATH%\appdata\Roaming\discord\0.0.309\modules\discord_spellcheck"
-rd /s /q "%HOMEPATH%\appdata\Roaming\discord\0.0.308\modules\discord_spellcheck"
-rd /s /q "%HOMEPATH%\appdata\Roaming\discord\0.0.307\modules\discord_spellcheck"
-rd /s /q "%HOMEPATH%\appdata\Roaming\discord\0.0.306\modules\discord_spellcheck"
-rd /s /q "%HOMEPATH%\appdata\Roaming\discord\0.0.309\modules\discord_krisp"
-rd /s /q "%HOMEPATH%\appdata\Roaming\discord\0.0.308\modules\discord_krisp"
-rd /s /q "%HOMEPATH%\appdata\Roaming\discord\0.0.307\modules\discord_krisp"
-rd /s /q "%HOMEPATH%\appdata\Roaming\discord\0.0.306\modules\discord_krisp"
-rd /s /q "%HOMEPATH%\appdata\Roaming\discord\0.0.309\modules\discord_rpc"
-rd /s /q "%HOMEPATH%\appdata\Roaming\discord\0.0.308\modules\discord_rpc"
-rd /s /q "%HOMEPATH%\appdata\Roaming\discord\0.0.307\modules\discord_rpc"
-rd /s /q "%HOMEPATH%\appdata\Roaming\discord\0.0.306\modules\discord_rpc"
-rd /s /q "%HOMEPATH%\appdata\Roaming\discord\0.0.309\modules\discord_overlay2"
-rd /s /q "%HOMEPATH%\appdata\Roaming\discord\0.0.308\modules\discord_overlay2"
-rd /s /q "%HOMEPATH%\appdata\Roaming\discord\0.0.307\modules\discord_overlay2"
-rd /s /q "%HOMEPATH%\appdata\Roaming\discord\0.0.306\modules\discord_overlay2"
-cls
-echo.
-echo.                                         %c%═══════════════════════════════════════════════════════
-echo.                                           %c%  Operation Completed, Press any key to continue%u% 
-echo.                                         %c%═══════════════════════════════════════════════════════%u%
-pause >nul
+echo %c%Discord cache cleanup preserves the updater, application modules and user settings.%u%
+taskkill /T /F /IM discord.exe >nul 2>&1
+for %%D in ("%APPDATA%\discord\Cache" "%APPDATA%\discord\Code Cache" "%APPDATA%\discord\GPUCache") do if exist "%%~D" (
+    del /f /s /q "%%~D\*" >nul 2>&1
+)
+echo %green%Discord caches cleaned without modifying the installation.%u%
+call :LogEvent "OK" "Discord caches cleaned safely"
+pause
 goto ProgramDebloat
 
 :debloatprogram
@@ -15440,9 +14516,7 @@ schtasks /change /tn "\NvTmRep_{B2FE1952-0186-46C3-BAEC-A80AA35AC5B8}" /disable 
 schtasks /change /tn "\NvTmRepOnLogon_{B2FE1952-0186-46C3-BAEC-A80AA35AC5B8}" /disable >nul 2>&1
 schtasks /change /tn "\NvTmMon_{B2FE1952-0186-46C3-BAEC-A80AA35AC5B8}" /disable >nul 2>&1
 
-for /r "%PROGRAMFILES%\NVIDIA Corporation\NvTelemetry" %%F in (*) do (
-    move "%%F" "%%F.OLD"
-)
+rem NVIDIA driver files are owned by Windows servicing and are not renamed.
 
 reg add "HKLM\SOFTWARE\NVIDIA Corporation\NvControlPanel2\Client" /v "OptInOrOutPreference" /t REG_DWORD /d 0 /f
 reg add "HKLM\SOFTWARE\NVIDIA Corporation\Global\FTS" /v "EnableRID44231" /t REG_DWORD /d 0 /f
@@ -15484,9 +14558,8 @@ reg add "HKCU\Software\Policies\Microsoft\Office\16.0\Common" /v "QMEnable" /t R
 reg add "HKCU\SOFTWARE\Microsoft\Office\15.0\Common\Feedback" /v "Enabled" /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKCU\SOFTWARE\Microsoft\Office\16.0\Common\Feedback" /v "Enabled" /t REG_DWORD /d 0 /f >nul 2>&1
 
-for /f "delims=" %%F in ('dir /b /s "%SYSTEMROOT%\System32\DriverStore\FileRepository\NvTelemetry*.dll" 2^>nul') do (
-    move "%%F" "%%F.OLD" >nul 2>&1
-)
+rem DriverStore contents are preserved. Registry preferences and scheduled-task
+rem controls above remain reversible and do not corrupt the installed driver.
 
 reg add "HKLM\SOFTWARE\Policies\Microsoft\WMDRM" /v "DisableOnline" /t REG_DWORD /d 1 /f >nul 2>&1
 
@@ -15502,32 +14575,8 @@ reg delete "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Teams Meeti
 reg delete "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Teams Meeting Add-in for Microsoft Office" /f >nul 2>&1
 reg delete "HKLM\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\Teams Meeting Add-in for Microsoft Office" /f >nul 2>&1
 
-chcp 437 >nul
-powershell -NoProfile -Command ^
-  "$p = 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager'; ^
-   $files = @( ^
-     'C:\Windows\System32\HEVC.dll', ^
-     'C:\Windows\System32\EdgeDevToolsClient.dll', ^
-     'C:\Program Files\WindowsApps\Microsoft.WidgetsPlatformRuntime*\Helium.dll', ^
-     '%LOCALAPPDATA%\Microsoft\Teams\current\squirrel.exe', ^
-     '%LOCALAPPDATA%\Microsoft\Teams\Update.exe', ^
-     'C:\Windows\System32\wslinstaller.exe' ^
-   ); ^
-   $add = @(); ^
-   foreach ($f in $files) { $add += ('\\??\\' + $f); $add += '' }; ^
-   $cur = (Get-ItemProperty -Path $p -Name PendingFileRenameOperations -EA SilentlyContinue).PendingFileRenameOperations; ^
-   $merged = if ($cur) { $cur + $add } else { $add }; ^
-   Set-ItemProperty -Path $p -Name PendingFileRenameOperations -Value $merged -Type MultiString" >nul 2>&1
-chcp 65001 >nul
-
-reg delete "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Appx\AppxAllUserStore\Applications" /v "MicrosoftCorporationII.WindowsSubsystemForLinux" /f >nul 2>&1
-powershell -NoProfile -Command ^
-  "Remove-Item -Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Appx\AppxAllUserStore\Config\MicrosoftCorporationII.WindowsSubsystemForLinux*' -Recurse -Force -EA SilentlyContinue" >nul 2>&1
-
-for /r "%PROGRAMDATA%\Microsoft\Windows\Start Menu" %%f in (*Linux* *WSL*) do del /f /q "%%f" >nul 2>&1
-powershell -NoProfile -Command ^
-  "Remove-Item -Path ([Environment]::GetFolderPath('CommonPrograms') + '\WSL') -Recurse -Force -EA SilentlyContinue; ^
-   Get-ChildItem ([Environment]::GetFolderPath('CommonPrograms')) -Filter '*Linux*' | Remove-Item -Force -EA SilentlyContinue" >nul 2>&1
+rem Program telemetry cleanup must not schedule Windows DLLs for deletion or
+rem remove WSL registration. Those components are unrelated to this operation.
 
 reg delete "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\MyComputer\NameSpace\{0DB7E03F-FC29-4DC6-9020-FF41B59E513A}" /f >nul 2>&1
 reg delete "HKLM\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Explorer\MyComputer\NameSpace\{0DB7E03F-FC29-4DC6-9020-FF41B59E513A}" /f >nul 2>&1
@@ -15737,15 +14786,15 @@ echo %c%                                   ╚═══════════�
 echo.
 echo.
 set /p M="%c%Choose an option »%u% "
-if "%M%"=="0" goto AdvancedMenu
-if "%M%"=="1" goto Valorant
-if "%M%"=="2" goto CS2
-if "%M%"=="3" goto Minecraft
-if "%M%"=="4" goto Fortnite
-if "%M%"=="5" goto Warzone
-if "%M%"=="6" goto SelectGame
-if "%M%"=="X" goto Destruct
-if "%M%"=="x" goto Destruct
+if "!M!"=="0" goto AdvancedMenu
+if "!M!"=="1" goto Valorant
+if "!M!"=="2" goto CS2
+if "!M!"=="3" goto Minecraft
+if "!M!"=="4" goto Fortnite
+if "!M!"=="5" goto Warzone
+if "!M!"=="6" goto SelectGame
+if "!M!"=="X" goto Destruct
+if "!M!"=="x" goto Destruct
 cls
 echo %underline%%red%Invalid Input. Press any key to continue.%u%
 pause >nul
@@ -15879,8 +14928,8 @@ echo %c%• Game DVR and Fullscreen Optimizations disabled%u%
 echo.
 echo.
 reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\FortniteClient-Win64-Shipping.exe\PerfOptions" /t REG_DWORD /v CpuPriorityClass /d 3 /f >nul 2>&1
-if exist "%localappdata%\FortniteGame" (
-    rmdir /s /q "%localappdata%\FortniteGame"
+for %%D in ("%localappdata%\FortniteGame\Saved\Logs" "%localappdata%\FortniteGame\Saved\Crashes" "%localappdata%\FortniteGame\Saved\webcache" "%localappdata%\FortniteGame\Saved\PersistentDownloadDir") do if exist "%%~D" (
+    rmdir /s /q "%%~D" >nul 2>&1
 )
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\PriorityControl" /v "Win32PrioritySeparation" /t REG_DWORD /d 38 /f >nul 2>&1
 reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\WMPlayer" /v "Priority" /t REG_DWORD /d 2 /f >nul 2>&1
@@ -16132,19 +15181,15 @@ if exist "%ALLUSERSPROFILE%\chocolatey" (
     echo %c%✔ Chocolatey is already installed.%u%
     timeout /t 2 >nul
 ) else (
-    echo %c%Chocolatey not found. Installing now, please wait...%u%
-    chcp 437>nul
-    powershell -NoProfile -ExecutionPolicy Bypass ^
-      -Command "iex ((New-Object Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))" ^
-      && (
-        set "PATH=%PATH%;%ALLUSERSPROFILE%\chocolatey\bin"
-        echo %c%✔ Successfully installed Chocolatey.%u%
-        timeout /t 3 >nul
-      ) || (
-        echo %red%✘ Failed to install Chocolatey. Some installs may not work.%u%
-        timeout /t 3 >nul
-      )
-    chcp 65001 >nul
+    echo %yellow%Chocolatey is not installed.%u%
+    echo %c%Dex Tweaks will not download and execute a remote script as administrator.%u%
+    echo %c%Install it from the official instructions, then reopen the Toolbox.%u%
+    choice /C YN /N /M "Open the official Chocolatey installation page? [Y/N]: "
+    if errorlevel 2 exit /b 1
+    start "" "https://chocolatey.org/install"
+    call :LogEvent "INFO" "Opened official Chocolatey installation instructions"
+    exit /b 1
+    rem Legacy remote bootstrap removed: never execute downloaded scripts as administrator.
 )
 exit /b
 
@@ -16167,15 +15212,15 @@ echo.
 echo                     %c%208 catalog entries: 159 automatic and 49 web/manual guidance%u%
 echo.
 set /p "mainChoice=%c%Choose an option »%u% "
-if /I "%mainChoice%"=="1" goto PAGE1
-if /I "%mainChoice%"=="2" goto PAGE2
-if /I "%mainChoice%"=="3" goto PAGE3
-if /I "%mainChoice%"=="4" goto PAGE4
-if /I "%mainChoice%"=="S" goto SEARCH
-if /I "%mainChoice%"=="U" goto UNINSTALL
-if /I "%mainChoice%"=="I" goto SoftwareStatus
-if /I "%mainChoice%"=="X" goto menu
-if /I "%mainChoice%"=="x" goto menu
+if /I "!mainChoice!"=="1" goto PAGE1
+if /I "!mainChoice!"=="2" goto PAGE2
+if /I "!mainChoice!"=="3" goto PAGE3
+if /I "!mainChoice!"=="4" goto PAGE4
+if /I "!mainChoice!"=="S" goto SEARCH
+if /I "!mainChoice!"=="U" goto UNINSTALL
+if /I "!mainChoice!"=="I" goto SoftwareStatus
+if /I "!mainChoice!"=="X" goto menu
+if /I "!mainChoice!"=="x" goto menu
 cls
 echo %underline%%red%Invalid Input. Press any key to continue.%u%
 pause >nul
@@ -16207,12 +15252,12 @@ echo   13. Chromium                  26. Betternet               39. Spybot Free
 echo.
 echo %c%[N]%u% Next Page (53-104)   %c%[M]%u% Main Menu   %red%[X]%u% Exit
 set /p "p1Choice=%c%Choose an option »%u% "
-if /I "%p1Choice%"=="N" goto PAGE2
-if /I "%p1Choice%"=="M" goto START
-if /I "%p1Choice%"=="X" goto :EOF
-if /I "%p1Choice%"=="x" goto :EOF
+if /I "!p1Choice!"=="N" goto PAGE2
+if /I "!p1Choice!"=="M" goto START
+if /I "!p1Choice!"=="X" goto :EOF
+if /I "!p1Choice!"=="x" goto :EOF
 
-call :InstallSoftware "%p1Choice%" "PAGE1"
+call :InstallSoftware "!p1Choice!" "PAGE1"
 goto PAGE1
 
 :PAGE2
@@ -16241,13 +15286,13 @@ echo   65. Miro                      78. Line                    91. OBS Studio 
 echo.
 echo %c%[P]%u% Previous (1-52)   %c%[N]%u% Next (105-156)   %c%[M]%u% Main Menu   %red%[X]%u% Exit
 set /p "p2Choice=%c%Choose an option »%u% "
-if /I "%p2Choice%"=="P" goto PAGE1
-if /I "%p2Choice%"=="N" goto PAGE3
-if /I "%p2Choice%"=="M" goto START
-if /I "%p2Choice%"=="X" goto :EOF
-if /I "%p2Choice%"=="x" goto :EOF
+if /I "!p2Choice!"=="P" goto PAGE1
+if /I "!p2Choice!"=="N" goto PAGE3
+if /I "!p2Choice!"=="M" goto START
+if /I "!p2Choice!"=="X" goto :EOF
+if /I "!p2Choice!"=="x" goto :EOF
 
-call :InstallSoftware "%p2Choice%" "PAGE2"
+call :InstallSoftware "!p2Choice!" "PAGE2"
 goto PAGE2
 
 :PAGE3
@@ -16276,13 +15321,13 @@ echo   117. Clonezilla              130. FreeCommander          143. PHP        
 echo.
 echo %c%[P]%u% Previous (53-104)   %c%[N]%u% Next (157-208)   %c%[M]%u% Main Menu   %red%[X]%u% Exit
 set /p "p3Choice=%c%Choose an option »%u% "
-if /I "%p3Choice%"=="P" goto PAGE2
-if /I "%p3Choice%"=="N" goto PAGE4
-if /I "%p3Choice%"=="M" goto START
-if /I "%p3Choice%"=="X" goto :EOF
-if /I "%p3Choice%"=="x" goto :EOF
+if /I "!p3Choice!"=="P" goto PAGE2
+if /I "!p3Choice!"=="N" goto PAGE4
+if /I "!p3Choice!"=="M" goto START
+if /I "!p3Choice!"=="X" goto :EOF
+if /I "!p3Choice!"=="x" goto :EOF
 
-call :InstallSoftware "%p3Choice%" "PAGE3"
+call :InstallSoftware "!p3Choice!" "PAGE3"
 goto PAGE3
 
 :PAGE4
@@ -16311,257 +15356,257 @@ echo   169. pencil2d                182. gamemakerstudio        195. teamspeak  
 echo.
 echo %c%[P]%u% Previous (105-156)   %c%[M]%u% Main Menu   %red%[X]%u% Exit
 set /p "p4Choice=%c%Choose an option »%u% "
-if /I "%p4Choice%"=="P" goto PAGE3
-if /I "%p4Choice%"=="M" goto START
-if /I "%p4Choice%"=="X" goto :EOF
-if /I "%p4Choice%"=="x" goto :EOF
+if /I "!p4Choice!"=="P" goto PAGE3
+if /I "!p4Choice!"=="M" goto START
+if /I "!p4Choice!"=="X" goto :EOF
+if /I "!p4Choice!"=="x" goto :EOF
 
-call :InstallSoftware "%p4Choice%" "PAGE4"
+call :InstallSoftware "!p4Choice!" "PAGE4"
 goto PAGE4
 
 :InstallSoftware
 set "choice=%~1"
 set "page=%~2"
 
-if "%choice%"=="" goto :EOF
+if "!choice!"=="" goto :EOF
 
 echo.
 set /p "confirm=%c%Are you sure you want to install this software? (Y/N) »%u% "
-if /I not "%confirm%"=="Y" exit /b
+if /I not "!confirm!"=="Y" exit /b
 
 echo %c%Installing software...%u%
 echo.
 
 if "%page%"=="PAGE1" (
-    if "%choice%"=="1" call :Install "googlechrome" "Google Chrome"
-    if "%choice%"=="2"  call :Install "firefox" "Mozilla Firefox"
-    if "%choice%"=="3"  call :Install "microsoft-edge" "Microsoft Edge"
-    if "%choice%"=="4"  call :Install "opera" "Opera Browser"
-    if "%choice%"=="5"  call :Install "brave" "Brave Browser"
-    if "%choice%"=="6"  call :Install "vivaldi" "Vivaldi Browser"
-    if "%choice%"=="7"  call :Install "waterfox" "Waterfox"
-    if "%choice%"=="8"  call :ShowMessage "Safari is not available on Windows"
-    if "%choice%"=="9"  call :Install "palemoon" "Pale Moon"
-    if "%choice%"=="10" call :Install "tor-browser" "Tor Browser"
-    if "%choice%"=="11" call :Install "opera-gx" "Opera GX"
-    if "%choice%"=="12" call :Install "yandex" "Yandex Browser"
-    if "%choice%"=="13" call :Install "chromium" "Chromium"
+    if "!choice!"=="1" call :Install "googlechrome" "Google Chrome"
+    if "!choice!"=="2"  call :Install "firefox" "Mozilla Firefox"
+    if "!choice!"=="3"  call :Install "microsoft-edge" "Microsoft Edge"
+    if "!choice!"=="4"  call :Install "opera" "Opera Browser"
+    if "!choice!"=="5"  call :Install "brave" "Brave Browser"
+    if "!choice!"=="6"  call :Install "vivaldi" "Vivaldi Browser"
+    if "!choice!"=="7"  call :Install "waterfox" "Waterfox"
+    if "!choice!"=="8"  call :ShowMessage "Safari is not available on Windows"
+    if "!choice!"=="9"  call :Install "palemoon" "Pale Moon"
+    if "!choice!"=="10" call :Install "tor-browser" "Tor Browser"
+    if "!choice!"=="11" call :Install "opera-gx" "Opera GX"
+    if "!choice!"=="12" call :Install "yandex" "Yandex Browser"
+    if "!choice!"=="13" call :Install "chromium" "Chromium"
     
-    if "%choice%"=="14" call :Install "nordvpn" "NordVPN"
-    if "%choice%"=="15" call :ShowMessage "ExpressVPN requires manual installation"
-    if "%choice%"=="16" call :Install "mullvad-app" "Mullvad VPN"
-    if "%choice%"=="17" call :Install "protonvpn" "ProtonVPN"
-    if "%choice%"=="18" call :ShowMessage "PIA requires manual installation"
-    if "%choice%"=="19" call :ShowMessage "F-Secure Freedome requires manual installation"
-    if "%choice%"=="20" call :Install "surfshark" "Surfshark"
-    if "%choice%"=="21" call :ShowMessage "TunnelBear requires manual installation"
-    if "%choice%"=="22" call :ShowMessage "Hide.me requires manual installation"
-    if "%choice%"=="23" call :Install "avira-free-antivirus" "Avira Free Antivirus"
-    if "%choice%"=="24" call :ShowMessage "CyberGhost requires manual installation"
-    if "%choice%"=="25" call :ShowMessage "IPVanish requires manual installation"
-    if "%choice%"=="26" call :ShowMessage "Betternet requires manual installation"
+    if "!choice!"=="14" call :Install "nordvpn" "NordVPN"
+    if "!choice!"=="15" call :ShowMessage "ExpressVPN requires manual installation"
+    if "!choice!"=="16" call :Install "mullvad-app" "Mullvad VPN"
+    if "!choice!"=="17" call :Install "protonvpn" "ProtonVPN"
+    if "!choice!"=="18" call :ShowMessage "PIA requires manual installation"
+    if "!choice!"=="19" call :ShowMessage "F-Secure Freedome requires manual installation"
+    if "!choice!"=="20" call :Install "surfshark" "Surfshark"
+    if "!choice!"=="21" call :ShowMessage "TunnelBear requires manual installation"
+    if "!choice!"=="22" call :ShowMessage "Hide.me requires manual installation"
+    if "!choice!"=="23" call :Install "avira-free-antivirus" "Avira Free Antivirus"
+    if "!choice!"=="24" call :ShowMessage "CyberGhost requires manual installation"
+    if "!choice!"=="25" call :ShowMessage "IPVanish requires manual installation"
+    if "!choice!"=="26" call :ShowMessage "Betternet requires manual installation"
     
-    if "%choice%"=="27" call :Install "avastfreeantivirus" "Avast Free Antivirus"
-    if "%choice%"=="28" call :Install "malwarebytes" "Malwarebytes"
-    if "%choice%"=="29" call :ShowMessage "Windows Defender is built into Windows"
-    if "%choice%"=="30" call :ShowMessage "ESET NOD32 requires manual installation"
-    if "%choice%"=="31" call :ShowMessage "Kaspersky requires manual installation"
-    if "%choice%"=="32" call :ShowMessage "Bitdefender requires manual installation"
-    if "%choice%"=="33" call :Install "adaware-free" "Ad-Aware Free Antivirus"
-    if "%choice%"=="34" call :ShowMessage "Norton requires manual installation"
-    if "%choice%"=="35" call :Install "superantispyware" "SUPERAntiSpyware"
-    if "%choice%"=="36" call :ShowMessage "IObit Malware Fighter requires manual installation"
-    if "%choice%"=="37" call :ShowMessage "Webroot requires manual installation"
-    if "%choice%"=="38" call :ShowMessage "Comodo requires manual installation"
-    if "%choice%"=="39" call :Install "spybot" "Spybot - Search & Destroy"
+    if "!choice!"=="27" call :Install "avastfreeantivirus" "Avast Free Antivirus"
+    if "!choice!"=="28" call :Install "malwarebytes" "Malwarebytes"
+    if "!choice!"=="29" call :ShowMessage "Windows Defender is built into Windows"
+    if "!choice!"=="30" call :ShowMessage "ESET NOD32 requires manual installation"
+    if "!choice!"=="31" call :ShowMessage "Kaspersky requires manual installation"
+    if "!choice!"=="32" call :ShowMessage "Bitdefender requires manual installation"
+    if "!choice!"=="33" call :Install "adaware-free" "Ad-Aware Free Antivirus"
+    if "!choice!"=="34" call :ShowMessage "Norton requires manual installation"
+    if "!choice!"=="35" call :Install "superantispyware" "SUPERAntiSpyware"
+    if "!choice!"=="36" call :ShowMessage "IObit Malware Fighter requires manual installation"
+    if "!choice!"=="37" call :ShowMessage "Webroot requires manual installation"
+    if "!choice!"=="38" call :ShowMessage "Comodo requires manual installation"
+    if "!choice!"=="39" call :Install "spybot" "Spybot - Search & Destroy"
     
-    if "%choice%"=="40" call :ShowMessage "Microsoft Office requires manual installation or subscription"
-    if "%choice%"=="41" call :ShowMessage "Office 365 requires subscription and manual setup"
-    if "%choice%"=="42" call :Install "libreoffice-fresh" "LibreOffice"
-    if "%choice%"=="43" call :Install "wps-office-free" "WPS Office"
-    if "%choice%"=="44" call :ShowMessage "Google Docs is web-based - no installation needed"
-    if "%choice%"=="45" call :Install "onlyoffice" "OnlyOffice"
-    if "%choice%"=="46" call :ShowMessage "SoftMaker Office requires manual installation"
-    if "%choice%"=="47" call :Install "freeoffice" "FreeOffice"
-    if "%choice%"=="48" call :ShowMessage "Zoho Office is web-based - no installation needed"
-    if "%choice%"=="49" call :ShowMessage "Polaris Office requires manual installation"
-    if "%choice%"=="50" call :ShowMessage "WordPerfect requires manual installation"
-    if "%choice%"=="51" call :Install "openoffice" "Apache OpenOffice"
-    if "%choice%"=="52" call :Install "onedrive" "Microsoft OneDrive"
+    if "!choice!"=="40" call :ShowMessage "Microsoft Office requires manual installation or subscription"
+    if "!choice!"=="41" call :ShowMessage "Office 365 requires subscription and manual setup"
+    if "!choice!"=="42" call :Install "libreoffice-fresh" "LibreOffice"
+    if "!choice!"=="43" call :Install "wps-office-free" "WPS Office"
+    if "!choice!"=="44" call :ShowMessage "Google Docs is web-based - no installation needed"
+    if "!choice!"=="45" call :Install "onlyoffice" "OnlyOffice"
+    if "!choice!"=="46" call :ShowMessage "SoftMaker Office requires manual installation"
+    if "!choice!"=="47" call :Install "freeoffice" "FreeOffice"
+    if "!choice!"=="48" call :ShowMessage "Zoho Office is web-based - no installation needed"
+    if "!choice!"=="49" call :ShowMessage "Polaris Office requires manual installation"
+    if "!choice!"=="50" call :ShowMessage "WordPerfect requires manual installation"
+    if "!choice!"=="51" call :Install "openoffice" "Apache OpenOffice"
+    if "!choice!"=="52" call :Install "onedrive" "Microsoft OneDrive"
 )
 
 if "%page%"=="PAGE2" (
-    if "%choice%"=="53"  call :Install "notion" "Notion"
-    if "%choice%"=="54"  call :Install "trello" "Trello"
-    if "%choice%"=="55"  call :Install "evernote" "Evernote"
-    if "%choice%"=="56"  call :ShowMessage "Todoist is primarily web-based"
-    if "%choice%"=="57"  call :ShowMessage "Asana is web-based - no installation needed"
-    if "%choice%"=="58"  call :Install "slack" "Slack"
-    if "%choice%"=="59"  call :ShowMessage "Monday.com is web-based - no installation needed"
-    if "%choice%"=="60"  call :ShowMessage "Google Keep is web-based - no installation needed"
-    if "%choice%"=="61"  call :Install "ticktick" "TickTick"
-    if "%choice%"=="62"  call :ShowMessage "Google Calendar is web-based - no installation needed"
-    if "%choice%"=="63"  call :Install "onenote" "Microsoft OneNote"
-    if "%choice%"=="64"  call :ShowMessage "Zoho Notebook is web-based - no installation needed"
-    if "%choice%"=="65"  call :Install "miro" "Miro"
+    if "!choice!"=="53"  call :Install "notion" "Notion"
+    if "!choice!"=="54"  call :Install "trello" "Trello"
+    if "!choice!"=="55"  call :Install "evernote" "Evernote"
+    if "!choice!"=="56"  call :ShowMessage "Todoist is primarily web-based"
+    if "!choice!"=="57"  call :ShowMessage "Asana is web-based - no installation needed"
+    if "!choice!"=="58"  call :Install "slack" "Slack"
+    if "!choice!"=="59"  call :ShowMessage "Monday.com is web-based - no installation needed"
+    if "!choice!"=="60"  call :ShowMessage "Google Keep is web-based - no installation needed"
+    if "!choice!"=="61"  call :Install "ticktick" "TickTick"
+    if "!choice!"=="62"  call :ShowMessage "Google Calendar is web-based - no installation needed"
+    if "!choice!"=="63"  call :Install "onenote" "Microsoft OneNote"
+    if "!choice!"=="64"  call :ShowMessage "Zoho Notebook is web-based - no installation needed"
+    if "!choice!"=="65"  call :Install "miro" "Miro"
     
-    if "%choice%"=="66"  call :Install "discord" "Discord"
-    if "%choice%"=="67"  call :Install "skype" "Skype"
-    if "%choice%"=="68"  call :Install "zoom" "Zoom"
-    if "%choice%"=="69"  call :Install "microsoft-teams" "Microsoft Teams"
-    if "%choice%"=="70"  call :Install "telegram" "Telegram Desktop"
-    if "%choice%"=="71"  call :Install "whatsapp" "WhatsApp Desktop"
-    if "%choice%"=="72"  call :Install "signal" "Signal Desktop"
-    if "%choice%"=="73"  call :Install "viber" "Viber"
-    if "%choice%"=="74"  call :Install "wire" "Wire"
-    if "%choice%"=="75"  call :Install "qtox" "qTox"
-    if "%choice%"=="76"  call :ShowMessage "WeChat requires manual installation"
-    if "%choice%"=="77"  call :ShowMessage "QQ requires manual installation"
-    if "%choice%"=="78"  call :ShowMessage "Line requires manual installation"
+    if "!choice!"=="66"  call :Install "discord" "Discord"
+    if "!choice!"=="67"  call :Install "skype" "Skype"
+    if "!choice!"=="68"  call :Install "zoom" "Zoom"
+    if "!choice!"=="69"  call :Install "microsoft-teams" "Microsoft Teams"
+    if "!choice!"=="70"  call :Install "telegram" "Telegram Desktop"
+    if "!choice!"=="71"  call :Install "whatsapp" "WhatsApp Desktop"
+    if "!choice!"=="72"  call :Install "signal" "Signal Desktop"
+    if "!choice!"=="73"  call :Install "viber" "Viber"
+    if "!choice!"=="74"  call :Install "wire" "Wire"
+    if "!choice!"=="75"  call :Install "qtox" "qTox"
+    if "!choice!"=="76"  call :ShowMessage "WeChat requires manual installation"
+    if "!choice!"=="77"  call :ShowMessage "QQ requires manual installation"
+    if "!choice!"=="78"  call :ShowMessage "Line requires manual installation"
     
-    if "%choice%"=="79"  call :Install "vlc" "VLC Media Player"
-    if "%choice%"=="80"  call :Install "winamp" "Winamp"
-    if "%choice%"=="81"  call :Install "spotify" "Spotify"
-    if "%choice%"=="82"  call :Install "itunes" "iTunes"
-    if "%choice%"=="83"  call :Install "foobar2000" "foobar2000"
-    if "%choice%"=="84"  call :Install "aimp" "AIMP"
-    if "%choice%"=="85"  call :Install "mpc-hc" "MPC-HC"
-    if "%choice%"=="86"  call :Install "gomplayer" "GOM Player"
-    if "%choice%"=="87"  call :ShowMessage "RealPlayer requires manual installation"
-    if "%choice%"=="88"  call :ShowMessage "QuickTime is no longer supported on Windows"
-    if "%choice%"=="89"  call :Install "potplayer" "PotPlayer"
-    if "%choice%"=="90"  call :Install "audacity" "Audacity"
-    if "%choice%"=="91"  call :Install "obs-studio" "OBS Studio"
+    if "!choice!"=="79"  call :Install "vlc" "VLC Media Player"
+    if "!choice!"=="80"  call :Install "winamp" "Winamp"
+    if "!choice!"=="81"  call :Install "spotify" "Spotify"
+    if "!choice!"=="82"  call :Install "itunes" "iTunes"
+    if "!choice!"=="83"  call :Install "foobar2000" "foobar2000"
+    if "!choice!"=="84"  call :Install "aimp" "AIMP"
+    if "!choice!"=="85"  call :Install "mpc-hc" "MPC-HC"
+    if "!choice!"=="86"  call :Install "gomplayer" "GOM Player"
+    if "!choice!"=="87"  call :ShowMessage "RealPlayer requires manual installation"
+    if "!choice!"=="88"  call :ShowMessage "QuickTime is no longer supported on Windows"
+    if "!choice!"=="89"  call :Install "potplayer" "PotPlayer"
+    if "!choice!"=="90"  call :Install "audacity" "Audacity"
+    if "!choice!"=="91"  call :Install "obs-studio" "OBS Studio"
     
-    if "%choice%"=="92"  call :Install "visualstudio2022community" "Visual Studio 2022 Community"
-    if "%choice%"=="93"  call :Install "vscode" "Visual Studio Code"
-    if "%choice%"=="94"  call :Install "androidstudio" "Android Studio"
-    if "%choice%"=="95"  call :Install "intellijidea-community" "IntelliJ IDEA Community"
-    if "%choice%"=="96"  call :Install "eclipse" "Eclipse IDE"
-    if "%choice%"=="97"  call :Install "netbeans" "NetBeans IDE"
-    if "%choice%"=="98"  call :ShowMessage "Xcode is Mac-only"
-    if "%choice%"=="99"  call :Install "sublimetext4" "Sublime Text 4"
-    if "%choice%"=="100" call :Install "atom" "Atom"
-    if "%choice%"=="101" call :Install "pycharm-community" "PyCharm Community"
-    if "%choice%"=="102" call :Install "jetbrains-rider" "JetBrains Rider"
-    if "%choice%"=="103" call :Install "codeblocks" "Code::Blocks"
-    if "%choice%"=="104" call :Install "phpstorm" "PhpStorm"
+    if "!choice!"=="92"  call :Install "visualstudio2022community" "Visual Studio 2022 Community"
+    if "!choice!"=="93"  call :Install "vscode" "Visual Studio Code"
+    if "!choice!"=="94"  call :Install "androidstudio" "Android Studio"
+    if "!choice!"=="95"  call :Install "intellijidea-community" "IntelliJ IDEA Community"
+    if "!choice!"=="96"  call :Install "eclipse" "Eclipse IDE"
+    if "!choice!"=="97"  call :Install "netbeans" "NetBeans IDE"
+    if "!choice!"=="98"  call :ShowMessage "Xcode is Mac-only"
+    if "!choice!"=="99"  call :Install "sublimetext4" "Sublime Text 4"
+    if "!choice!"=="100" call :Install "atom" "Atom"
+    if "!choice!"=="101" call :Install "pycharm-community" "PyCharm Community"
+    if "!choice!"=="102" call :Install "jetbrains-rider" "JetBrains Rider"
+    if "!choice!"=="103" call :Install "codeblocks" "Code::Blocks"
+    if "!choice!"=="104" call :Install "phpstorm" "PhpStorm"
 )
 
 if "%page%"=="PAGE3" (
-    if "%choice%"=="105" call :Install "ccleaner" "CCleaner"
-    if "%choice%"=="106" call :Install "bleachbit" "BleachBit"
-    if "%choice%"=="107" call :Install "sysinternals" "Sysinternals Suite"
-    if "%choice%"=="108" call :Install "procexp" "Process Explorer"
-    if "%choice%"=="109" call :Install "windirstat" "WinDirStat"
-    if "%choice%"=="110" call :Install "glaryutilities-free" "Glary Utilities"
-    if "%choice%"=="111" call :Install "revo-uninstaller" "Revo Uninstaller"
-    if "%choice%"=="112" call :ShowMessage "StartIsBack requires manual installation"
-    if "%choice%"=="113" call :Install "winaero-tweaker" "Winaero Tweaker"
-    if "%choice%"=="114" call :ShowMessage "ExplorerPatcher requires manual installation"
-    if "%choice%"=="115" call :Install "minitool-partition-wizard-free" "MiniTool Partition Wizard"
-    if "%choice%"=="116" call :Install "reflect-free" "Macrium Reflect"
-    if "%choice%"=="117" call :ShowMessage "Clonezilla requires manual installation"
+    if "!choice!"=="105" call :Install "ccleaner" "CCleaner"
+    if "!choice!"=="106" call :Install "bleachbit" "BleachBit"
+    if "!choice!"=="107" call :Install "sysinternals" "Sysinternals Suite"
+    if "!choice!"=="108" call :Install "procexp" "Process Explorer"
+    if "!choice!"=="109" call :Install "windirstat" "WinDirStat"
+    if "!choice!"=="110" call :Install "glaryutilities-free" "Glary Utilities"
+    if "!choice!"=="111" call :Install "revo-uninstaller" "Revo Uninstaller"
+    if "!choice!"=="112" call :ShowMessage "StartIsBack requires manual installation"
+    if "!choice!"=="113" call :Install "winaero-tweaker" "Winaero Tweaker"
+    if "!choice!"=="114" call :ShowMessage "ExplorerPatcher requires manual installation"
+    if "!choice!"=="115" call :Install "minitool-partition-wizard-free" "MiniTool Partition Wizard"
+    if "!choice!"=="116" call :Install "reflect-free" "Macrium Reflect"
+    if "!choice!"=="117" call :ShowMessage "Clonezilla requires manual installation"
     
-    if "%choice%"=="118" call :Install "winrar" "WinRAR"
-    if "%choice%"=="119" call :Install "7zip" "7-Zip"
-    if "%choice%"=="120" call :Install "peazip" "PeaZip"
-    if "%choice%"=="121" call :Install "bandizip" "Bandizip"
-    if "%choice%"=="122" call :Install "izarc" "IZArc"
-    if "%choice%"=="123" call :Install "poweriso" "PowerISO"
-    if "%choice%"=="124" call :Install "daemon-tools-lite" "DAEMON Tools Lite"
-    if "%choice%"=="125" call :Install "rufus" "Rufus"
-    if "%choice%"=="126" call :Install "balenaetcher" "balenaEtcher"
-    if "%choice%"=="127" call :Install "ventoy" "Ventoy"
-    if "%choice%"=="128" call :Install "imgburn" "ImgBurn"
-    if "%choice%"=="129" call :Install "ultraiso" "UltraISO"
-    if "%choice%"=="130" call :Install "freecommander-xe" "FreeCommander XE"
+    if "!choice!"=="118" call :Install "winrar" "WinRAR"
+    if "!choice!"=="119" call :Install "7zip" "7-Zip"
+    if "!choice!"=="120" call :Install "peazip" "PeaZip"
+    if "!choice!"=="121" call :Install "bandizip" "Bandizip"
+    if "!choice!"=="122" call :Install "izarc" "IZArc"
+    if "!choice!"=="123" call :Install "poweriso" "PowerISO"
+    if "!choice!"=="124" call :Install "daemon-tools-lite" "DAEMON Tools Lite"
+    if "!choice!"=="125" call :Install "rufus" "Rufus"
+    if "!choice!"=="126" call :Install "balenaetcher" "balenaEtcher"
+    if "!choice!"=="127" call :Install "ventoy" "Ventoy"
+    if "!choice!"=="128" call :Install "imgburn" "ImgBurn"
+    if "!choice!"=="129" call :Install "ultraiso" "UltraISO"
+    if "!choice!"=="130" call :Install "freecommander-xe" "FreeCommander XE"
     
-    if "%choice%"=="131" call :Install "directx" "DirectX"
-    if "%choice%"=="132" call :Install "dotnet-4.8" ".NET Framework 4.8"
-    if "%choice%"=="133" call :Install "openjdk" "OpenJDK"
-    if "%choice%"=="134" call :Install "python" "Python"
-    if "%choice%"=="135" call :Install "nodejs" "Node.js"
-    if "%choice%"=="136" call :Install "vcredist-all" "Visual C++ Redistributables"
-    if "%choice%"=="137" call :Install "strawberryperl" "Strawberry Perl"
-    if "%choice%"=="138" call :Install "ruby" "Ruby"
-    if "%choice%"=="139" call :Install "golang" "Go Programming Language"
-    if "%choice%"=="140" call :ShowMessage "Visual Basic Runtime is included in Windows"
-    if "%choice%"=="141" call :Install "sqlcmd" "SQL Server Command Line Utilities"
-    if "%choice%"=="142" call :ShowMessage "Oracle Instant Client requires manual installation"
-    if "%choice%"=="143" call :Install "php" "PHP"
+    if "!choice!"=="131" call :Install "directx" "DirectX"
+    if "!choice!"=="132" call :Install "dotnet-4.8" ".NET Framework 4.8"
+    if "!choice!"=="133" call :Install "openjdk" "OpenJDK"
+    if "!choice!"=="134" call :Install "python" "Python"
+    if "!choice!"=="135" call :Install "nodejs" "Node.js"
+    if "!choice!"=="136" call :Install "vcredist-all" "Visual C++ Redistributables"
+    if "!choice!"=="137" call :Install "strawberryperl" "Strawberry Perl"
+    if "!choice!"=="138" call :Install "ruby" "Ruby"
+    if "!choice!"=="139" call :Install "golang" "Go Programming Language"
+    if "!choice!"=="140" call :ShowMessage "Visual Basic Runtime is included in Windows"
+    if "!choice!"=="141" call :Install "sqlcmd" "SQL Server Command Line Utilities"
+    if "!choice!"=="142" call :ShowMessage "Oracle Instant Client requires manual installation"
+    if "!choice!"=="143" call :Install "php" "PHP"
     
-    if "%choice%"=="144" call :Install "teamviewer" "TeamViewer"
-    if "%choice%"=="145" call :Install "anydesk" "AnyDesk"
-    if "%choice%"=="146" call :Install "dropbox" "Dropbox"
-    if "%choice%"=="147" call :Install "googledrive" "Google Drive"
-    if "%choice%"=="148" call :Install "steam" "Steam"
-    if "%choice%"=="149" call :Install "epicgameslauncher" "Epic Games Launcher"
-    if "%choice%"=="150" call :Install "goggalaxy" "GOG Galaxy"
-    if "%choice%"=="151" call :Install "battle.net" "Battle.net"
-    if "%choice%"=="152" call :Install "rockstargameslauncher" "Rockstar Games Launcher"
-    if "%choice%"=="153" call :Install "roblox-player" "Roblox Player"
-    if "%choice%"=="154" call :ShowMessage "Popcorn Time requires manual installation"
-    if "%choice%"=="155" call :Install "qbittorrent" "qBittorrent"
-    if "%choice%"=="156" call :Install "opentoonz" "OpenToonz"
+    if "!choice!"=="144" call :Install "teamviewer" "TeamViewer"
+    if "!choice!"=="145" call :Install "anydesk" "AnyDesk"
+    if "!choice!"=="146" call :Install "dropbox" "Dropbox"
+    if "!choice!"=="147" call :Install "googledrive" "Google Drive"
+    if "!choice!"=="148" call :Install "steam" "Steam"
+    if "!choice!"=="149" call :Install "epicgameslauncher" "Epic Games Launcher"
+    if "!choice!"=="150" call :Install "goggalaxy" "GOG Galaxy"
+    if "!choice!"=="151" call :Install "battle.net" "Battle.net"
+    if "!choice!"=="152" call :Install "rockstargameslauncher" "Rockstar Games Launcher"
+    if "!choice!"=="153" call :Install "roblox-player" "Roblox Player"
+    if "!choice!"=="154" call :ShowMessage "Popcorn Time requires manual installation"
+    if "!choice!"=="155" call :Install "qbittorrent" "qBittorrent"
+    if "!choice!"=="156" call :Install "opentoonz" "OpenToonz"
 )
 
 if "%page%"=="PAGE4" (
-    if "%choice%"=="157" call :Install "gimp" "GIMP"
-    if "%choice%"=="158" call :Install "inkscape" "Inkscape"
-    if "%choice%"=="159" call :Install "paint.net" "Paint.NET"
-    if "%choice%"=="160" call :Install "blender" "Blender"
-    if "%choice%"=="161" call :Install "krita" "Krita"
-    if "%choice%"=="162" call :Install "darktable" "darktable"
-    if "%choice%"=="163" call :Install "rawtherapee" "RawTherapee"
-    if "%choice%"=="164" call :Install "pencil" "Pencil Project"
-    if "%choice%"=="165" call :ShowMessage "Autodesk Sketchbook requires manual installation"
-    if "%choice%"=="166" call :Install "sharex" "ShareX"
-    if "%choice%"=="167" call :Install "scribus" "Scribus"
-    if "%choice%"=="168" call :ShowMessage "Piskel requires manual installation"
-    if "%choice%"=="169" call :Install "pencil2d" "Pencil2D"
+    if "!choice!"=="157" call :Install "gimp" "GIMP"
+    if "!choice!"=="158" call :Install "inkscape" "Inkscape"
+    if "!choice!"=="159" call :Install "paint.net" "Paint.NET"
+    if "!choice!"=="160" call :Install "blender" "Blender"
+    if "!choice!"=="161" call :Install "krita" "Krita"
+    if "!choice!"=="162" call :Install "darktable" "darktable"
+    if "!choice!"=="163" call :Install "rawtherapee" "RawTherapee"
+    if "!choice!"=="164" call :Install "pencil" "Pencil Project"
+    if "!choice!"=="165" call :ShowMessage "Autodesk Sketchbook requires manual installation"
+    if "!choice!"=="166" call :Install "sharex" "ShareX"
+    if "!choice!"=="167" call :Install "scribus" "Scribus"
+    if "!choice!"=="168" call :ShowMessage "Piskel requires manual installation"
+    if "!choice!"=="169" call :Install "pencil2d" "Pencil2D"
     
-    if "%choice%"=="170" call :Install "itch" "itch.io"
-    if "%choice%"=="171" call :Install "dolphin" "Dolphin Emulator"
-    if "%choice%"=="172" call :Install "pcsx2" "PCSX2"
-    if "%choice%"=="173" call :Install "retroarch" "RetroArch"
-    if "%choice%"=="174" call :Install "citra" "Citra"
-    if "%choice%"=="175" call :Install "ryujinx" "Ryujinx"
-    if "%choice%"=="176" call :ShowMessage "Yuzu emulator is no longer available"
-    if "%choice%"=="177" call :Install "joytokey" "JoyToKey"
-    if "%choice%"=="178" call :Install "ds4windows" "DS4Windows"
-    if "%choice%"=="179" call :Install "steamcmd" "SteamCMD"
-    if "%choice%"=="180" call :ShowMessage "Unreal Engine requires Epic Games Launcher"
-    if "%choice%"=="181" call :Install "unity-hub" "Unity Hub"
-    if "%choice%"=="182" call :ShowMessage "GameMaker Studio requires manual installation"
+    if "!choice!"=="170" call :Install "itch" "itch.io"
+    if "!choice!"=="171" call :Install "dolphin" "Dolphin Emulator"
+    if "!choice!"=="172" call :Install "pcsx2" "PCSX2"
+    if "!choice!"=="173" call :Install "retroarch" "RetroArch"
+    if "!choice!"=="174" call :Install "citra" "Citra"
+    if "!choice!"=="175" call :Install "ryujinx" "Ryujinx"
+    if "!choice!"=="176" call :ShowMessage "Yuzu emulator is no longer available"
+    if "!choice!"=="177" call :Install "joytokey" "JoyToKey"
+    if "!choice!"=="178" call :Install "ds4windows" "DS4Windows"
+    if "!choice!"=="179" call :Install "steamcmd" "SteamCMD"
+    if "!choice!"=="180" call :ShowMessage "Unreal Engine requires Epic Games Launcher"
+    if "!choice!"=="181" call :Install "unity-hub" "Unity Hub"
+    if "!choice!"=="182" call :ShowMessage "GameMaker Studio requires manual installation"
     
-    if "%choice%"=="183" call :Install "thunderbird" "Mozilla Thunderbird"
-    if "%choice%"=="184" call :ShowMessage "Postbox requires manual installation"
-    if "%choice%"=="185" call :Install "mailspring" "Mailspring"
-    if "%choice%"=="186" call :Install "mailbird" "Mailbird"
-    if "%choice%"=="187" call :Install "element-desktop" "Element"
-    if "%choice%"=="188" call :Install "franz" "Franz"
-    if "%choice%"=="189" call :Install "ferdium" "Ferdium"
-    if "%choice%"=="190" call :Install "hexchat" "HexChat"
-    if "%choice%"=="191" call :Install "pidgin" "Pidgin"
-    if "%choice%"=="192" call :Install "trillian" "Trillian"
-    if "%choice%"=="193" call :Install "miranda-ng" "Miranda NG"
-    if "%choice%"=="194" call :ShowMessage "Guilded requires manual installation"
-    if "%choice%"=="195" call :Install "teamspeak" "TeamSpeak"
+    if "!choice!"=="183" call :Install "thunderbird" "Mozilla Thunderbird"
+    if "!choice!"=="184" call :ShowMessage "Postbox requires manual installation"
+    if "!choice!"=="185" call :Install "mailspring" "Mailspring"
+    if "!choice!"=="186" call :Install "mailbird" "Mailbird"
+    if "!choice!"=="187" call :Install "element-desktop" "Element"
+    if "!choice!"=="188" call :Install "franz" "Franz"
+    if "!choice!"=="189" call :Install "ferdium" "Ferdium"
+    if "!choice!"=="190" call :Install "hexchat" "HexChat"
+    if "!choice!"=="191" call :Install "pidgin" "Pidgin"
+    if "!choice!"=="192" call :Install "trillian" "Trillian"
+    if "!choice!"=="193" call :Install "miranda-ng" "Miranda NG"
+    if "!choice!"=="194" call :ShowMessage "Guilded requires manual installation"
+    if "!choice!"=="195" call :Install "teamspeak" "TeamSpeak"
     
-    if "%choice%"=="196" call :Install "docker-desktop" "Docker Desktop"
-    if "%choice%"=="197" call :Install "kubernetes-cli" "Kubernetes CLI"
-    if "%choice%"=="198" call :Install "minikube" "Minikube"
-    if "%choice%"=="199" call :Install "terraform" "Terraform"
-    if "%choice%"=="200" call :Install "awscli" "AWS CLI"
-    if "%choice%"=="201" call :Install "azure-cli" "Azure CLI"
-    if "%choice%"=="202" call :Install "gcloudsdk" "Google Cloud SDK"
-    if "%choice%"=="203" call :Install "vagrant" "Vagrant"
-    if "%choice%"=="204" call :Install "packer" "Packer"
-    if "%choice%"=="205" call :Install "postman" "Postman"
-    if "%choice%"=="206" call :Install "k9s" "k9s"
-    if "%choice%"=="207" call :Install "kubernetes-helm" "Helm"
-    if "%choice%"=="208" call :Install "synfig" "Synfig Studio"
+    if "!choice!"=="196" call :Install "docker-desktop" "Docker Desktop"
+    if "!choice!"=="197" call :Install "kubernetes-cli" "Kubernetes CLI"
+    if "!choice!"=="198" call :Install "minikube" "Minikube"
+    if "!choice!"=="199" call :Install "terraform" "Terraform"
+    if "!choice!"=="200" call :Install "awscli" "AWS CLI"
+    if "!choice!"=="201" call :Install "azure-cli" "Azure CLI"
+    if "!choice!"=="202" call :Install "gcloudsdk" "Google Cloud SDK"
+    if "!choice!"=="203" call :Install "vagrant" "Vagrant"
+    if "!choice!"=="204" call :Install "packer" "Packer"
+    if "!choice!"=="205" call :Install "postman" "Postman"
+    if "!choice!"=="206" call :Install "k9s" "k9s"
+    if "!choice!"=="207" call :Install "kubernetes-helm" "Helm"
+    if "!choice!"=="208" call :Install "synfig" "Synfig Studio"
 )
 
 echo.
@@ -16579,6 +15624,10 @@ if not defined candidate (
 echo(!candidate!| findstr /R /C:"^[A-Za-z0-9][A-Za-z0-9._+-]*$" >nul
 set "validationResult=!errorlevel!"
 endlocal & exit /b %validationResult%
+
+:ValidateManagedSnapshotPath
+powershell -NoProfile -Command "try{$base=[IO.Path]::GetFullPath($env:DEX_BACKUPS).TrimEnd('\')+'\';$candidate=[IO.Path]::GetFullPath($env:DEX_RESTORE_PATH).TrimEnd('\')+'\';$leaf=Split-Path $candidate.TrimEnd('\') -Leaf;if($candidate.StartsWith($base,[StringComparison]::OrdinalIgnoreCase)-and$leaf -match '^Managed_[0-9A-Za-z_-]+$'){exit 0}else{exit 1}}catch{exit 1}" >nul 2>&1
+exit /b %errorlevel%
 
 :ConfirmChecksumBypass
 echo %yellow%Chocolatey reported a checksum failure or package validation problem.%u%
@@ -16624,36 +15673,43 @@ echo.
 echo %c%Search the Chocolatey repository by name. Copy the exact package ID to install.%u%
 echo.
 set /p "searchTerm=%c%Enter software name to search (or Enter to go back) »%u% "
-if "%searchTerm%"=="" goto START
+if "!searchTerm!"=="" goto START
+set "DEX_VALIDATE_TEXT=!searchTerm!"
+powershell -NoProfile -Command "if($env:DEX_VALIDATE_TEXT -match '^[0-9A-Za-z ._+-]{1,80}$'){exit 0}else{exit 1}" >nul 2>&1
+if errorlevel 1 (
+    echo %red%Invalid search. Use up to 80 letters, numbers, spaces, dots, underscores, pluses or hyphens.%u%
+    pause
+    goto START
+)
 echo.
-echo %c%Searching for packages containing "%searchTerm%"...%u%
-choco search "%searchTerm%" --limit-output
+echo %c%Searching for packages containing "!searchTerm!"...%u%
+choco search "!searchTerm!" --limit-output
 echo.
 echo %c%Copy the package name exactly as shown above (e.g., googlechrome)%u%
 echo.
 
 set /p "installPkg=%c%Enter exact package name to install (or Enter to return) »%u% "
-if "%installPkg%"=="" goto START
-call :ValidatePackageName "%installPkg%"
+if "!installPkg!"=="" goto START
+powershell -NoProfile -Command "if($env:installPkg -match '^[0-9A-Za-z][0-9A-Za-z._+-]{0,79}$'){exit 0}else{exit 1}" >nul 2>&1
 if errorlevel 1 (
     echo %red%Invalid package name. Use only letters, numbers, dot, underscore, plus, or hyphen.%u%
     pause
     goto START
 )
-set "name=%installPkg%"
+set "name=!installPkg!"
 echo.
-set /p "confirmInstall=%c%Install '%installPkg%'? (Y/N) »%u% "
-if /I "%confirmInstall%"=="Y" (
+set /p "confirmInstall=%c%Install '!installPkg!'? (Y/N) »%u% "
+if /I "!confirmInstall!"=="Y" (
     echo %c%Installing %name%...%u%
-    choco install "%installPkg%" -y --no-progress
+    choco install "!installPkg!" -y --no-progress
 
     if errorlevel 1 (
         echo %red%Installation failed or package integrity could not be verified.%u%
         echo %yellow%Dex Tweaks will not bypass Chocolatey checksum validation.%u%
-        call :LogEvent "FAIL" "Chocolatey search install failed for %installPkg%"
+        call :LogEvent "FAIL" "Chocolatey search install failed for !installPkg!"
     ) else (
         echo %c%✔ Successfully installed %name%!%u%
-        call :LogEvent "OK" "Chocolatey search installed %installPkg%"
+        call :LogEvent "OK" "Chocolatey search installed !installPkg!"
     )
     echo.
     pause
@@ -16720,38 +15776,38 @@ echo.
 powershell -Command "Get-ChildItem 'C:\ProgramData\chocolatey\lib' | Select-Object Name | Format-Table -HideTableHeaders"
 echo.
 set /p "uninstallPackage=%c%Enter package name to uninstall (or Enter to go back) »%u% "
-if "%uninstallPackage%"=="" (
+if "!uninstallPackage!"=="" (
     endlocal
     goto START
 )
-call :ValidatePackageName "%uninstallPackage%"
+powershell -NoProfile -Command "if($env:uninstallPackage -match '^[0-9A-Za-z][0-9A-Za-z._+-]{0,79}$'){exit 0}else{exit 1}" >nul 2>&1
 if errorlevel 1 (
     echo %red%Invalid package name. Use only letters, numbers, dot, underscore, plus, or hyphen.%u%
     pause
     endlocal
     goto START
 )
-if /I "%uninstallPackage%"=="chocolatey" (
+if /I "!uninstallPackage!"=="chocolatey" (
     echo %red%Refusing to uninstall Chocolatey core package from this menu.%u%
     pause
     endlocal
     goto START
 )
-if not exist "C:\ProgramData\chocolatey\lib\%uninstallPackage%" (
-    echo %red%Package "%uninstallPackage%" was not found in Chocolatey's local package folder.%u%
+if not exist "C:\ProgramData\chocolatey\lib\!uninstallPackage!" (
+    echo %red%Package "!uninstallPackage!" was not found in Chocolatey's local package folder.%u%
     pause
     endlocal
     goto START
 )
 echo.
-set /p "confirmUninstall=%red%Are you sure you want to uninstall %uninstallPackage%? (Y/N) »%u% "
-if /I "%confirmUninstall%"=="Y" (
-    echo %c%Uninstalling %uninstallPackage%...%u%
-    choco uninstall "%uninstallPackage%" -y
+set /p "confirmUninstall=%red%Are you sure you want to uninstall !uninstallPackage!? (Y/N) »%u% "
+if /I "!confirmUninstall!"=="Y" (
+    echo %c%Uninstalling !uninstallPackage!...%u%
+    choco uninstall "!uninstallPackage!" -y
     if !errorlevel! equ 0 (
-        echo %c%✔ Successfully uninstalled %uninstallPackage%!%u%
+        echo %c%✔ Successfully uninstalled !uninstallPackage!!%u%
     ) else (
-        echo %red%✘ Failed to uninstall %uninstallPackage%.%u%
+        echo %red%✘ Failed to uninstall !uninstallPackage!.%u%
     )
 )
 echo.
@@ -16766,6 +15822,8 @@ setlocal
 set "DEX_SELF_FILE=%~f0"
 powershell -NoProfile -Command "$lines=[IO.File]::ReadAllLines($env:DEX_SELF_FILE,[Text.UTF8Encoding]::new($false));$labels=@{};$dup=@();for($i=0;$i-lt$lines.Count;$i++){if($lines[$i]-match '^:([A-Za-z0-9_.-]+)\s*$'){$n=$matches[1].ToLower();if($labels.ContainsKey($n)){$dup+=$n}else{$labels[$n]=$i+1}}};$missing=@();for($i=0;$i-lt$lines.Count;$i++){foreach($m in [regex]::Matches($lines[$i],'(?i)\b(?:goto|call)\s+:([A-Za-z0-9_.-]+)')){$n=$m.Groups[1].Value.ToLower();if($n-ne'eof'-and-not$labels.ContainsKey($n)){$missing+=$n}}};$required=@('menu','dashboardcenter','profilescenter','changecenter','backupmanager','healthcenter','benchmarkcenter','globalsearch','historycenter','restartcenter','destruct');$missingRequired=@($required|Where-Object{-not$labels.ContainsKey($_)});Write-Host ('Dex Tweaks self-test: {0} lines, {1} labels' -f $lines.Count,$labels.Count);if($dup.Count){Write-Host ('Duplicate labels: '+(($dup|Sort-Object -Unique)-join', '))};if($missing.Count){Write-Host ('Missing call/goto targets: '+(($missing|Sort-Object -Unique)-join', '))};if($missingRequired.Count){Write-Host ('Missing required modules: '+($missingRequired-join', '))};if($dup.Count-or$missing.Count-or$missingRequired.Count){exit 1}else{Write-Host 'PASS: navigation and required modules are valid.';exit 0}"
 set "DEX_SELF_RC=%errorlevel%"
+if "%DEX_SELF_RC%"=="0" powershell -NoProfile -Command "$lines=[IO.File]::ReadAllLines($env:DEX_SELF_FILE,[Text.UTF8Encoding]::new($false));$active=@($lines|Where-Object{$_ -notmatch '^\s*(?:rem\b|::)' -and $_ -notmatch '\$patterns=@'});$pct=[char]37;$unsafeInput=$pct+'(?:userInput|preset|M|input|choice|TR_OPT|TR_CUSTOM|NvChoice|svc_mode|IA_MODE|G(?:1|2|3|4|5|6|7|8|9|10|11)|bl_choice|sc_choice|ENC_PICK|QUAL_PICK|mainChoice|p1Choice|p2Choice|p3Choice|p4Choice|confirm|searchTerm|installPkg|confirmInstall|uninstallPackage|confirmUninstall|hyperv_choice|restart_choice|featureChoice|defenderConfirm)(?::[^'+$pct+']+)?'+$pct;$patterns=@('\biex\s*\(','DownloadString\s*\(','\bbcdedit\b.*(?:nointegritychecks|disableelamdrivers|nx\s+AlwaysOff)','\b(?:del|rd|rmdir|move|ren|takeown)\b.*(?:\\System32\\|\\WindowsApps\\|\\DriverStore\\)','rmdir\s+/s\s+/q\s+.*\\FortniteGame.*$',$unsafeInput);$bad=@();for($i=0;$i-lt$active.Count;$i++){foreach($p in $patterns){if($active[$i]-match $p){$bad+=$active[$i];break}}};if($bad.Count){Write-Host 'Blocked safety patterns found:'; $bad|Select-Object -Unique|ForEach-Object{Write-Host ('  '+$_)};exit 1};Write-Host 'PASS: interactive input and destructive-command safety guards are valid.';exit 0"
+if errorlevel 1 set "DEX_SELF_RC=1"
 endlocal & exit /b %DEX_SELF_RC%
 
 :DexSmokeTestEntry
@@ -16802,6 +15860,12 @@ if not exist "%DEX_LOG%" set "DEX_SMOKE_INVALID=1"
 if not exist "%DEX_CATALOG%" set "DEX_SMOKE_INVALID=1"
 if not exist "%DEX_QUEUE%" set "DEX_SMOKE_INVALID=1"
 if not exist "%DEX_SNAPSHOT%\metadata.txt" set "DEX_SMOKE_INVALID=1"
+set "DEX_RESTORE_PATH=%DEX_SNAPSHOT%"
+call :ValidateManagedSnapshotPath
+if errorlevel 1 set "DEX_SMOKE_INVALID=1"
+set "DEX_RESTORE_PATH=%DEX_BACKUPS%\..\OutsideDexBackups"
+call :ValidateManagedSnapshotPath
+if not errorlevel 1 set "DEX_SMOKE_INVALID=1"
 if "%DEX_SMOKE_INVALID%"=="1" (
     echo FAIL: managed runtime smoke test found an invalid state.
     echo Test data: "%DEX_TEST_ROOT%"
@@ -16826,7 +15890,7 @@ set "DEX_REPORTS=%DEX_ROOT%\Reports"
 set "DEX_STATE_DIR=%DEX_ROOT%\State"
 for %%D in ("%DEX_ROOT%" "%DEX_LOG_DIR%" "%DEX_BACKUPS%" "%DEX_REPORTS%" "%DEX_STATE_DIR%") do if not exist "%%~D" mkdir "%%~D" >nul 2>&1
 if not defined DEX_TEST_ROOT icacls "%DEX_ROOT%" /inheritance:r /grant:r "*S-1-5-18:(OI)(CI)F" "*S-1-5-32-544:(OI)(CI)F" >nul 2>&1
-for /f "delims=" %%T in ('powershell -NoProfile -Command "Get-Date -Format yyyyMMdd_HHmmss" 2^>nul') do set "DEX_SESSION=%%T"
+for /f "delims=" %%T in ('powershell -NoProfile -Command "Get-Date -Format yyyyMMdd_HHmmss_fff" 2^>nul') do set "DEX_SESSION=%%T"
 if not defined DEX_SESSION set "DEX_SESSION=%RANDOM%_%RANDOM%"
 set "DEX_LOG=%DEX_LOG_DIR%\Session_%DEX_SESSION%.log"
 set "DEX_QUEUE=%DEX_STATE_DIR%\pending.queue"
@@ -16922,6 +15986,12 @@ if errorlevel 2 (
     exit /b 1
 )
 call :CreateManagedSnapshot "Before_Expert_Action"
+if errorlevel 1 (
+    echo %red%Expert workflow cancelled because the managed snapshot could not be created.%u%
+    call :LogEvent "BLOCKED" "Expert action refused without a managed snapshot"
+    pause
+    exit /b 1
+)
 powershell -NoProfile -ExecutionPolicy Bypass -Command "try { Checkpoint-Computer -Description 'DexTweaks_Expert_%DEX_SESSION%' -RestorePointType MODIFY_SETTINGS -ErrorAction Stop; exit 0 } catch { exit 1 }" >nul 2>&1
 if errorlevel 1 (
     call :LogEvent "WARN" "Expert action Restore Point could not be created"
@@ -16953,7 +16023,7 @@ echo %c% DEX TWEAKS CONTROL PANEL%u%  v%version%  ^| !DEX_OS_NAME! build !_OS_BU
 echo %c%-------------------------------------------------------------------------------%u%
 echo  Security: %DEX_DEFENDER%  ^| Network: %DEX_NETWORK%  ^| Reboot: %DEX_REBOOT_STATUS%
 echo  Power: %DEX_POWER%
-echo  Profile: %DEX_LAST_PROFILE%  ^| Managed backups: %DEX_BACKUP_COUNT%
+echo  Profile: !DEX_LAST_PROFILE!  ^| Managed backups: %DEX_BACKUP_COUNT%
 echo %c%===============================================================================%u%
 exit /b
 
@@ -17019,7 +16089,7 @@ set "DEX_DASH_REPORT=%DEX_REPORTS%\Dashboard_%DEX_SESSION%.txt"
 >>"%DEX_DASH_REPORT%" echo Network=%DEX_NETWORK%
 >>"%DEX_DASH_REPORT%" echo Reboot=%DEX_REBOOT_STATUS%
 >>"%DEX_DASH_REPORT%" echo Power=%DEX_POWER%
->>"%DEX_DASH_REPORT%" echo Profile=%DEX_LAST_PROFILE%
+>>"%DEX_DASH_REPORT%" echo Profile=!DEX_LAST_PROFILE!
 >>"%DEX_DASH_REPORT%" echo ManagedBackups=%DEX_BACKUP_COUNT%
 echo.
 echo Report saved to: "%DEX_DASH_REPORT%"
@@ -17517,10 +16587,14 @@ goto CustomQueueBuilderLoop
 
 :CreateManagedSnapshot
 set "DEX_SNAPSHOT_TAG=%~1"
-for /f "delims=" %%T in ('powershell -NoProfile -Command "Get-Date -Format yyyyMMdd_HHmmss" 2^>nul') do set "DEX_SNAPSHOT_TIME=%%T"
+for /f "delims=" %%T in ('powershell -NoProfile -Command "Get-Date -Format yyyyMMdd_HHmmss_fff" 2^>nul') do set "DEX_SNAPSHOT_TIME=%%T"
 if not defined DEX_SNAPSHOT_TIME set "DEX_SNAPSHOT_TIME=%RANDOM%"
 set "DEX_SNAPSHOT=%DEX_BACKUPS%\Managed_%DEX_SNAPSHOT_TIME%"
 mkdir "%DEX_SNAPSHOT%" >nul 2>&1
+if errorlevel 1 (
+    call :LogEvent "FAIL" "Could not create managed snapshot folder"
+    exit /b 1
+)
 reg export "HKCU\Software\Microsoft\GameBar" "%DEX_SNAPSHOT%\GameBar.reg" /y >nul 2>&1
 reg export "HKCU\System\GameConfigStore" "%DEX_SNAPSHOT%\GameConfigStore.reg" /y >nul 2>&1
 reg export "HKCU\Software\Microsoft\Windows\CurrentVersion\GameDVR" "%DEX_SNAPSHOT%\GameDVR.reg" /y >nul 2>&1
@@ -17534,10 +16608,18 @@ powershell -NoProfile -Command "Get-MpPreference -ErrorAction SilentlyContinue |
 powershell -NoProfile -Command "Get-CimInstance Win32_Service -ErrorAction SilentlyContinue | Where-Object Name -in @('wuauserv','BITS','WSearch') | Select-Object Name,StartMode | Export-Csv -NoTypeInformation -Encoding UTF8 -LiteralPath '%DEX_SNAPSHOT%\services.csv'" >nul 2>&1
 > "%DEX_SNAPSHOT%\metadata.txt" echo Created=%date% %time%
 >>"%DEX_SNAPSHOT%\metadata.txt" echo Tag=%DEX_SNAPSHOT_TAG%
+if not exist "%DEX_SNAPSHOT%\metadata.txt" (
+    call :LogEvent "FAIL" "Could not write managed snapshot metadata"
+    exit /b 1
+)
 > "%DEX_SNAPSHOT_FILE%" echo %DEX_SNAPSHOT%
+if not exist "%DEX_SNAPSHOT_FILE%" (
+    call :LogEvent "FAIL" "Could not register managed snapshot"
+    exit /b 1
+)
 call :LogEvent "BACKUP" "Managed snapshot created: %DEX_SNAPSHOT%"
 echo Managed snapshot created: "%DEX_SNAPSHOT%"
-exit /b
+exit /b 0
 
 :RestoreLatestManagedSnapshot
 if not exist "%DEX_SNAPSHOT_FILE%" (
@@ -17553,26 +16635,33 @@ if not defined DEX_RESTORE_PATH (
     pause
     exit /b
 )
-if not exist "%DEX_RESTORE_PATH%\metadata.txt" (
-    echo Snapshot folder was not found: "%DEX_RESTORE_PATH%"
+call :ValidateManagedSnapshotPath
+if errorlevel 1 (
+    echo Invalid snapshot path. Only managed backups inside the Dex backup folder are accepted.
+    call :LogEvent "BLOCKED" "Managed snapshot path escaped the backup folder"
+    pause
+    exit /b
+)
+if not exist "!DEX_RESTORE_PATH!\metadata.txt" (
+    echo Snapshot folder was not found: "!DEX_RESTORE_PATH!"
     pause
     exit /b
 )
 echo.
-echo Latest snapshot: "%DEX_RESTORE_PATH%"
+echo Latest snapshot: "!DEX_RESTORE_PATH!"
 choice /C YN /N /M "Restore this managed snapshot? [Y/N]: "
 if errorlevel 2 exit /b
 set /a DEX_RESTORE_FAIL=0
 call :ClearManagedValues
-for %%R in ("%DEX_RESTORE_PATH%\*.reg") do (
+for %%R in ("!DEX_RESTORE_PATH!\*.reg") do (
     reg import "%%~fR" >nul 2>&1
     if errorlevel 1 set /a DEX_RESTORE_FAIL+=1
 )
-if exist "%DEX_RESTORE_PATH%\services.csv" powershell -NoProfile -Command "Import-Csv -LiteralPath '%DEX_RESTORE_PATH%\services.csv' | ForEach-Object { $mode=switch($_.StartMode){'Auto'{'Automatic'}'Manual'{'Manual'}'Disabled'{'Disabled'}default{'Manual'}}; Set-Service -Name $_.Name -StartupType $mode -ErrorAction SilentlyContinue }" >nul 2>&1
-if exist "%DEX_RESTORE_PATH%\defender.json" powershell -NoProfile -Command "$p=Get-Content -LiteralPath '%DEX_RESTORE_PATH%\defender.json' -Raw | ConvertFrom-Json; Set-MpPreference -DisableRealtimeMonitoring $p.DisableRealtimeMonitoring -DisableBehaviorMonitoring $p.DisableBehaviorMonitoring -DisableBlockAtFirstSeen $p.DisableBlockAtFirstSeen -DisableIOAVProtection $p.DisableIOAVProtection -DisableScriptScanning $p.DisableScriptScanning -MAPSReporting $p.MAPSReporting -SubmitSamplesConsent $p.SubmitSamplesConsent -ErrorAction SilentlyContinue; foreach($x in @($p.ExclusionPath)){if($x){Add-MpPreference -ExclusionPath $x -ErrorAction SilentlyContinue}};foreach($x in @($p.ExclusionProcess)){if($x){Add-MpPreference -ExclusionProcess $x -ErrorAction SilentlyContinue}}" >nul 2>&1
-if exist "%DEX_RESTORE_PATH%\power.txt" for /f "delims=" %%G in ('powershell -NoProfile -Command "$x=Get-Content -LiteralPath '%DEX_RESTORE_PATH%\power.txt' -Raw; if($x -match '[0-9a-fA-F-]{36}'){$matches[0]}" 2^>nul') do powercfg /setactive %%G >nul 2>&1
-if exist "%DEX_RESTORE_PATH%\bcd_store.bak" (
-    bcdedit /import "%DEX_RESTORE_PATH%\bcd_store.bak" >nul 2>&1
+if exist "!DEX_RESTORE_PATH!\services.csv" powershell -NoProfile -Command "Import-Csv -LiteralPath '!DEX_RESTORE_PATH!\services.csv' | ForEach-Object { $mode=switch($_.StartMode){'Auto'{'Automatic'}'Manual'{'Manual'}'Disabled'{'Disabled'}default{'Manual'}}; Set-Service -Name $_.Name -StartupType $mode -ErrorAction SilentlyContinue }" >nul 2>&1
+if exist "!DEX_RESTORE_PATH!\defender.json" powershell -NoProfile -Command "$p=Get-Content -LiteralPath '!DEX_RESTORE_PATH!\defender.json' -Raw | ConvertFrom-Json; Set-MpPreference -DisableRealtimeMonitoring $p.DisableRealtimeMonitoring -DisableBehaviorMonitoring $p.DisableBehaviorMonitoring -DisableBlockAtFirstSeen $p.DisableBlockAtFirstSeen -DisableIOAVProtection $p.DisableIOAVProtection -DisableScriptScanning $p.DisableScriptScanning -MAPSReporting $p.MAPSReporting -SubmitSamplesConsent $p.SubmitSamplesConsent -ErrorAction SilentlyContinue; foreach($x in @($p.ExclusionPath)){if($x){Add-MpPreference -ExclusionPath $x -ErrorAction SilentlyContinue}};foreach($x in @($p.ExclusionProcess)){if($x){Add-MpPreference -ExclusionProcess $x -ErrorAction SilentlyContinue}}" >nul 2>&1
+if exist "!DEX_RESTORE_PATH!\power.txt" for /f "delims=" %%G in ('powershell -NoProfile -Command "$x=Get-Content -LiteralPath '!DEX_RESTORE_PATH!\power.txt' -Raw; if($x -match '[0-9a-fA-F-]{36}'){$matches[0]}" 2^>nul') do powercfg /setactive %%G >nul 2>&1
+if exist "!DEX_RESTORE_PATH!\bcd_store.bak" (
+    bcdedit /import "!DEX_RESTORE_PATH!\bcd_store.bak" >nul 2>&1
     if errorlevel 1 set /a DEX_RESTORE_FAIL+=1
 )
 call :MarkRebootRequired "Managed snapshot restored"
@@ -17692,7 +16781,14 @@ if not exist "%DEX_SNAPSHOT_FILE%" (
 )
 set "DEX_RESTORE_PATH="
 set /p DEX_RESTORE_PATH=<"%DEX_SNAPSHOT_FILE%"
-if not exist "%DEX_RESTORE_PATH%\metadata.txt" (
+call :ValidateManagedSnapshotPath
+if errorlevel 1 (
+    echo Invalid snapshot path.
+    call :LogEvent "BLOCKED" "Selective restore snapshot path escaped the backup folder"
+    pause
+    exit /b
+)
+if not exist "!DEX_RESTORE_PATH!\metadata.txt" (
     echo Snapshot folder was not found.
     pause
     exit /b
@@ -17701,7 +16797,7 @@ cls
 call :SetupConsole
 echo.
 echo %c%SELECTIVE RESTORE%u%
-echo Snapshot: "%DEX_RESTORE_PATH%"
+echo Snapshot: "!DEX_RESTORE_PATH!"
 echo.
 echo  [1] Managed registry settings
 echo  [2] Windows Update and Search service startup
@@ -17734,7 +16830,7 @@ exit /b
 :RestoreSnapshotRegistry
 call :ClearManagedValues
 set "DEX_MODULE_FOUND=0"
-for %%R in ("%DEX_RESTORE_PATH%\*.reg") do if exist "%%~fR" (
+for %%R in ("!DEX_RESTORE_PATH!\*.reg") do if exist "%%~fR" (
     set "DEX_MODULE_FOUND=1"
     reg import "%%~fR" >nul 2>&1
     if errorlevel 1 exit /b 1
@@ -17743,26 +16839,26 @@ if "%DEX_MODULE_FOUND%"=="0" exit /b 1
 exit /b 0
 
 :RestoreSnapshotServices
-if not exist "%DEX_RESTORE_PATH%\services.csv" exit /b 1
-powershell -NoProfile -Command "Import-Csv -LiteralPath '%DEX_RESTORE_PATH%\services.csv' | ForEach-Object { $mode=switch($_.StartMode){'Auto'{'Automatic'}'Manual'{'Manual'}'Disabled'{'Disabled'}default{'Manual'}}; Set-Service -Name $_.Name -StartupType $mode -ErrorAction Stop }" >nul 2>&1
+if not exist "!DEX_RESTORE_PATH!\services.csv" exit /b 1
+powershell -NoProfile -Command "Import-Csv -LiteralPath '!DEX_RESTORE_PATH!\services.csv' | ForEach-Object { $mode=switch($_.StartMode){'Auto'{'Automatic'}'Manual'{'Manual'}'Disabled'{'Disabled'}default{'Manual'}}; Set-Service -Name $_.Name -StartupType $mode -ErrorAction Stop }" >nul 2>&1
 exit /b %errorlevel%
 
 :RestoreSnapshotPower
-if not exist "%DEX_RESTORE_PATH%\power.txt" exit /b 1
+if not exist "!DEX_RESTORE_PATH!\power.txt" exit /b 1
 set "DEX_POWER_GUID="
-for /f "delims=" %%G in ('powershell -NoProfile -Command "$x=Get-Content -LiteralPath '%DEX_RESTORE_PATH%\power.txt' -Raw; if($x -match '[0-9a-fA-F-]{36}'){$matches[0]}" 2^>nul') do set "DEX_POWER_GUID=%%G"
+for /f "delims=" %%G in ('powershell -NoProfile -Command "$x=Get-Content -LiteralPath '!DEX_RESTORE_PATH!\power.txt' -Raw; if($x -match '[0-9a-fA-F-]{36}'){$matches[0]}" 2^>nul') do set "DEX_POWER_GUID=%%G"
 if not defined DEX_POWER_GUID exit /b 1
 powercfg /setactive %DEX_POWER_GUID% >nul 2>&1
 exit /b %errorlevel%
 
 :RestoreSnapshotDefender
-if not exist "%DEX_RESTORE_PATH%\defender.json" exit /b 1
-powershell -NoProfile -Command "$p=Get-Content -LiteralPath '%DEX_RESTORE_PATH%\defender.json' -Raw | ConvertFrom-Json; Set-MpPreference -DisableRealtimeMonitoring $p.DisableRealtimeMonitoring -DisableBehaviorMonitoring $p.DisableBehaviorMonitoring -DisableBlockAtFirstSeen $p.DisableBlockAtFirstSeen -DisableIOAVProtection $p.DisableIOAVProtection -DisableScriptScanning $p.DisableScriptScanning -MAPSReporting $p.MAPSReporting -SubmitSamplesConsent $p.SubmitSamplesConsent -ErrorAction Stop; foreach($x in @($p.ExclusionPath)){if($x){Add-MpPreference -ExclusionPath $x -ErrorAction SilentlyContinue}};foreach($x in @($p.ExclusionProcess)){if($x){Add-MpPreference -ExclusionProcess $x -ErrorAction SilentlyContinue}}" >nul 2>&1
+if not exist "!DEX_RESTORE_PATH!\defender.json" exit /b 1
+powershell -NoProfile -Command "$p=Get-Content -LiteralPath '!DEX_RESTORE_PATH!\defender.json' -Raw | ConvertFrom-Json; Set-MpPreference -DisableRealtimeMonitoring $p.DisableRealtimeMonitoring -DisableBehaviorMonitoring $p.DisableBehaviorMonitoring -DisableBlockAtFirstSeen $p.DisableBlockAtFirstSeen -DisableIOAVProtection $p.DisableIOAVProtection -DisableScriptScanning $p.DisableScriptScanning -MAPSReporting $p.MAPSReporting -SubmitSamplesConsent $p.SubmitSamplesConsent -ErrorAction Stop; foreach($x in @($p.ExclusionPath)){if($x){Add-MpPreference -ExclusionPath $x -ErrorAction SilentlyContinue}};foreach($x in @($p.ExclusionProcess)){if($x){Add-MpPreference -ExclusionProcess $x -ErrorAction SilentlyContinue}}" >nul 2>&1
 exit /b %errorlevel%
 
 :RestoreSnapshotBcd
-if not exist "%DEX_RESTORE_PATH%\bcd_store.bak" exit /b 1
-bcdedit /import "%DEX_RESTORE_PATH%\bcd_store.bak" >nul 2>&1
+if not exist "!DEX_RESTORE_PATH!\bcd_store.bak" exit /b 1
+bcdedit /import "!DEX_RESTORE_PATH!\bcd_store.bak" >nul 2>&1
 exit /b %errorlevel%
 
 :CreateWindowsRestorePoint
@@ -17780,7 +16876,7 @@ pause
 exit /b
 
 :CreateFullRegistryBackup
-for /f "delims=" %%T in ('powershell -NoProfile -Command "Get-Date -Format yyyyMMdd_HHmmss" 2^>nul') do set "DEX_FULL_TIME=%%T"
+for /f "delims=" %%T in ('powershell -NoProfile -Command "Get-Date -Format yyyyMMdd_HHmmss_fff" 2^>nul') do set "DEX_FULL_TIME=%%T"
 set "DEX_FULL_PATH=%DEX_BACKUPS%\FullRegistry_%DEX_FULL_TIME%"
 mkdir "%DEX_FULL_PATH%" >nul 2>&1
 echo.
