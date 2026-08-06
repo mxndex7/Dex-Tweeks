@@ -3053,63 +3053,53 @@ choice /C YN /M "%c%Apply AMD GPU optimizations? (Y/N)%u%"
 if errorlevel 2 goto C
 
 echo.
-echo %c%[0/7] Detecting AMD GPU registry entry...%u%
-call :AMD_SelectGPUIndex
-if errorlevel 1 (
-    echo.
-    echo %red%AMD GPU optimizations were not applied.%u%
-    pause
-    goto C
-)
-
-echo.
 echo %c%╔══════════════════════════════════════════════════════════════════════════════╗
 echo ║                       %red%AMD%u%%c% OPTIMIZATION IN PROGRESS                           ║
 echo ╚══════════════════════════════════════════════════════════════════════════════╝%u%
 
 echo.
 echo %c%[1/7] Enabling ReBAR and Modern GPU Features...%u%
-reg add "!AMD_GPU_CLASS_KEY!" /v "KMD_EnableReBarForLegacyASIC" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!" /v "KMD_RebarControlMode" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!" /v "KMD_RebarControlSupport" /t REG_DWORD /d "1" /f >nul 2>&1
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "KMD_EnableReBarForLegacyASIC" /t REG_DWORD /d "1" /f >nul 2>&1
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "KMD_RebarControlMode" /t REG_DWORD /d "1" /f >nul 2>&1
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "KMD_RebarControlSupport" /t REG_DWORD /d "1" /f >nul 2>&1
 
 echo %c%[2/7] Disabling Power Management Features...%u%
-reg add "!AMD_GPU_CLASS_KEY!" /v "KMD_USUEnable" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!" /v "KMD_RadeonBoostEnabled" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!" /v "KMD_ChillEnabled" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!" /v "KMD_DeLagEnabled" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!" /v "PP_ThermalAutoThrottlingEnable" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!" /v "DisableDrmdmaPowerGating" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!" /v "KMD_DisableDPD" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!" /v "KMD_EnableMSHWS" /t REG_DWORD /d "0" /f >nul 2>&1
+reg add "HKLM\System\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "KMD_USUEnable" /t REG_DWORD /d "0" /f >nul 2>&1
+reg add "HKLM\System\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "KMD_RadeonBoostEnabled" /t REG_DWORD /d "0" /f >nul 2>&1
+reg add "HKLM\System\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "KMD_ChillEnabled" /t REG_DWORD /d "0" /f >nul 2>&1
+reg add "HKLM\System\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "KMD_DeLagEnabled" /t REG_DWORD /d "0" /f >nul 2>&1
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "PP_ThermalAutoThrottlingEnable" /t REG_DWORD /d "0" /f >nul 2>&1
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "DisableDrmdmaPowerGating" /t REG_DWORD /d "1" /f >nul 2>&1
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "KMD_DisableDPD" /t REG_DWORD /d "1" /f >nul 2>&1
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "KMD_EnableMSHWS" /t REG_DWORD /d "0" /f >nul 2>&1
 
 echo %c%[3/7] Configuring 3D Rendering and Anti-Aliasing...%u%
-reg add "!AMD_GPU_CLASS_KEY!\UMD" /v "Main3D" /t REG_BINARY /d "3100" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!\UMD" /v "AntiAlias" /t REG_BINARY /d "3100" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!\UMD" /v "AntiAliasSamples" /t REG_BINARY /d "3000" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!\UMD" /v "AnisoDegree" /t REG_BINARY /d "3000" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!\UMD" /v "Tessellation" /t REG_BINARY /d "3100" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!\UMD" /v "HighQualityAF" /t REG_BINARY /d "3100" /f >nul 2>&1
+reg add "HKLM\System\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000\UMD" /v "Main3D" /t REG_BINARY /d "3100" /f >nul 2>&1
+reg add "HKLM\System\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000\UMD" /v "AntiAlias" /t REG_BINARY /d "3100" /f >nul 2>&1
+reg add "HKLM\System\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000\UMD" /v "AntiAliasSamples" /t REG_BINARY /d "3000" /f >nul 2>&1
+reg add "HKLM\System\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000\UMD" /v "AnisoDegree" /t REG_BINARY /d "3000" /f >nul 2>&1
+reg add "HKLM\System\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000\UMD" /v "Tessellation" /t REG_BINARY /d "3100" /f >nul 2>&1
+reg add "HKLM\System\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000\UMD" /v "HighQualityAF" /t REG_BINARY /d "3100" /f >nul 2>&1
 
 echo %c%[4/7] Optimizing Texture and Buffer Settings...%u%
-reg add "!AMD_GPU_CLASS_KEY!\UMD" /v "TextureOpt" /t REG_BINARY /d "30000000" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!\UMD" /v "TextureLod" /t REG_BINARY /d "30000000" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!\UMD" /v "EnableTripleBuffering" /t REG_BINARY /d "3000" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!\UMD" /v "ShaderCache" /t REG_BINARY /d "3100" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!\UMD" /v "ExportCompressedTex" /t REG_BINARY /d "31000000" /f >nul 2>&1
+reg add "HKLM\System\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000\UMD" /v "TextureOpt" /t REG_BINARY /d "30000000" /f >nul 2>&1
+reg add "HKLM\System\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000\UMD" /v "TextureLod" /t REG_BINARY /d "30000000" /f >nul 2>&1
+reg add "HKLM\System\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000\UMD" /v "EnableTripleBuffering" /t REG_BINARY /d "3000" /f >nul 2>&1
+reg add "HKLM\System\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000\UMD" /v "ShaderCache" /t REG_BINARY /d "3100" /f >nul 2>&1
+reg add "HKLM\System\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000\UMD" /v "ExportCompressedTex" /t REG_BINARY /d "31000000" /f >nul 2>&1
 
 echo %c%[5/7] Configuring Display and VSync Settings...%u%
-reg add "!AMD_GPU_CLASS_KEY!\UMD" /v "VSyncControl" /t REG_BINARY /d "3100" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!\UMD" /v "TurboSync" /t REG_BINARY /d "3000" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!\UMD" /v "AntiStuttering" /t REG_BINARY /d "3100" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!\UMD" /v "DisplayCrossfireLogo" /t REG_BINARY /d "3000" /f >nul 2>&1
+reg add "HKLM\System\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000\UMD" /v "VSyncControl" /t REG_BINARY /d "3100" /f >nul 2>&1
+reg add "HKLM\System\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000\UMD" /v "TurboSync" /t REG_BINARY /d "3000" /f >nul 2>&1
+reg add "HKLM\System\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000\UMD" /v "AntiStuttering" /t REG_BINARY /d "3100" /f >nul 2>&1
+reg add "HKLM\System\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000\UMD" /v "DisplayCrossfireLogo" /t REG_BINARY /d "3000" /f >nul 2>&1
 
 echo %c%[6/7] Optimizing Video Enhancement and DXVA...%u%
-reg add "!AMD_GPU_CLASS_KEY!\UMD\DXVA" /v "LRTCEnable" /t REG_BINARY /d "30000000" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!\UMD\DXVA" /v "MosquitoNoiseRemoval_ENABLE" /t REG_BINARY /d "30000000" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!\UMD\DXVA" /v "Deblocking_ENABLE" /t REG_BINARY /d "30000000" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!\UMD\DXVA" /v "ColorVibrance_ENABLE" /t REG_BINARY /d "31000000" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!\UMD\DXVA" /v "BlueStretch_ENABLE" /t REG_BINARY /d "31000000" /f >nul 2>&1
+reg add "HKLM\System\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000\UMD\DXVA" /v "LRTCEnable" /t REG_BINARY /d "30000000" /f >nul 2>&1
+reg add "HKLM\System\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000\UMD\DXVA" /v "MosquitoNoiseRemoval_ENABLE" /t REG_BINARY /d "30000000" /f >nul 2>&1
+reg add "HKLM\System\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000\UMD\DXVA" /v "Deblocking_ENABLE" /t REG_BINARY /d "30000000" /f >nul 2>&1
+reg add "HKLM\System\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000\UMD\DXVA" /v "ColorVibrance_ENABLE" /t REG_BINARY /d "31000000" /f >nul 2>&1
+reg add "HKLM\System\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000\UMD\DXVA" /v "BlueStretch_ENABLE" /t REG_BINARY /d "31000000" /f >nul 2>&1
 
 echo %c%[7/7] Disabling AMD Services and Telemetry...%u%
 reg add "HKLM\System\CurrentControlSet\Services\amdwddmg" /v "ChillEnabled" /t REG_DWORD /d "0" /f >nul 2>&1
@@ -3118,8 +3108,8 @@ reg add "HKLM\System\CurrentControlSet\Services\AMD External Events Utility" /v 
 reg add "HKLM\System\CurrentControlSet\Services\amdfendr" /v "Start" /t REG_DWORD /d "4" /f >nul 2>&1
 reg add "HKLM\System\CurrentControlSet\Services\amdfendrmgr" /v "Start" /t REG_DWORD /d "4" /f >nul 2>&1
 reg add "HKLM\System\CurrentControlSet\Services\amdlog" /v "Start" /t REG_DWORD /d "4" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!" /v "DisableDMACopy" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!" /v "DisableBlockWrite" /t REG_DWORD /d "0" /f >nul 2>&1
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "DisableDMACopy" /t REG_DWORD /d "1" /f >nul 2>&1
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "DisableBlockWrite" /t REG_DWORD /d "0" /f >nul 2>&1
 
 echo %c%[8/11] Disabling AMD driver-level image enhancement hooks...%u%
 reg add "HKLM\SYSTEM\CurrentControlSet\Services\amdkmdag" /v "EnableRSR" /t REG_DWORD /d "0" /f >nul 2>&1
@@ -3168,95 +3158,6 @@ echo.
 echo %c%══════════════════════════ PRESS ANY KEY TO CONTINUE ══════════════════════════%u%
 pause >nul
 goto TweaksMenu
-
-:AMD_SelectGPUIndex
-rem Used only by :AMDGPU. Enumerates every numeric subkey under the Display class
-rem GUID (not limited to a fixed range), identifies which ones are AMD adapters via
-rem ProviderName, logs every candidate found, and lets the user pick when there is
-rem more than one. Sets AMD_GPU_INDEX and AMD_GPU_CLASS_KEY on success (errorlevel 0).
-rem On failure, cancellation, or an invalid choice it clears both variables, writes
-rem no registry values, and returns errorlevel 1.
-set "AMD_GPU_CLASS_KEY="
-set "AMD_GPU_INDEX="
-set "AMD_CAND_COUNT=0"
-set "_amd_class=HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}"
-call :LogEvent "INFO" "AMD GPU detection started for :AMDGPU"
-for /f "delims=" %%K in ('reg query "%_amd_class%" 2^>nul ^| findstr /r /i "\\[0-9][0-9][0-9][0-9]$"') do (
-    set "_amd_scan_idx="
-    for %%N in ("%%K") do set "_amd_scan_idx=%%~nN"
-    set "_amd_scan_provider="
-    for /f "tokens=2,*" %%a in ('reg query "%_amd_class%\!_amd_scan_idx!" /v ProviderName 2^>nul ^| findstr /i "ProviderName"') do set "_amd_scan_provider=%%b"
-    if defined _amd_scan_provider (
-        set "_amd_is_amd="
-        echo(!_amd_scan_provider!| findstr /I /C:"Advanced Micro Devices" /C:"ATI Technologies" /C:"AMD" >nul && set "_amd_is_amd=1"
-        if defined _amd_is_amd (
-            set "_amd_scan_desc=Unknown"
-            for /f "tokens=2,*" %%a in ('reg query "%_amd_class%\!_amd_scan_idx!" /v DriverDesc 2^>nul ^| findstr /i "DriverDesc"') do set "_amd_scan_desc=%%b"
-            set "_amd_scan_devid=Unknown"
-            for /f "tokens=2,*" %%a in ('reg query "%_amd_class%\!_amd_scan_idx!" /v MatchingDeviceId 2^>nul ^| findstr /i "MatchingDeviceId"') do set "_amd_scan_devid=%%b"
-            if "!_amd_scan_devid!"=="Unknown" (
-                for /f "delims=" %%a in ('powershell -NoProfile -Command "try { $b = (Get-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\!_amd_scan_idx!' -Name 'HardwareInformation.AdapterString' -ErrorAction Stop).'HardwareInformation.AdapterString'; [Text.Encoding]::Unicode.GetString($b).TrimEnd([char]0) } catch { '' }" 2^>nul') do if not "%%a"=="" set "_amd_scan_devid=%%a"
-            )
-            set /a "AMD_CAND_COUNT+=1"
-            set "AMD_CAND_!AMD_CAND_COUNT!_IDX=!_amd_scan_idx!"
-            set "AMD_CAND_!AMD_CAND_COUNT!_DESC=!_amd_scan_desc!"
-            set "AMD_CAND_!AMD_CAND_COUNT!_PROVIDER=!_amd_scan_provider!"
-            set "AMD_CAND_!AMD_CAND_COUNT!_DEVID=!_amd_scan_devid!"
-            call :LogEvent "INFO" "AMD GPU candidate #!AMD_CAND_COUNT!: index=!_amd_scan_idx! DriverDesc=!_amd_scan_desc! ProviderName=!_amd_scan_provider! DeviceId=!_amd_scan_devid!"
-            echo %c%  → Candidate !AMD_CAND_COUNT!: !_amd_scan_desc! ^(index !_amd_scan_idx!^)%u%
-        )
-    )
-)
-
-if "!AMD_CAND_COUNT!"=="0" (
-    echo %red%No AMD GPU was found under the Display adapters registry class.%u%
-    call :LogEvent "BLOCKED" "AMD GPU tweaks refused: no AMD adapter detected under !_amd_class!"
-    exit /b 1
-)
-
-if "!AMD_CAND_COUNT!"=="1" (
-    set "_amd_selected=1"
-) else (
-    echo.
-    echo %c%Multiple AMD GPUs were found. Select which one to optimize:%u%
-    for /l %%N in (1,1,!AMD_CAND_COUNT!) do (
-        call echo   [%%N] %%AMD_CAND_%%N_DESC%% ^(index %%AMD_CAND_%%N_IDX%%^)
-    )
-    echo.
-    set "_amd_selected="
-    set /p "_amd_selected=%c%Enter the number of the GPU to optimize (or Enter to cancel) »%u% "
-    if not defined _amd_selected (
-        echo %yellow%Selection cancelled. No registry changes were made.%u%
-        call :LogEvent "CANCEL" "AMD GPU selection cancelled by user"
-        exit /b 1
-    )
-    set "_amd_valid_selection="
-    for /l %%N in (1,1,!AMD_CAND_COUNT!) do if "!_amd_selected!"=="%%N" set "_amd_valid_selection=1"
-    if not defined _amd_valid_selection (
-        echo %red%Invalid selection "!_amd_selected!". No registry changes were made.%u%
-        call :LogEvent "BLOCKED" "AMD GPU tweaks refused: invalid selection !_amd_selected!"
-        exit /b 1
-    )
-)
-
-call set "AMD_GPU_INDEX=%%AMD_CAND_!_amd_selected!_IDX%%"
-call set "_amd_confirm_desc=%%AMD_CAND_!_amd_selected!_DESC%%"
-
-set "_amd_reverify_provider="
-for /f "tokens=2,*" %%a in ('reg query "%_amd_class%\!AMD_GPU_INDEX!" /v ProviderName 2^>nul ^| findstr /i "ProviderName"') do set "_amd_reverify_provider=%%b"
-set "_amd_reverify_ok="
-if defined _amd_reverify_provider echo(!_amd_reverify_provider!| findstr /I /C:"Advanced Micro Devices" /C:"ATI Technologies" /C:"AMD" >nul && set "_amd_reverify_ok=1"
-if not defined _amd_reverify_ok (
-    echo %red%The selected registry subkey no longer matches an AMD adapter. Aborting.%u%
-    call :LogEvent "BLOCKED" "AMD GPU tweaks refused: re-validation of index !AMD_GPU_INDEX! failed"
-    set "AMD_GPU_INDEX="
-    exit /b 1
-)
-
-set "AMD_GPU_CLASS_KEY=%_amd_class%\!AMD_GPU_INDEX!"
-echo %c%  ✓ Selected: !_amd_confirm_desc! ^(index !AMD_GPU_INDEX!^)%u%
-call :LogEvent "OK" "AMD GPU selected for :AMDGPU tweaks: index=!AMD_GPU_INDEX! desc=!_amd_confirm_desc!"
-exit /b 0
 
 :D
 cls
@@ -6121,6 +6022,28 @@ echo %c%════════════════════════
 pause >nul
 goto TweaksMenu
 
+:IAdv_Keep
+rem Delayed expansion is already enabled globally.
+set "svc=%~1"
+set "num=%~2"
+set "keeps=%~3"
+set "do_disable=true"
+if /i "!keeps!"=="ALL" set "do_disable=false"
+for %%k in (!keeps!) do if "%%k"=="!num!" set "do_disable=false"
+if "!do_disable!"=="true" call :DisableService "!svc!"
+exit /b
+
+:IAdv_Disable
+rem Delayed expansion is already enabled globally.
+set "svc=%~1"
+set "num=%~2"
+set "disables=%~3"
+set "do_disable=false"
+if /i "!disables!"=="ALL" set "do_disable=true"
+for %%k in (!disables!) do if "%%k"=="!num!" set "do_disable=true"
+if "!do_disable!"=="true" call :DisableService "!svc!"
+exit /b
+
 :DisableTelemetryServices
 echo %c%    Disabling telemetry and data collection services...%u%
 call :DisableService "DiagTrack"
@@ -8206,6 +8129,18 @@ echo ║ 2. Find "Secure Boot" option                                           
 echo ║ 3. Set to "Enabled" and ensure UEFI boot mode                              ║
 echo ╚═══════════════════════════════════════════════════════════════════════════════╝%u%
 goto :eof
+
+:CleanupTemp
+del /q "%temp%\tpm_status.txt" 2>nul
+del /q "%temp%\sb_status.txt" 2>nul
+del /q "%temp%\virt_status.txt" 2>nul
+del /q "%temp%\bitlocker_status.txt" 2>nul
+del /q "%temp%\bio_status.txt" 2>nul
+del /q "%temp%\sg_compat.txt" 2>nul
+del /q "%temp%\hvci_compat.txt" 2>nul
+del /q "%temp%\sc_reader.txt" 2>nul
+goto :eof
+
 
 :EnableSystemGuard
 cls
@@ -12233,8 +12168,8 @@ set DISM_SCAN=%errorlevel%
 if %DISM_SCAN% neq 0 (
     echo %c%Issues detected - running DISM repair...%u%
     dism /online /cleanup-image /restorehealth
-    set "DISM_REPAIR=!errorlevel!"
-    if "!DISM_REPAIR!"=="0" (
+    set DISM_REPAIR=%errorlevel%
+    if %DISM_REPAIR%==0 (
         echo %c%✓ DISM repair completed successfully%u%
     ) else (
         echo %c%⚠ DISM repair encountered some issues%u%
@@ -15905,9 +15840,26 @@ echo %c%Installation process completed.%u%
 timeout /t 3 >nul
 exit /b
 
+:ValidatePackageName
+setlocal EnableDelayedExpansion
+set "candidate=%~1"
+if not defined candidate (
+    endlocal
+    exit /b 1
+)
+echo(!candidate!| findstr /R /C:"^[A-Za-z0-9][A-Za-z0-9._+-]*$" >nul
+set "validationResult=!errorlevel!"
+endlocal & exit /b %validationResult%
+
 :ValidateManagedSnapshotPath
 powershell -NoProfile -Command "try{$base=[IO.Path]::GetFullPath($env:DEX_BACKUPS).TrimEnd('\')+'\';$candidate=[IO.Path]::GetFullPath($env:DEX_RESTORE_PATH).TrimEnd('\')+'\';$leaf=Split-Path $candidate.TrimEnd('\') -Leaf;if($candidate.StartsWith($base,[StringComparison]::OrdinalIgnoreCase)-and$leaf -match '^Managed_[0-9A-Za-z_-]+$'){exit 0}else{exit 1}}catch{exit 1}" >nul 2>&1
 exit /b %errorlevel%
+
+:ConfirmChecksumBypass
+echo %yellow%Chocolatey reported a checksum failure or package validation problem.%u%
+echo %red%Installation stopped because package integrity could not be verified.%u%
+call :LogEvent "BLOCKED" "Chocolatey checksum bypass refused"
+exit /b 1
 
 :Install
 set "package=%~1"

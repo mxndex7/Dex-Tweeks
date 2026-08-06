@@ -1656,15 +1656,12 @@ reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power" /v "CsEnabled" /t REG_DWOR
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power" /v "CoalescingTimerInterval" /t REG_DWORD /d "0" /f >nul 2>&1
 
 echo %c%  → Optimizing CPU vendor-specific settings...%u%
-set "_cpu_is_intel="
-for /f "delims=" %%Z in ('powershell -NoProfile -Command "(Get-CimInstance -ClassName Win32_Processor -ErrorAction SilentlyContinue).Name" 2^>nul') do echo(%%Z| findstr /i "Intel" >nul && set "_cpu_is_intel=1"
-if not defined _cpu_is_intel (wmic cpu get name 2>nul | findstr /i "Intel" >nul && set "_cpu_is_intel=1")
-if defined _cpu_is_intel (
+wmic cpu get name | findstr /i "Intel" >nul && (
     echo %c%    → Applying Intel-specific optimizations...%u%
     reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power" /v "Class2InitialUnparkCount" /t REG_DWORD /d "100" /f >nul 2>&1
     reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power" /v "InitialUnparkCount" /t REG_DWORD /d "100" /f >nul 2>&1
     reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power" /v "MaxIAverageGraphicsLatencyInOneBucket" /t REG_DWORD /d "1" /f >nul 2>&1
-) else (
+) || (
     echo %c%    → Applying AMD-specific optimizations...%u%
     reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power" /v "DefaultD3TransitionLatencyActivelyUsed" /t REG_DWORD /d "1" /f >nul 2>&1
     reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power" /v "DefaultD3TransitionLatencyIdleLongTime" /t REG_DWORD /d "1" /f >nul 2>&1
@@ -1693,12 +1690,7 @@ echo %c%  → Creating configuration backup...%u%
 echo Desktop Ultimate Performance Plan Created: %date% %time% > "%temp%\desktop_plan_created"
 echo Scheme GUID: %CUSTOM_GUID% >> "%temp%\desktop_plan_created"
 echo CPU Vendor: >> "%temp%\desktop_plan_created"
-set "_desktop_plan_cpu_logged="
-for /f "delims=" %%i in ('powershell -NoProfile -Command "(Get-CimInstance -ClassName Win32_Processor -ErrorAction SilentlyContinue).Name" 2^>nul') do (
-    echo %%i >> "%temp%\desktop_plan_created"
-    set "_desktop_plan_cpu_logged=1"
-)
-if not defined _desktop_plan_cpu_logged wmic cpu get name >> "%temp%\desktop_plan_created" 2>nul
+wmic cpu get name >> "%temp%\desktop_plan_created" 2>nul
 
 echo %c%  → Power scheme activation completed%u%
 goto :eof
@@ -2838,8 +2830,6 @@ pause >nul
 goto TweaksMenu
 
 :NVIDIAGPUExperimental
-call :RequireExpertMode "Maximum Performance DWORD mode disables all NVIDIA power management and can raise temperatures, increase power draw, or cause instability."
-if errorlevel 1 goto NVIDIAGPU
 cls
 call :SetupConsole
 echo.
@@ -3053,63 +3043,53 @@ choice /C YN /M "%c%Apply AMD GPU optimizations? (Y/N)%u%"
 if errorlevel 2 goto C
 
 echo.
-echo %c%[0/7] Detecting AMD GPU registry entry...%u%
-call :AMD_SelectGPUIndex
-if errorlevel 1 (
-    echo.
-    echo %red%AMD GPU optimizations were not applied.%u%
-    pause
-    goto C
-)
-
-echo.
 echo %c%╔══════════════════════════════════════════════════════════════════════════════╗
 echo ║                       %red%AMD%u%%c% OPTIMIZATION IN PROGRESS                           ║
 echo ╚══════════════════════════════════════════════════════════════════════════════╝%u%
 
 echo.
 echo %c%[1/7] Enabling ReBAR and Modern GPU Features...%u%
-reg add "!AMD_GPU_CLASS_KEY!" /v "KMD_EnableReBarForLegacyASIC" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!" /v "KMD_RebarControlMode" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!" /v "KMD_RebarControlSupport" /t REG_DWORD /d "1" /f >nul 2>&1
+reg add "HKLM\SYSTEM\ControlSet001\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "KMD_EnableReBarForLegacyASIC" /t REG_DWORD /d "1" /f >nul 2>&1
+reg add "HKLM\SYSTEM\ControlSet001\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "KMD_RebarControlMode" /t REG_DWORD /d "1" /f >nul 2>&1
+reg add "HKLM\SYSTEM\ControlSet001\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "KMD_RebarControlSupport" /t REG_DWORD /d "1" /f >nul 2>&1
 
 echo %c%[2/7] Disabling Power Management Features...%u%
-reg add "!AMD_GPU_CLASS_KEY!" /v "KMD_USUEnable" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!" /v "KMD_RadeonBoostEnabled" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!" /v "KMD_ChillEnabled" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!" /v "KMD_DeLagEnabled" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!" /v "PP_ThermalAutoThrottlingEnable" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!" /v "DisableDrmdmaPowerGating" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!" /v "KMD_DisableDPD" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!" /v "KMD_EnableMSHWS" /t REG_DWORD /d "0" /f >nul 2>&1
+reg add "HKLM\System\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "KMD_USUEnable" /t REG_DWORD /d "0" /f >nul 2>&1
+reg add "HKLM\System\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "KMD_RadeonBoostEnabled" /t REG_DWORD /d "0" /f >nul 2>&1
+reg add "HKLM\System\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "KMD_ChillEnabled" /t REG_DWORD /d "0" /f >nul 2>&1
+reg add "HKLM\System\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "KMD_DeLagEnabled" /t REG_DWORD /d "0" /f >nul 2>&1
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "PP_ThermalAutoThrottlingEnable" /t REG_DWORD /d "0" /f >nul 2>&1
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "DisableDrmdmaPowerGating" /t REG_DWORD /d "1" /f >nul 2>&1
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "KMD_DisableDPD" /t REG_DWORD /d "1" /f >nul 2>&1
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "KMD_EnableMSHWS" /t REG_DWORD /d "0" /f >nul 2>&1
 
 echo %c%[3/7] Configuring 3D Rendering and Anti-Aliasing...%u%
-reg add "!AMD_GPU_CLASS_KEY!\UMD" /v "Main3D" /t REG_BINARY /d "3100" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!\UMD" /v "AntiAlias" /t REG_BINARY /d "3100" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!\UMD" /v "AntiAliasSamples" /t REG_BINARY /d "3000" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!\UMD" /v "AnisoDegree" /t REG_BINARY /d "3000" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!\UMD" /v "Tessellation" /t REG_BINARY /d "3100" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!\UMD" /v "HighQualityAF" /t REG_BINARY /d "3100" /f >nul 2>&1
+reg add "HKLM\System\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000\UMD" /v "Main3D" /t REG_BINARY /d "3100" /f >nul 2>&1
+reg add "HKLM\System\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000\UMD" /v "AntiAlias" /t REG_BINARY /d "3100" /f >nul 2>&1
+reg add "HKLM\System\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000\UMD" /v "AntiAliasSamples" /t REG_BINARY /d "3000" /f >nul 2>&1
+reg add "HKLM\System\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000\UMD" /v "AnisoDegree" /t REG_BINARY /d "3000" /f >nul 2>&1
+reg add "HKLM\System\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000\UMD" /v "Tessellation" /t REG_BINARY /d "3100" /f >nul 2>&1
+reg add "HKLM\System\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000\UMD" /v "HighQualityAF" /t REG_BINARY /d "3100" /f >nul 2>&1
 
 echo %c%[4/7] Optimizing Texture and Buffer Settings...%u%
-reg add "!AMD_GPU_CLASS_KEY!\UMD" /v "TextureOpt" /t REG_BINARY /d "30000000" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!\UMD" /v "TextureLod" /t REG_BINARY /d "30000000" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!\UMD" /v "EnableTripleBuffering" /t REG_BINARY /d "3000" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!\UMD" /v "ShaderCache" /t REG_BINARY /d "3100" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!\UMD" /v "ExportCompressedTex" /t REG_BINARY /d "31000000" /f >nul 2>&1
+reg add "HKLM\System\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000\UMD" /v "TextureOpt" /t REG_BINARY /d "30000000" /f >nul 2>&1
+reg add "HKLM\System\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000\UMD" /v "TextureLod" /t REG_BINARY /d "30000000" /f >nul 2>&1
+reg add "HKLM\System\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000\UMD" /v "EnableTripleBuffering" /t REG_BINARY /d "3000" /f >nul 2>&1
+reg add "HKLM\System\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000\UMD" /v "ShaderCache" /t REG_BINARY /d "3100" /f >nul 2>&1
+reg add "HKLM\System\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000\UMD" /v "ExportCompressedTex" /t REG_BINARY /d "31000000" /f >nul 2>&1
 
 echo %c%[5/7] Configuring Display and VSync Settings...%u%
-reg add "!AMD_GPU_CLASS_KEY!\UMD" /v "VSyncControl" /t REG_BINARY /d "3100" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!\UMD" /v "TurboSync" /t REG_BINARY /d "3000" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!\UMD" /v "AntiStuttering" /t REG_BINARY /d "3100" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!\UMD" /v "DisplayCrossfireLogo" /t REG_BINARY /d "3000" /f >nul 2>&1
+reg add "HKLM\System\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000\UMD" /v "VSyncControl" /t REG_BINARY /d "3100" /f >nul 2>&1
+reg add "HKLM\System\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000\UMD" /v "TurboSync" /t REG_BINARY /d "3000" /f >nul 2>&1
+reg add "HKLM\System\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000\UMD" /v "AntiStuttering" /t REG_BINARY /d "3100" /f >nul 2>&1
+reg add "HKLM\System\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000\UMD" /v "DisplayCrossfireLogo" /t REG_BINARY /d "3000" /f >nul 2>&1
 
 echo %c%[6/7] Optimizing Video Enhancement and DXVA...%u%
-reg add "!AMD_GPU_CLASS_KEY!\UMD\DXVA" /v "LRTCEnable" /t REG_BINARY /d "30000000" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!\UMD\DXVA" /v "MosquitoNoiseRemoval_ENABLE" /t REG_BINARY /d "30000000" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!\UMD\DXVA" /v "Deblocking_ENABLE" /t REG_BINARY /d "30000000" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!\UMD\DXVA" /v "ColorVibrance_ENABLE" /t REG_BINARY /d "31000000" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!\UMD\DXVA" /v "BlueStretch_ENABLE" /t REG_BINARY /d "31000000" /f >nul 2>&1
+reg add "HKLM\System\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000\UMD\DXVA" /v "LRTCEnable" /t REG_BINARY /d "30000000" /f >nul 2>&1
+reg add "HKLM\System\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000\UMD\DXVA" /v "MosquitoNoiseRemoval_ENABLE" /t REG_BINARY /d "30000000" /f >nul 2>&1
+reg add "HKLM\System\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000\UMD\DXVA" /v "Deblocking_ENABLE" /t REG_BINARY /d "30000000" /f >nul 2>&1
+reg add "HKLM\System\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000\UMD\DXVA" /v "ColorVibrance_ENABLE" /t REG_BINARY /d "31000000" /f >nul 2>&1
+reg add "HKLM\System\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000\UMD\DXVA" /v "BlueStretch_ENABLE" /t REG_BINARY /d "31000000" /f >nul 2>&1
 
 echo %c%[7/7] Disabling AMD Services and Telemetry...%u%
 reg add "HKLM\System\CurrentControlSet\Services\amdwddmg" /v "ChillEnabled" /t REG_DWORD /d "0" /f >nul 2>&1
@@ -3118,8 +3098,8 @@ reg add "HKLM\System\CurrentControlSet\Services\AMD External Events Utility" /v 
 reg add "HKLM\System\CurrentControlSet\Services\amdfendr" /v "Start" /t REG_DWORD /d "4" /f >nul 2>&1
 reg add "HKLM\System\CurrentControlSet\Services\amdfendrmgr" /v "Start" /t REG_DWORD /d "4" /f >nul 2>&1
 reg add "HKLM\System\CurrentControlSet\Services\amdlog" /v "Start" /t REG_DWORD /d "4" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!" /v "DisableDMACopy" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!" /v "DisableBlockWrite" /t REG_DWORD /d "0" /f >nul 2>&1
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "DisableDMACopy" /t REG_DWORD /d "1" /f >nul 2>&1
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "DisableBlockWrite" /t REG_DWORD /d "0" /f >nul 2>&1
 
 echo %c%[8/11] Disabling AMD driver-level image enhancement hooks...%u%
 reg add "HKLM\SYSTEM\CurrentControlSet\Services\amdkmdag" /v "EnableRSR" /t REG_DWORD /d "0" /f >nul 2>&1
@@ -3168,95 +3148,6 @@ echo.
 echo %c%══════════════════════════ PRESS ANY KEY TO CONTINUE ══════════════════════════%u%
 pause >nul
 goto TweaksMenu
-
-:AMD_SelectGPUIndex
-rem Used only by :AMDGPU. Enumerates every numeric subkey under the Display class
-rem GUID (not limited to a fixed range), identifies which ones are AMD adapters via
-rem ProviderName, logs every candidate found, and lets the user pick when there is
-rem more than one. Sets AMD_GPU_INDEX and AMD_GPU_CLASS_KEY on success (errorlevel 0).
-rem On failure, cancellation, or an invalid choice it clears both variables, writes
-rem no registry values, and returns errorlevel 1.
-set "AMD_GPU_CLASS_KEY="
-set "AMD_GPU_INDEX="
-set "AMD_CAND_COUNT=0"
-set "_amd_class=HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}"
-call :LogEvent "INFO" "AMD GPU detection started for :AMDGPU"
-for /f "delims=" %%K in ('reg query "%_amd_class%" 2^>nul ^| findstr /r /i "\\[0-9][0-9][0-9][0-9]$"') do (
-    set "_amd_scan_idx="
-    for %%N in ("%%K") do set "_amd_scan_idx=%%~nN"
-    set "_amd_scan_provider="
-    for /f "tokens=2,*" %%a in ('reg query "%_amd_class%\!_amd_scan_idx!" /v ProviderName 2^>nul ^| findstr /i "ProviderName"') do set "_amd_scan_provider=%%b"
-    if defined _amd_scan_provider (
-        set "_amd_is_amd="
-        echo(!_amd_scan_provider!| findstr /I /C:"Advanced Micro Devices" /C:"ATI Technologies" /C:"AMD" >nul && set "_amd_is_amd=1"
-        if defined _amd_is_amd (
-            set "_amd_scan_desc=Unknown"
-            for /f "tokens=2,*" %%a in ('reg query "%_amd_class%\!_amd_scan_idx!" /v DriverDesc 2^>nul ^| findstr /i "DriverDesc"') do set "_amd_scan_desc=%%b"
-            set "_amd_scan_devid=Unknown"
-            for /f "tokens=2,*" %%a in ('reg query "%_amd_class%\!_amd_scan_idx!" /v MatchingDeviceId 2^>nul ^| findstr /i "MatchingDeviceId"') do set "_amd_scan_devid=%%b"
-            if "!_amd_scan_devid!"=="Unknown" (
-                for /f "delims=" %%a in ('powershell -NoProfile -Command "try { $b = (Get-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\!_amd_scan_idx!' -Name 'HardwareInformation.AdapterString' -ErrorAction Stop).'HardwareInformation.AdapterString'; [Text.Encoding]::Unicode.GetString($b).TrimEnd([char]0) } catch { '' }" 2^>nul') do if not "%%a"=="" set "_amd_scan_devid=%%a"
-            )
-            set /a "AMD_CAND_COUNT+=1"
-            set "AMD_CAND_!AMD_CAND_COUNT!_IDX=!_amd_scan_idx!"
-            set "AMD_CAND_!AMD_CAND_COUNT!_DESC=!_amd_scan_desc!"
-            set "AMD_CAND_!AMD_CAND_COUNT!_PROVIDER=!_amd_scan_provider!"
-            set "AMD_CAND_!AMD_CAND_COUNT!_DEVID=!_amd_scan_devid!"
-            call :LogEvent "INFO" "AMD GPU candidate #!AMD_CAND_COUNT!: index=!_amd_scan_idx! DriverDesc=!_amd_scan_desc! ProviderName=!_amd_scan_provider! DeviceId=!_amd_scan_devid!"
-            echo %c%  → Candidate !AMD_CAND_COUNT!: !_amd_scan_desc! ^(index !_amd_scan_idx!^)%u%
-        )
-    )
-)
-
-if "!AMD_CAND_COUNT!"=="0" (
-    echo %red%No AMD GPU was found under the Display adapters registry class.%u%
-    call :LogEvent "BLOCKED" "AMD GPU tweaks refused: no AMD adapter detected under !_amd_class!"
-    exit /b 1
-)
-
-if "!AMD_CAND_COUNT!"=="1" (
-    set "_amd_selected=1"
-) else (
-    echo.
-    echo %c%Multiple AMD GPUs were found. Select which one to optimize:%u%
-    for /l %%N in (1,1,!AMD_CAND_COUNT!) do (
-        call echo   [%%N] %%AMD_CAND_%%N_DESC%% ^(index %%AMD_CAND_%%N_IDX%%^)
-    )
-    echo.
-    set "_amd_selected="
-    set /p "_amd_selected=%c%Enter the number of the GPU to optimize (or Enter to cancel) »%u% "
-    if not defined _amd_selected (
-        echo %yellow%Selection cancelled. No registry changes were made.%u%
-        call :LogEvent "CANCEL" "AMD GPU selection cancelled by user"
-        exit /b 1
-    )
-    set "_amd_valid_selection="
-    for /l %%N in (1,1,!AMD_CAND_COUNT!) do if "!_amd_selected!"=="%%N" set "_amd_valid_selection=1"
-    if not defined _amd_valid_selection (
-        echo %red%Invalid selection "!_amd_selected!". No registry changes were made.%u%
-        call :LogEvent "BLOCKED" "AMD GPU tweaks refused: invalid selection !_amd_selected!"
-        exit /b 1
-    )
-)
-
-call set "AMD_GPU_INDEX=%%AMD_CAND_!_amd_selected!_IDX%%"
-call set "_amd_confirm_desc=%%AMD_CAND_!_amd_selected!_DESC%%"
-
-set "_amd_reverify_provider="
-for /f "tokens=2,*" %%a in ('reg query "%_amd_class%\!AMD_GPU_INDEX!" /v ProviderName 2^>nul ^| findstr /i "ProviderName"') do set "_amd_reverify_provider=%%b"
-set "_amd_reverify_ok="
-if defined _amd_reverify_provider echo(!_amd_reverify_provider!| findstr /I /C:"Advanced Micro Devices" /C:"ATI Technologies" /C:"AMD" >nul && set "_amd_reverify_ok=1"
-if not defined _amd_reverify_ok (
-    echo %red%The selected registry subkey no longer matches an AMD adapter. Aborting.%u%
-    call :LogEvent "BLOCKED" "AMD GPU tweaks refused: re-validation of index !AMD_GPU_INDEX! failed"
-    set "AMD_GPU_INDEX="
-    exit /b 1
-)
-
-set "AMD_GPU_CLASS_KEY=%_amd_class%\!AMD_GPU_INDEX!"
-echo %c%  ✓ Selected: !_amd_confirm_desc! ^(index !AMD_GPU_INDEX!^)%u%
-call :LogEvent "OK" "AMD GPU selected for :AMDGPU tweaks: index=!AMD_GPU_INDEX! desc=!_amd_confirm_desc!"
-exit /b 0
 
 :D
 cls
@@ -3471,14 +3362,7 @@ powercfg -setacvalueindex scheme_current sub_processor PERFBOOSTPOL 100 >nul 2>&
 powercfg -setdcvalueindex scheme_current sub_processor PERFBOOSTMODE 1 >nul 2>&1
 powercfg -setdcvalueindex scheme_current sub_processor PERFBOOSTPOL 60 >nul 2>&1
 powercfg -setactive scheme_current >nul 2>&1
-set "_wifi_pnp_found="
-for /f "delims=" %%j in ('powershell -NoProfile -Command "Get-CimInstance -ClassName Win32_NetworkAdapter -ErrorAction SilentlyContinue | Where-Object { $_.NetEnabled -eq $true -and $_.AdapterTypeId -eq 9 } | Select-Object -ExpandProperty PNPDeviceID" 2^>nul') do (
-    set "_wifi_pnp_found=1"
-    reg add "HKLM\SYSTEM\CurrentControlSet\Enum\%%j\Device Parameters" /v "SelectiveSuspendEnabled" /t REG_DWORD /d 0 /f >nul 2>&1
-    reg add "HKLM\SYSTEM\CurrentControlSet\Enum\%%j\Device Parameters" /v "SelectiveSuspendOn" /t REG_DWORD /d 0 /f >nul 2>&1
-    reg add "HKLM\SYSTEM\CurrentControlSet\Enum\%%j\Device Parameters" /v "BSSType" /t REG_DWORD /d 1 /f >nul 2>&1
-)
-if not defined _wifi_pnp_found for /f "tokens=1* delims=" %%i in ('wmic path Win32_NetworkAdapter where "NetEnabled=true and AdapterTypeId=9" get PNPDeviceID /format:value ^| findstr "PNPDeviceID"') do (
+for /f "tokens=1* delims=" %%i in ('wmic path Win32_NetworkAdapter where "NetEnabled=true and AdapterTypeId=9" get PNPDeviceID /format:value ^| findstr "PNPDeviceID"') do (
     for /f "tokens=2 delims==" %%j in ("%%i") do (
         reg add "HKLM\SYSTEM\CurrentControlSet\Enum\%%j\Device Parameters" /v "SelectiveSuspendEnabled" /t REG_DWORD /d 0 /f >nul 2>&1
         reg add "HKLM\SYSTEM\CurrentControlSet\Enum\%%j\Device Parameters" /v "SelectiveSuspendOn" /t REG_DWORD /d 0 /f >nul 2>&1
@@ -3632,11 +3516,8 @@ echo ╚════════════════════════
 echo.
 echo %c%[1/16] Detecting Ethernet interfaces and speed...%u%
 set "ETHERNET_SPEED=Unknown"
-set "_eth_speed_raw="
-for /f "delims=" %%a in ('powershell -NoProfile -Command "Get-CimInstance -ClassName Win32_NetworkAdapter -ErrorAction SilentlyContinue | Where-Object { $_.NetConnectionStatus -eq 2 -and $_.AdapterTypeId -eq 0 } | Select-Object -First 1 -ExpandProperty Speed" 2^>nul') do set "_eth_speed_raw=%%a"
-if not defined _eth_speed_raw for /f "tokens=2 delims==" %%a in ('wmic path win32_networkadapter where "NetConnectionStatus=2 and AdapterTypeId=0" get Speed /format:value 2^>nul ^| findstr "Speed"') do set "_eth_speed_raw=%%a"
-if defined _eth_speed_raw (
-    set /a "SPEED_MBPS=!_eth_speed_raw!/1000000"
+for /f "tokens=2 delims==" %%a in ('wmic path win32_networkadapter where "NetConnectionStatus=2 and AdapterTypeId=0" get Speed /format:value 2^>nul ^| findstr "Speed"') do (
+    set /a "SPEED_MBPS=%%a/1000000"
     set "ETHERNET_SPEED=!SPEED_MBPS! Mbps"
 )
 echo %c%  → Detected Ethernet speed: !ETHERNET_SPEED!%u%
@@ -3703,17 +3584,7 @@ echo %c%[8/16] Optimizing Ethernet adapter power and performance settings...%u%
 powercfg -setacvalueindex scheme_current sub_processor PERFBOOSTMODE 2 >nul 2>&1
 powercfg -setacvalueindex scheme_current sub_processor PERFBOOSTPOL 100 >nul 2>&1
 powercfg -setactive scheme_current >nul 2>&1
-set "_eth_pnp_found="
-for /f "delims=" %%j in ('powershell -NoProfile -Command "Get-CimInstance -ClassName Win32_NetworkAdapter -ErrorAction SilentlyContinue | Where-Object { $_.NetEnabled -eq $true -and $_.AdapterTypeId -eq 0 } | Select-Object -ExpandProperty PNPDeviceID" 2^>nul') do (
-    set "_eth_pnp_found=1"
-    reg add "HKLM\SYSTEM\CurrentControlSet\Enum\%%j\Device Parameters" /v "SelectiveSuspendEnabled" /t REG_DWORD /d 0 /f >nul 2>&1
-    reg add "HKLM\SYSTEM\CurrentControlSet\Enum\%%j\Device Parameters" /v "SelectiveSuspendOn" /t REG_DWORD /d 0 /f >nul 2>&1
-    reg add "HKLM\SYSTEM\CurrentControlSet\Enum\%%j\Device Parameters" /v "FlowControl" /t REG_DWORD /d 3 /f >nul 2>&1
-    reg add "HKLM\SYSTEM\CurrentControlSet\Enum\%%j\Device Parameters" /v "SpeedDuplex" /t REG_DWORD /d 0 /f >nul 2>&1
-    reg add "HKLM\SYSTEM\CurrentControlSet\Enum\%%j\Device Parameters" /v "WakeOnMagicPacket" /t REG_DWORD /d 0 /f >nul 2>&1
-    reg add "HKLM\SYSTEM\CurrentControlSet\Enum\%%j\Device Parameters" /v "WakeOnPattern" /t REG_DWORD /d 0 /f >nul 2>&1
-)
-if not defined _eth_pnp_found for /f "tokens=1* delims=" %%i in ('wmic path Win32_NetworkAdapter where "NetEnabled=true and AdapterTypeId=0" get PNPDeviceID /format:value ^| findstr "PNPDeviceID"') do (
+for /f "tokens=1* delims=" %%i in ('wmic path Win32_NetworkAdapter where "NetEnabled=true and AdapterTypeId=0" get PNPDeviceID /format:value ^| findstr "PNPDeviceID"') do (
     for /f "tokens=2 delims==" %%j in ("%%i") do (
         reg add "HKLM\SYSTEM\CurrentControlSet\Enum\%%j\Device Parameters" /v "SelectiveSuspendEnabled" /t REG_DWORD /d 0 /f >nul 2>&1
         reg add "HKLM\SYSTEM\CurrentControlSet\Enum\%%j\Device Parameters" /v "SelectiveSuspendOn" /t REG_DWORD /d 0 /f >nul 2>&1
@@ -4039,15 +3910,7 @@ powercfg -setacvalueindex scheme_current sub_processor PERFBOOSTPOL 100 >nul 2>&
 powercfg -setdcvalueindex scheme_current sub_processor PERFBOOSTMODE 1 >nul 2>&1
 powercfg -setdcvalueindex scheme_current sub_processor PERFBOOSTPOL 60 >nul 2>&1
 powercfg -setactive scheme_current >nul 2>&1
-set "_all_pnp_found="
-for /f "delims=" %%j in ('powershell -NoProfile -Command "Get-CimInstance -ClassName Win32_NetworkAdapter -ErrorAction SilentlyContinue | Where-Object { $_.NetEnabled -eq $true } | Select-Object -ExpandProperty PNPDeviceID" 2^>nul') do (
-    set "_all_pnp_found=1"
-    reg add "HKLM\SYSTEM\CurrentControlSet\Enum\%%j\Device Parameters" /v "SelectiveSuspendEnabled" /t REG_DWORD /d 0 /f >nul 2>&1
-    reg add "HKLM\SYSTEM\CurrentControlSet\Enum\%%j\Device Parameters" /v "SelectiveSuspendOn" /t REG_DWORD /d 0 /f >nul 2>&1
-    reg add "HKLM\SYSTEM\CurrentControlSet\Enum\%%j\Device Parameters" /v "DeviceSelectiveSuspended" /t REG_DWORD /d 0 /f >nul 2>&1
-    reg add "HKLM\SYSTEM\CurrentControlSet\Enum\%%j\Device Parameters" /v "EnableSelectiveSuspend" /t REG_DWORD /d 0 /f >nul 2>&1
-)
-if not defined _all_pnp_found for /f "tokens=1* delims=" %%i in ('wmic path Win32_NetworkAdapter where "NetEnabled=true" get PNPDeviceID /format:value ^| findstr "PNPDeviceID"') do (
+for /f "tokens=1* delims=" %%i in ('wmic path Win32_NetworkAdapter where "NetEnabled=true" get PNPDeviceID /format:value ^| findstr "PNPDeviceID"') do (
     for /f "tokens=2 delims==" %%j in ("%%i") do (
         reg add "HKLM\SYSTEM\CurrentControlSet\Enum\%%j\Device Parameters" /v "SelectiveSuspendEnabled" /t REG_DWORD /d 0 /f >nul 2>&1
         reg add "HKLM\SYSTEM\CurrentControlSet\Enum\%%j\Device Parameters" /v "SelectiveSuspendOn" /t REG_DWORD /d 0 /f >nul 2>&1
@@ -4128,14 +3991,7 @@ if "!CONN_TYPE!"=="WiFi" (
     reg add "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" /v "TcpInitialRTT" /t REG_DWORD /d 400 /f >nul 2>&1
     reg add "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" /v "GlobalMaxTcpWindowSize" /t REG_DWORD /d 32768 /f >nul 2>&1
     netsh interface tcp set global autotuninglevel=normal >nul 2>&1
-    set "_wifi_conn_pnp_found="
-    for /f "delims=" %%b in ('powershell -NoProfile -Command "Get-CimInstance -ClassName Win32_NetworkAdapter -ErrorAction SilentlyContinue | Where-Object { $_.NetConnectionStatus -eq 2 -and $_.AdapterTypeId -eq 9 } | Select-Object -ExpandProperty PNPDeviceID" 2^>nul') do (
-        set "_wifi_conn_pnp_found=1"
-        reg add "HKLM\SYSTEM\CurrentControlSet\Enum\%%b\Device Parameters" /v "ScanWhenAssociated" /t REG_DWORD /d 0 /f >nul 2>&1
-        reg add "HKLM\SYSTEM\CurrentControlSet\Enum\%%b\Device Parameters" /v "PowerSaveMode" /t REG_DWORD /d 0 /f >nul 2>&1
-        reg add "HKLM\SYSTEM\CurrentControlSet\Enum\%%b\Device Parameters" /v "RoamTrigger" /t REG_DWORD /d 80 /f >nul 2>&1
-    )
-    if not defined _wifi_conn_pnp_found for /f %%a in ('wmic path win32_networkadapter where "NetConnectionStatus=2 and AdapterTypeId=9" get PNPDeviceID /format:value ^| findstr "PNPDeviceID"') do (
+    for /f %%a in ('wmic path win32_networkadapter where "NetConnectionStatus=2 and AdapterTypeId=9" get PNPDeviceID /format:value ^| findstr "PNPDeviceID"') do (
         for /f "tokens=2 delims==" %%b in ("%%a") do (
             reg add "HKLM\SYSTEM\CurrentControlSet\Enum\%%b\Device Parameters" /v "ScanWhenAssociated" /t REG_DWORD /d 0 /f >nul 2>&1
             reg add "HKLM\SYSTEM\CurrentControlSet\Enum\%%b\Device Parameters" /v "PowerSaveMode" /t REG_DWORD /d 0 /f >nul 2>&1
@@ -4147,13 +4003,7 @@ if "!CONN_TYPE!"=="WiFi" (
     reg add "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" /v "TcpInitialRTT" /t REG_DWORD /d 300 /f >nul 2>&1
     reg add "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" /v "GlobalMaxTcpWindowSize" /t REG_DWORD /d 65535 /f >nul 2>&1
     netsh interface tcp set global autotuninglevel=normal >nul 2>&1
-    set "_eth_conn_pnp_found="
-    for /f "delims=" %%b in ('powershell -NoProfile -Command "Get-CimInstance -ClassName Win32_NetworkAdapter -ErrorAction SilentlyContinue | Where-Object { $_.NetConnectionStatus -eq 2 -and $_.AdapterTypeId -eq 0 } | Select-Object -ExpandProperty PNPDeviceID" 2^>nul') do (
-        set "_eth_conn_pnp_found=1"
-        reg add "HKLM\SYSTEM\CurrentControlSet\Enum\%%b\Device Parameters" /v "FlowControl" /t REG_DWORD /d 3 /f >nul 2>&1
-        reg add "HKLM\SYSTEM\CurrentControlSet\Enum\%%b\Device Parameters" /v "SpeedDuplex" /t REG_DWORD /d 0 /f >nul 2>&1
-    )
-    if not defined _eth_conn_pnp_found for /f %%a in ('wmic path win32_networkadapter where "NetConnectionStatus=2 and AdapterTypeId=0" get PNPDeviceID /format:value ^| findstr "PNPDeviceID"') do (
+    for /f %%a in ('wmic path win32_networkadapter where "NetConnectionStatus=2 and AdapterTypeId=0" get PNPDeviceID /format:value ^| findstr "PNPDeviceID"') do (
         for /f "tokens=2 delims==" %%b in ("%%a") do (
             reg add "HKLM\SYSTEM\CurrentControlSet\Enum\%%b\Device Parameters" /v "FlowControl" /t REG_DWORD /d 3 /f >nul 2>&1
             reg add "HKLM\SYSTEM\CurrentControlSet\Enum\%%b\Device Parameters" /v "SpeedDuplex" /t REG_DWORD /d 0 /f >nul 2>&1
@@ -4439,25 +4289,25 @@ set "NumberOfCores=6"
 set "MaxClockSpeed=3000"
 set "CPU_SCORE=18000"
 
-set "temp_cores="
-for /f "delims=" %%a in ('powershell -NoProfile -Command "(Get-CimInstance -ClassName Win32_Processor -ErrorAction SilentlyContinue).NumberOfCores" 2^>nul') do set "temp_cores=%%a"
-if not defined temp_cores for /f "tokens=2 delims==" %%a in ('wmic cpu get NumberOfCores /format:value 2^>nul ^| findstr /i "NumberOfCores" 2^>nul') do set "temp_cores=%%a"
-if defined temp_cores (
-    for /f "tokens=* delims= " %%b in ("!temp_cores!") do set "temp_cores=%%b"
-    if not "!temp_cores!"=="" (
-        set /a "test_cores=!temp_cores!" 2>nul
-        if !test_cores! GEQ 1 if !test_cores! LEQ 32 set "NumberOfCores=!test_cores!"
+for /f "tokens=2 delims==" %%a in ('wmic cpu get NumberOfCores /format:value 2^>nul ^| findstr /i "NumberOfCores" 2^>nul') do (
+    set "temp_cores=%%a"
+    if defined temp_cores (
+        for /f "tokens=* delims= " %%b in ("!temp_cores!") do set "temp_cores=%%b"
+        if not "!temp_cores!"=="" (
+            set /a "test_cores=!temp_cores!" 2>nul
+            if !test_cores! GEQ 1 if !test_cores! LEQ 32 set "NumberOfCores=!test_cores!"
+        )
     )
 )
 
-set "temp_speed="
-for /f "delims=" %%a in ('powershell -NoProfile -Command "(Get-CimInstance -ClassName Win32_Processor -ErrorAction SilentlyContinue).MaxClockSpeed" 2^>nul') do set "temp_speed=%%a"
-if not defined temp_speed for /f "tokens=2 delims==" %%a in ('wmic cpu get MaxClockSpeed /format:value 2^>nul ^| findstr /i "MaxClockSpeed" 2^>nul') do set "temp_speed=%%a"
-if defined temp_speed (
-    for /f "tokens=* delims= " %%b in ("!temp_speed!") do set "temp_speed=%%b"
-    if not "!temp_speed!"=="" (
-        set /a "test_speed=!temp_speed!" 2>nul
-        if !test_speed! GEQ 1000 if !test_speed! LEQ 8000 set "MaxClockSpeed=!test_speed!"
+for /f "tokens=2 delims==" %%a in ('wmic cpu get MaxClockSpeed /format:value 2^>nul ^| findstr /i "MaxClockSpeed" 2^>nul') do (
+    set "temp_speed=%%a"
+    if defined temp_speed (
+        for /f "tokens=* delims= " %%b in ("!temp_speed!") do set "temp_speed=%%b"
+        if not "!temp_speed!"=="" (
+            set /a "test_speed=!temp_speed!" 2>nul
+            if !test_speed! GEQ 1000 if !test_speed! LEQ 8000 set "MaxClockSpeed=!test_speed!"
+        )
     )
 )
 
@@ -4482,10 +4332,7 @@ reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\54533251-82be
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\54533251-82be-4824-96c1-47b60b740d00\45bcc044-d885-43e2-8605-ee0ec6e96b59" /v "ValueMin" /t REG_DWORD /d "100" /f >nul 2>&1
 
 echo %c%[5/12] Configuring Intel Spectre/Meltdown Mitigations...%u%
-set "_cpu_is_intel2="
-for /f "delims=" %%Z in ('powershell -NoProfile -Command "(Get-CimInstance -ClassName Win32_Processor -ErrorAction SilentlyContinue).Name" 2^>nul') do echo(%%Z| findstr /i "Intel" >nul && set "_cpu_is_intel2=1"
-if not defined _cpu_is_intel2 (wmic cpu get name 2>nul | findstr /i "Intel" >nul && set "_cpu_is_intel2=1")
-if defined _cpu_is_intel2 (
+wmic cpu get name 2>nul | findstr /i "Intel" >nul && (
     reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" /v "FeatureSettingsOverride" /t REG_DWORD /d "0" /f >nul 2>&1
     reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" /v "FeatureSettingsOverrideMask" /t REG_DWORD /d "3" /f >nul 2>&1
 )
@@ -4621,15 +4468,9 @@ echo ╚════════════════════════
 
 echo.
 echo %c%[1/12] Detecting CPU Specifications...%u%
-set "NumberOfCores="
-set "MaxClockSpeed="
-for /f "delims=" %%a in ('powershell -NoProfile -Command "(Get-CimInstance -ClassName Win32_Processor -ErrorAction SilentlyContinue).NumberOfCores" 2^>nul') do set /a "NumberOfCores=%%a" >nul 2>&1
-if not defined NumberOfCores for /f "tokens=2 delims==" %%a in ('wmic cpu get NumberOfCores /format:value 2^>nul ^| findstr "NumberOfCores"') do set /a "NumberOfCores=%%a" >nul 2>&1
-for /f "delims=" %%a in ('powershell -NoProfile -Command "(Get-CimInstance -ClassName Win32_Processor -ErrorAction SilentlyContinue).MaxClockSpeed" 2^>nul') do set /a "MaxClockSpeed=%%a" >nul 2>&1
-if not defined MaxClockSpeed for /f "tokens=2 delims==" %%a in ('wmic cpu get MaxClockSpeed /format:value 2^>nul ^| findstr "MaxClockSpeed"') do set /a "MaxClockSpeed=%%a" >nul 2>&1
-set "CPUName="
-for /f "delims=" %%a in ('powershell -NoProfile -Command "(Get-CimInstance -ClassName Win32_Processor -ErrorAction SilentlyContinue).Name" 2^>nul') do set "CPUName=%%a"
-if not defined CPUName for /f "tokens=2 delims==" %%a in ('wmic cpu get Name /format:value 2^>nul ^| findstr "Name"') do set "CPUName=%%a" >nul 2>&1
+for /f "tokens=2 delims==" %%a in ('wmic cpu get NumberOfCores /format:value 2^>nul ^| findstr "NumberOfCores"') do set /a "NumberOfCores=%%a" >nul 2>&1
+for /f "tokens=2 delims==" %%a in ('wmic cpu get MaxClockSpeed /format:value 2^>nul ^| findstr "MaxClockSpeed"') do set /a "MaxClockSpeed=%%a" >nul 2>&1
+for /f "tokens=2 delims==" %%a in ('wmic cpu get Name /format:value 2^>nul ^| findstr "Name"') do set "CPUName=%%a" >nul 2>&1
 if not defined NumberOfCores set NumberOfCores=4
 if not defined MaxClockSpeed set MaxClockSpeed=3000
 set /a "CPU_SCORE=%NumberOfCores%*%MaxClockSpeed%"
@@ -4691,10 +4532,7 @@ echo %c%[11/12] Optimizing Memory Controller for Boost Performance...%u%
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" /v "DisablePagingExecutive" /t REG_DWORD /d "1" /f >nul 2>&1
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" /v "LargeSystemCache" /t REG_DWORD /d "0" /f >nul 2>&1
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" /v "SecondLevelDataCache" /t REG_DWORD /d "1024" /f >nul 2>&1
-set "_cpu_is_amd="
-for /f "delims=" %%Z in ('powershell -NoProfile -Command "(Get-CimInstance -ClassName Win32_Processor -ErrorAction SilentlyContinue).Name" 2^>nul') do echo(%%Z| findstr "AMD" >nul && set "_cpu_is_amd=1"
-if not defined _cpu_is_amd (wmic cpu get name 2>nul | findstr "AMD" >nul && set "_cpu_is_amd=1")
-if defined _cpu_is_amd (
+wmic cpu get name 2>nul | findstr "AMD" >nul && (
     reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" /v "FeatureSettingsOverride" /t REG_DWORD /d "64" /f >nul 2>&1
     reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" /v "FeatureSettingsOverrideMask" /t REG_DWORD /d "3" /f >nul 2>&1
 )
@@ -4757,12 +4595,8 @@ echo ╚════════════════════════
 
 echo.
 echo %c%[1/6] Detecting CPU Specifications...%u%
-set "NumberOfCores="
-set "MaxClockSpeed="
-for /f "delims=" %%a in ('powershell -NoProfile -Command "(Get-CimInstance -ClassName Win32_Processor -ErrorAction SilentlyContinue).NumberOfCores" 2^>nul') do set /a "NumberOfCores=%%a" >nul 2>&1
-if not defined NumberOfCores for /f "tokens=2 delims==" %%a in ('wmic cpu get NumberOfCores /format:value 2^>nul ^| findstr "NumberOfCores"') do set /a "NumberOfCores=%%a" >nul 2>&1
-for /f "delims=" %%a in ('powershell -NoProfile -Command "(Get-CimInstance -ClassName Win32_Processor -ErrorAction SilentlyContinue).MaxClockSpeed" 2^>nul') do set /a "MaxClockSpeed=%%a" >nul 2>&1
-if not defined MaxClockSpeed for /f "tokens=2 delims==" %%a in ('wmic cpu get MaxClockSpeed /format:value 2^>nul ^| findstr "MaxClockSpeed"') do set /a "MaxClockSpeed=%%a" >nul 2>&1
+for /f "tokens=2 delims==" %%a in ('wmic cpu get NumberOfCores /format:value 2^>nul ^| findstr "NumberOfCores"') do set /a "NumberOfCores=%%a" >nul 2>&1
+for /f "tokens=2 delims==" %%a in ('wmic cpu get MaxClockSpeed /format:value 2^>nul ^| findstr "MaxClockSpeed"') do set /a "MaxClockSpeed=%%a" >nul 2>&1
 if not defined NumberOfCores set NumberOfCores=4
 if not defined MaxClockSpeed set MaxClockSpeed=3000
 set /a "CPU_SCORE=%NumberOfCores%*%MaxClockSpeed%"
@@ -4835,8 +4669,6 @@ echo.
 echo %red%%underline%Memory Notice:%u%
 echo %c%This optimization adjusts system service priorities and memory settings.%u%
 echo %c%Some low-priority services will be deprioritized for better performance.%u%
-echo %red%If Chrome, Firefox, or Edge are running, they will be closed and reopened%u%
-echo %red%to free their memory. Save your work in those browsers before continuing.%u%
 echo.
 echo.
 choice /C YN /M "%c%Apply memory performance optimizations? (Y/N)%u%"
@@ -6120,6 +5952,28 @@ echo.
 echo %c%══════════════════════════ PRESS ANY KEY TO CONTINUE ══════════════════════════%u%
 pause >nul
 goto TweaksMenu
+
+:IAdv_Keep
+rem Delayed expansion is already enabled globally.
+set "svc=%~1"
+set "num=%~2"
+set "keeps=%~3"
+set "do_disable=true"
+if /i "!keeps!"=="ALL" set "do_disable=false"
+for %%k in (!keeps!) do if "%%k"=="!num!" set "do_disable=false"
+if "!do_disable!"=="true" call :DisableService "!svc!"
+exit /b
+
+:IAdv_Disable
+rem Delayed expansion is already enabled globally.
+set "svc=%~1"
+set "num=%~2"
+set "disables=%~3"
+set "do_disable=false"
+if /i "!disables!"=="ALL" set "do_disable=true"
+for %%k in (!disables!) do if "%%k"=="!num!" set "do_disable=true"
+if "!do_disable!"=="true" call :DisableService "!svc!"
+exit /b
 
 :DisableTelemetryServices
 echo %c%    Disabling telemetry and data collection services...%u%
@@ -7706,21 +7560,10 @@ echo.
 echo %c%Analyzing hardware security configuration...%u%
 echo.
 
-set "mobo_manufacturer="
-for /f "delims=" %%i in ('powershell -NoProfile -Command "(Get-CimInstance -ClassName Win32_BaseBoard -ErrorAction SilentlyContinue).Manufacturer" 2^>nul') do set "mobo_manufacturer=%%i"
-if not defined mobo_manufacturer for /f "tokens=1,* delims==" %%a in ('wmic baseboard get manufacturer /value ^| find "="') do for /f "delims=" %%i in ("%%b") do set "mobo_manufacturer=%%i"
-
-set "mobo_model="
-for /f "delims=" %%i in ('powershell -NoProfile -Command "(Get-CimInstance -ClassName Win32_BaseBoard -ErrorAction SilentlyContinue).Product" 2^>nul') do set "mobo_model=%%i"
-if not defined mobo_model for /f "tokens=1,* delims==" %%a in ('wmic baseboard get product /value ^| find "="') do for /f "delims=" %%i in ("%%b") do set "mobo_model=%%i"
-
-set "bios_version="
-for /f "delims=" %%i in ('powershell -NoProfile -Command "(Get-CimInstance -ClassName Win32_BIOS -ErrorAction SilentlyContinue).SMBIOSBIOSVersion" 2^>nul') do set "bios_version=%%i"
-if not defined bios_version for /f "tokens=1,* delims==" %%a in ('wmic bios get smbiosbiosversion /value ^| find "="') do for /f "delims=" %%i in ("%%b") do set "bios_version=%%i"
-
-set "cpu_name="
-for /f "delims=" %%i in ('powershell -NoProfile -Command "(Get-CimInstance -ClassName Win32_Processor -ErrorAction SilentlyContinue).Name" 2^>nul') do set "cpu_name=%%i"
-if not defined cpu_name for /f "tokens=1,* delims==" %%a in ('wmic cpu get name /value ^| find "="') do for /f "delims=" %%i in ("%%b") do set "cpu_name=%%i"
+for /f "tokens=1,* delims==" %%a in ('wmic baseboard get manufacturer /value ^| find "="') do for /f "delims=" %%i in ("%%b") do set "mobo_manufacturer=%%i"
+for /f "tokens=1,* delims==" %%a in ('wmic baseboard get product /value ^| find "="') do for /f "delims=" %%i in ("%%b") do set "mobo_model=%%i"
+for /f "tokens=1,* delims==" %%a in ('wmic bios get smbiosbiosversion /value ^| find "="') do for /f "delims=" %%i in ("%%b") do set "bios_version=%%i"
+for /f "tokens=1,* delims==" %%a in ('wmic cpu get name /value ^| find "="') do for /f "delims=" %%i in ("%%b") do set "cpu_name=%%i"
 
 chcp 437 >nul
 powershell -Command "try { $tpm = Get-Tpm -ErrorAction SilentlyContinue; if ($tpm) { if ($tpm.TpmPresent) { Write-Host 'TPM_PRESENT' } else { Write-Host 'TPM_ABSENT' } } else { Write-Host 'TPM_UNKNOWN' } } catch { Write-Host 'TPM_UNKNOWN' }" > "%temp%\tpm_status.txt"
@@ -8207,6 +8050,18 @@ echo ║ 3. Set to "Enabled" and ensure UEFI boot mode                          
 echo ╚═══════════════════════════════════════════════════════════════════════════════╝%u%
 goto :eof
 
+:CleanupTemp
+del /q "%temp%\tpm_status.txt" 2>nul
+del /q "%temp%\sb_status.txt" 2>nul
+del /q "%temp%\virt_status.txt" 2>nul
+del /q "%temp%\bitlocker_status.txt" 2>nul
+del /q "%temp%\bio_status.txt" 2>nul
+del /q "%temp%\sg_compat.txt" 2>nul
+del /q "%temp%\hvci_compat.txt" 2>nul
+del /q "%temp%\sc_reader.txt" 2>nul
+goto :eof
+
+
 :EnableSystemGuard
 cls
 call :SetupConsole
@@ -8527,7 +8382,7 @@ if "!sc_choice!"=="5" (
 
 if "!sc_choice!"=="6" (
     echo %c%Configuring EFS with Smart Card integration...%u%
-    cipher /adduser /certhash:* /s:"%userprofile%"
+    cipher /adduser /certhash:* /s:%userprofile%
     echo %c%EFS Smart Card integration configured%u%
     timeout /t 3 >nul
     goto ConfigureSmartCard
@@ -8814,13 +8669,7 @@ goto HardwareMenu
 :AMD_Step1_DetectGPU
 echo %c%[1/7] Detecting AMD GPU...%u%
 set "AMD_GPU_FOUND=false"
-for /f "delims=" %%i in ('powershell -NoProfile -Command "Get-CimInstance -ClassName Win32_VideoController -ErrorAction SilentlyContinue | Where-Object { $_.Name -match 'AMD|Radeon|RX ' } | Select-Object -ExpandProperty Name" 2^>nul') do (
-    if not "%%i"=="" (
-        echo %c%  → Found: %%i%u%
-        set "AMD_GPU_FOUND=true"
-    )
-)
-if "%AMD_GPU_FOUND%"=="false" for /f "tokens=2 delims==" %%i in ('wmic path win32_VideoController where "Name like '%%AMD%%' or Name like '%%Radeon%%' or Name like '%%RX %%'" get Name /value 2^>nul') do (
+for /f "tokens=2 delims==" %%i in ('wmic path win32_VideoController where "Name like '%%AMD%%' or Name like '%%Radeon%%' or Name like '%%RX %%'" get Name /value 2^>nul') do (
     if not "%%i"=="" (
         echo %c%  → Found: %%i%u%
         set "AMD_GPU_FOUND=true"
@@ -9069,10 +8918,8 @@ goto HardwareMenu
 echo.
 echo %c%[1/12] Detecting NVIDIA Graphics Hardware...%u%
 set "NVIDIA_FOUND=false"
-set "_nvidia_probe="
-for /f "delims=" %%i in ('powershell -NoProfile -Command "Get-CimInstance -ClassName Win32_VideoController -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Name" 2^>nul') do echo(%%i| findstr /i "NVIDIA" >nul && set "_nvidia_probe=1"
-if not defined _nvidia_probe (wmic path Win32_VideoController get Name 2>nul | findstr /i "NVIDIA" >nul && set "_nvidia_probe=1")
-if defined _nvidia_probe (
+wmic path Win32_VideoController get Name | findstr /i "NVIDIA" >nul 2>&1
+if %errorlevel%==0 (
     set "NVIDIA_FOUND=true"
     echo %c%  * NVIDIA GPU detected%u%
 ) else (
@@ -9731,13 +9578,7 @@ reg add "HKLM\SYSTEM\CurrentControlSet\Control\FileSystem" /v "NtfsDisable8dot3N
 echo %c%  ✓ NTFS performance optimizations applied%u%
 
 echo %c%[4/8] Optimizing Disk Write Caching...%u%
-set "_logicaldisk_found="
-for /f "delims=" %%d in ('powershell -NoProfile -Command "Get-CimInstance -ClassName Win32_LogicalDisk -ErrorAction SilentlyContinue | Select-Object -ExpandProperty DeviceID" 2^>nul') do (
-    set "_logicaldisk_found=1"
-    fsutil dirty set %%d >nul 2>&1
-    echo %c%  ✓ Write caching enabled for drive %%d%u%
-)
-if not defined _logicaldisk_found for /f "tokens=1" %%d in ('wmic logicaldisk get size^,deviceid /format:table ^| findstr /r "[A-Z]:"') do (
+for /f "tokens=1" %%d in ('wmic logicaldisk get size^,deviceid /format:table ^| findstr /r "[A-Z]:"') do (
     fsutil dirty set %%d >nul 2>&1
 	chcp 65001>nul
     echo %c%  ✓ Write caching enabled for drive %%d%u%
@@ -9758,13 +9599,7 @@ if "%SSD_FOUND%"=="true" (
 
 echo %c%[6/8] Optimizing Storage Controllers...%u%
 
-set "_scsi_found="
-for /f "delims=" %%j in ('powershell -NoProfile -Command "Get-CimInstance -ClassName Win32_SCSIController -ErrorAction SilentlyContinue | Where-Object { $_.PNPDeviceID -like 'PCI\VEN_*' } | Select-Object -ExpandProperty PNPDeviceID" 2^>nul') do (
-    set "_scsi_found=1"
-    reg add "HKLM\SYSTEM\CurrentControlSet\Enum\%%j\Device Parameters\Interrupt Management\MessageSignaledInterruptProperties" /v "MSISupported" /t REG_DWORD /d "1" /f >nul 2>&1
-    reg add "HKLM\SYSTEM\CurrentControlSet\Enum\%%j\Device Parameters" /v "ForceFifo" /t REG_DWORD /d "0" /f >nul 2>&1
-)
-if not defined _scsi_found for /f "tokens=*" %%i in ('wmic path Win32_SCSIController get PNPDeviceID /format:value 2^>nul ^| find "PNPDeviceID=" ^| find "PCI\VEN_"') do (
+for /f "tokens=*" %%i in ('wmic path Win32_SCSIController get PNPDeviceID /format:value 2^>nul ^| find "PNPDeviceID=" ^| find "PCI\VEN_"') do (
     for /f "tokens=2 delims==" %%j in ("%%i") do (
         reg add "HKLM\SYSTEM\CurrentControlSet\Enum\%%j\Device Parameters\Interrupt Management\MessageSignaledInterruptProperties" /v "MSISupported" /t REG_DWORD /d "1" /f >nul 2>&1
         reg add "HKLM\SYSTEM\CurrentControlSet\Enum\%%j\Device Parameters" /v "ForceFifo" /t REG_DWORD /d "0" /f >nul 2>&1
@@ -9775,13 +9610,7 @@ chcp 437>nul
 powershell.exe -NoProfile -Command "Get-PnpDevice | Where-Object {$_.FriendlyName -like '*NVMe*' -and $_.InstanceId -like 'PCI*'} | ForEach-Object {try{New-ItemProperty -Path \"HKLM:\SYSTEM\CurrentControlSet\Enum\$($_.InstanceId)\Device Parameters\Interrupt Management\MessageSignaledInterruptProperties\" -Name 'MSISupported' -Value 1 -PropertyType DWord -Force -ErrorAction SilentlyContinue}catch{}}" >nul 2>&1
 chcp 65001>nul
 
-set "_ide_found="
-for /f "delims=" %%i in ('powershell -NoProfile -Command "Get-CimInstance -ClassName Win32_IDEController -ErrorAction SilentlyContinue | Where-Object { $_.PNPDeviceID -like 'PCI\VEN_*' } | Select-Object -ExpandProperty PNPDeviceID" 2^>nul') do (
-    set "_ide_found=1"
-    reg add "HKLM\SYSTEM\CurrentControlSet\Enum\%%i\Device Parameters\Interrupt Management\MessageSignaledInterruptProperties" /v "MSISupported" /t REG_DWORD /d "1" /f >nul 2>&1
-    reg add "HKLM\SYSTEM\CurrentControlSet\Enum\%%i\Device Parameters" /v "ForceFifo" /t REG_DWORD /d "0" /f >nul 2>&1
-)
-if not defined _ide_found for /f %%i in ('wmic path Win32_IDEController get PNPDeviceID 2^>nul ^| findstr /l "PCI\VEN_"') do (
+for /f %%i in ('wmic path Win32_IDEController get PNPDeviceID 2^>nul ^| findstr /l "PCI\VEN_"') do (
     reg add "HKLM\SYSTEM\CurrentControlSet\Enum\%%i\Device Parameters\Interrupt Management\MessageSignaledInterruptProperties" /v "MSISupported" /t REG_DWORD /d "1" /f >nul 2>&1
     reg add "HKLM\SYSTEM\CurrentControlSet\Enum\%%i\Device Parameters" /v "ForceFifo" /t REG_DWORD /d "0" /f >nul 2>&1
 ) >nul 2>&1
@@ -9799,12 +9628,7 @@ echo %c%  ✓ NVMe controller settings optimized%u%
 
 echo %c%[7/8] Configuring Storage Power Management...%u%
 chcp 437>nul
-set "_diskdrive_pnp_found="
-for /f "delims=" %%b in ('powershell -NoProfile -Command "Get-CimInstance -ClassName Win32_DiskDrive -ErrorAction SilentlyContinue | Select-Object -ExpandProperty PNPDeviceID" 2^>nul') do (
-    set "_diskdrive_pnp_found=1"
-    reg add "HKLM\SYSTEM\CurrentControlSet\Enum\%%b\Device Parameters" /v "StorageDevicePolicies" /t REG_DWORD /d "0" /f >nul 2>&1
-)
-if not defined _diskdrive_pnp_found for /f "tokens=*" %%a in ('wmic diskdrive get PNPDeviceID /format:value ^| find "PNPDeviceID"') do (
+for /f "tokens=*" %%a in ('wmic diskdrive get PNPDeviceID /format:value ^| find "PNPDeviceID"') do (
     for /f "tokens=2 delims==" %%b in ("%%a") do (
         reg add "HKLM\SYSTEM\CurrentControlSet\Enum\%%b\Device Parameters" /v "StorageDevicePolicies" /t REG_DWORD /d "0" /f >nul 2>&1
     )
@@ -9919,29 +9743,25 @@ set "win_version=Unknown"
 set "win_build=Unknown"
 
 echo %c%• Reading computer model...%u%
-for /f "delims=" %%i in ('powershell -NoProfile -Command "(Get-CimInstance -ClassName Win32_ComputerSystem -ErrorAction SilentlyContinue).Model" 2^>nul') do if not "%%i"=="" set "comp_model=%%i"
-if "!comp_model!"=="Unknown" for /f "tokens=2 delims==" %%i in ('wmic computersystem get model /value 2^>nul ^| find "=" 2^>nul') do (
+for /f "tokens=2 delims==" %%i in ('wmic computersystem get model /value 2^>nul ^| find "=" 2^>nul') do (
     set "comp_model=%%i"
     if "!comp_model!"=="" set "comp_model=Unknown"
 )
 
 echo %c%• Reading manufacturer...%u%
-for /f "delims=" %%i in ('powershell -NoProfile -Command "(Get-CimInstance -ClassName Win32_ComputerSystem -ErrorAction SilentlyContinue).Manufacturer" 2^>nul') do if not "%%i"=="" set "comp_manufacturer=%%i"
-if "!comp_manufacturer!"=="Unknown" for /f "tokens=2 delims==" %%i in ('wmic computersystem get manufacturer /value 2^>nul ^| find "=" 2^>nul') do (
+for /f "tokens=2 delims==" %%i in ('wmic computersystem get manufacturer /value 2^>nul ^| find "=" 2^>nul') do (
     set "comp_manufacturer=%%i"
     if "!comp_manufacturer!"=="" set "comp_manufacturer=Unknown"
 )
 
 echo %c%• Reading computer name...%u%
-for /f "delims=" %%i in ('powershell -NoProfile -Command "(Get-CimInstance -ClassName Win32_ComputerSystem -ErrorAction SilentlyContinue).Name" 2^>nul') do if not "%%i"=="" set "comp_name=%%i"
-if "!comp_name!"=="Unknown" for /f "tokens=2 delims==" %%i in ('wmic computersystem get name /value 2^>nul ^| find "=" 2^>nul') do (
+for /f "tokens=2 delims==" %%i in ('wmic computersystem get name /value 2^>nul ^| find "=" 2^>nul') do (
     set "comp_name=%%i"
     if "!comp_name!"=="" set "comp_name=Unknown"
 )
 
 echo %c%• Reading current user...%u%
-for /f "delims=" %%i in ('powershell -NoProfile -Command "(Get-CimInstance -ClassName Win32_ComputerSystem -ErrorAction SilentlyContinue).UserName" 2^>nul') do if not "%%i"=="" set "comp_user=%%i"
-if "!comp_user!"=="Unknown" for /f "tokens=2 delims==" %%i in ('wmic computersystem get username /value 2^>nul ^| find "=" 2^>nul') do (
+for /f "tokens=2 delims==" %%i in ('wmic computersystem get username /value 2^>nul ^| find "=" 2^>nul') do (
     set "comp_user=%%i"
     if "!comp_user!"=="" set "comp_user=%username%"
 )
@@ -9976,39 +9796,33 @@ set "bios_version=Unknown"
 set "bios_date=Unknown"
 
 echo %c%• Reading motherboard info...%u%
-for /f "delims=" %%i in ('powershell -NoProfile -Command "(Get-CimInstance -ClassName Win32_BaseBoard -ErrorAction SilentlyContinue).Manufacturer" 2^>nul') do if not "%%i"=="" set "mb_manufacturer=%%i"
-if "!mb_manufacturer!"=="Unknown" for /f "tokens=2 delims==" %%i in ('wmic baseboard get manufacturer /value 2^>nul ^| find "=" 2^>nul') do (
+for /f "tokens=2 delims==" %%i in ('wmic baseboard get manufacturer /value 2^>nul ^| find "=" 2^>nul') do (
     set "mb_manufacturer=%%i"
     if "!mb_manufacturer!"=="" set "mb_manufacturer=Unknown"
 )
 
-for /f "delims=" %%i in ('powershell -NoProfile -Command "(Get-CimInstance -ClassName Win32_BaseBoard -ErrorAction SilentlyContinue).Product" 2^>nul') do if not "%%i"=="" set "mb_product=%%i"
-if "!mb_product!"=="Unknown" for /f "tokens=2 delims==" %%i in ('wmic baseboard get product /value 2^>nul ^| find "=" 2^>nul') do (
+for /f "tokens=2 delims==" %%i in ('wmic baseboard get product /value 2^>nul ^| find "=" 2^>nul') do (
     set "mb_product=%%i"
     if "!mb_product!"=="" set "mb_product=Unknown"
 )
 
-for /f "delims=" %%i in ('powershell -NoProfile -Command "(Get-CimInstance -ClassName Win32_BaseBoard -ErrorAction SilentlyContinue).Version" 2^>nul') do if not "%%i"=="" set "mb_version=%%i"
-if "!mb_version!"=="Unknown" for /f "tokens=2 delims==" %%i in ('wmic baseboard get version /value 2^>nul ^| find "=" 2^>nul') do (
+for /f "tokens=2 delims==" %%i in ('wmic baseboard get version /value 2^>nul ^| find "=" 2^>nul') do (
     set "mb_version=%%i"
     if "!mb_version!"=="" set "mb_version=Unknown"
 )
 
 echo %c%• Reading BIOS info...%u%
-for /f "delims=" %%i in ('powershell -NoProfile -Command "(Get-CimInstance -ClassName Win32_BIOS -ErrorAction SilentlyContinue).Manufacturer" 2^>nul') do if not "%%i"=="" set "bios_manufacturer=%%i"
-if "!bios_manufacturer!"=="Unknown" for /f "tokens=2 delims==" %%i in ('wmic bios get manufacturer /value 2^>nul ^| find "=" 2^>nul') do (
+for /f "tokens=2 delims==" %%i in ('wmic bios get manufacturer /value 2^>nul ^| find "=" 2^>nul') do (
     set "bios_manufacturer=%%i"
     if "!bios_manufacturer!"=="" set "bios_manufacturer=Unknown"
 )
 
-for /f "delims=" %%i in ('powershell -NoProfile -Command "(Get-CimInstance -ClassName Win32_BIOS -ErrorAction SilentlyContinue).SMBIOSBIOSVersion" 2^>nul') do if not "%%i"=="" set "bios_version=%%i"
-if "!bios_version!"=="Unknown" for /f "tokens=2 delims==" %%i in ('wmic bios get smbiosbiosversion /value 2^>nul ^| find "=" 2^>nul') do (
+for /f "tokens=2 delims==" %%i in ('wmic bios get smbiosversion /value 2^>nul ^| find "=" 2^>nul') do (
     set "bios_version=%%i"
     if "!bios_version!"=="" set "bios_version=Unknown"
 )
 
-for /f "delims=" %%i in ('powershell -NoProfile -Command "try { (Get-CimInstance -ClassName Win32_BIOS -ErrorAction Stop).ReleaseDate.ToString('yyyy-MM-dd') } catch { '' }" 2^>nul') do if not "%%i"=="" set "bios_date=%%i"
-if "!bios_date!"=="Unknown" for /f "tokens=2 delims==" %%i in ('wmic bios get releasedate /value 2^>nul ^| find "=" 2^>nul') do (
+for /f "tokens=2 delims==" %%i in ('wmic bios get releasedate /value 2^>nul ^| find "=" 2^>nul') do (
     set "rawdate=%%i"
     if not "!rawdate!"=="" if not "!rawdate!"=="Unknown" (
         set "bios_date=!rawdate:~0,4!-!rawdate:~4,2!-!rawdate:~6,2!"
@@ -10039,8 +9853,7 @@ set "cpu_cache=Unknown"
 set "cpu_arch=Unknown"
 
 echo %c%• Reading CPU name...%u%
-for /f "delims=" %%i in ('powershell -NoProfile -Command "(Get-CimInstance -ClassName Win32_Processor -ErrorAction SilentlyContinue).Name" 2^>nul') do if not "%%i"=="" (set "cpu_name=%%i" & goto :cpu_name_done)
-if "!cpu_name!"=="Unknown" for /f "tokens=2 delims==" %%i in ('wmic cpu get name /value 2^>nul ^| find "=" 2^>nul') do (
+for /f "tokens=2 delims==" %%i in ('wmic cpu get name /value 2^>nul ^| find "=" 2^>nul') do (
     set "cpu_name=%%i"
     if "!cpu_name!"=="" set "cpu_name=Unknown"
     goto :cpu_name_done
@@ -10048,26 +9861,22 @@ if "!cpu_name!"=="Unknown" for /f "tokens=2 delims==" %%i in ('wmic cpu get name
 :cpu_name_done
 
 echo %c%• Reading CPU specifications...%u%
-for /f "delims=" %%i in ('powershell -NoProfile -Command "(Get-CimInstance -ClassName Win32_Processor -ErrorAction SilentlyContinue).Manufacturer" 2^>nul') do if not "%%i"=="" set "cpu_manufacturer=%%i"
-if "!cpu_manufacturer!"=="Unknown" for /f "tokens=2 delims==" %%i in ('wmic cpu get manufacturer /value 2^>nul ^| find "=" 2^>nul') do (
+for /f "tokens=2 delims==" %%i in ('wmic cpu get manufacturer /value 2^>nul ^| find "=" 2^>nul') do (
     set "cpu_manufacturer=%%i"
     if "!cpu_manufacturer!"=="" set "cpu_manufacturer=Unknown"
 )
 
-for /f "delims=" %%i in ('powershell -NoProfile -Command "(Get-CimInstance -ClassName Win32_Processor -ErrorAction SilentlyContinue).NumberOfCores" 2^>nul') do if not "%%i"=="" set "cpu_cores=%%i"
-if "!cpu_cores!"=="Unknown" for /f "tokens=2 delims==" %%i in ('wmic cpu get numberofcores /value 2^>nul ^| find "=" 2^>nul') do (
+for /f "tokens=2 delims==" %%i in ('wmic cpu get numberofcores /value 2^>nul ^| find "=" 2^>nul') do (
     set "cpu_cores=%%i"
     if "!cpu_cores!"=="" set "cpu_cores=Unknown"
 )
 
-for /f "delims=" %%i in ('powershell -NoProfile -Command "(Get-CimInstance -ClassName Win32_Processor -ErrorAction SilentlyContinue).NumberOfLogicalProcessors" 2^>nul') do if not "%%i"=="" set "cpu_threads=%%i"
-if "!cpu_threads!"=="Unknown" for /f "tokens=2 delims==" %%i in ('wmic cpu get numberoflogicalprocessors /value 2^>nul ^| find "=" 2^>nul') do (
+for /f "tokens=2 delims==" %%i in ('wmic cpu get numberoflogicalprocessors /value 2^>nul ^| find "=" 2^>nul') do (
     set "cpu_threads=%%i"
     if "!cpu_threads!"=="" set "cpu_threads=Unknown"
 )
 
-for /f "delims=" %%i in ('powershell -NoProfile -Command "(Get-CimInstance -ClassName Win32_Processor -ErrorAction SilentlyContinue).MaxClockSpeed" 2^>nul') do if not "%%i"=="" set "cpu_speed=%%i"
-if "!cpu_speed!"=="0" for /f "tokens=2 delims==" %%i in ('wmic cpu get maxclockspeed /value 2^>nul ^| find "=" 2^>nul') do (
+for /f "tokens=2 delims==" %%i in ('wmic cpu get maxclockspeed /value 2^>nul ^| find "=" 2^>nul') do (
     set "cpu_speed=%%i"
     if "!cpu_speed!"=="" set "cpu_speed=0"
 )
@@ -10172,38 +9981,20 @@ echo %c%════════════════════════
 set "gpucount=0"
 echo %c%• Reading graphics cards...%u%
 chcp 437>nul
-for /f "delims=" %%i in ('powershell -NoProfile -Command "Get-CimInstance -ClassName Win32_VideoController -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Name" 2^>nul') do (
-    if not "%%i"=="" (
-        set /a "gpucount+=1"
-        echo %c%Graphics Card !gpucount!: %%i%u%
-    )
-)
-if !gpucount! equ 0 for /f "tokens=2 delims==" %%i in ('wmic path win32_videocontroller get name /value 2^>nul ^| find "=" 2^>nul') do (
-chcp 65001>nul
+for /f "tokens=2 delims==" %%i in ('wmic path win32_videocontroller get name /value 2^>nul ^| find "=" 2^>nul') do (
+chcp 65001>nul     
 	if not "%%i"=="" (
         set /a "gpucount+=1"
         echo %c%Graphics Card !gpucount!: %%i%u%
     )
 )
-chcp 65001>nul
 if !gpucount! equ 0 echo %c%Graphics Card: Detection failed%u%
 
 echo %c%• Reading video memory...%u%
 set "vram_found=false"
 chcp 437>nul
-for /f "delims=" %%i in ('powershell -NoProfile -Command "Get-CimInstance -ClassName Win32_VideoController -ErrorAction SilentlyContinue | Select-Object -ExpandProperty AdapterRAM" 2^>nul') do (
-	if not "%%i"=="" if not "%%i"=="4294967295" (
-        for /f %%j in ('powershell -command "try { $size = [math]::round(%%i/1GB, 0); if($size -gt 0) { $size } else { 0 } } catch { 0 }"') do (
-            if %%j gtr 0 (
-                echo %c%Video Memory: %%j GB%u%
-                set "vram_found=true"
-                goto :vram_done
-            )
-        )
-    )
-)
 for /f "tokens=2 delims==" %%i in ('wmic path win32_videocontroller get adapterram /value 2^>nul ^| find "=" 2^>nul') do (
-chcp 65001>nul
+chcp 65001>nul      
 	if not "%%i"=="" if not "%%i"=="4294967295" (
 	chcp 437>nul
         for /f %%j in ('powershell -command "try { $size = [math]::round(%%i/1GB, 0); if($size -gt 0) { $size } else { 0 } } catch { 0 }"') do (
@@ -10232,23 +10023,8 @@ set "drive1_size="
 set "drive2_name="
 set "drive2_size="
 echo %c%• Reading storage devices...%u%
-for /f "tokens=1,* delims=|" %%i in ('powershell -NoProfile -Command "Get-CimInstance -ClassName Win32_DiskDrive -ErrorAction SilentlyContinue | ForEach-Object { $sz = 0; try { $sz = [math]::Round($_.Size/1GB,0) } catch {}; ('{0}|{1}' -f $_.Model, $sz) }" 2^>nul') do (
-    if not "%%i"=="" (
-        set /a "drivecount+=1"
-        if !drivecount! equ 1 (
-            set "drive1_name=%%i"
-            if %%j gtr 0 set "drive1_size=%%j"
-        )
-        if !drivecount! equ 2 (
-            set "drive2_name=%%i"
-            if %%j gtr 0 set "drive2_size=%%j"
-        )
-        echo %c%Drive !drivecount!: %%i%u%
-        if %%j gtr 0 echo %c%  Capacity: %%j GB%u%
-    )
-)
 chcp 437>nul
-if !drivecount! equ 0 for /f "skip=1 tokens=1,2" %%i in ('wmic diskdrive get model^,size /format:table 2^>nul') do (
+for /f "skip=1 tokens=1,2" %%i in ('wmic diskdrive get model^,size /format:table 2^>nul') do (
 chcp 65001>nul  
     if not "%%i"=="" if not "%%i"=="Model" (
         set /a "drivecount+=1"
@@ -10374,12 +10150,9 @@ chcp 65001>nul
 )
 
 echo %c%• Checking system drivers...%u%
-set "_running_driver_count="
-for /f "delims=" %%i in ('powershell -NoProfile -Command "(Get-CimInstance -ClassName Win32_SystemDriver -ErrorAction SilentlyContinue | Where-Object { $_.State -eq 'Running' } | Measure-Object).Count" 2^>nul') do if not "%%i"=="0" set "_running_driver_count=%%i"
 chcp 437>nul
-if not defined _running_driver_count for /f %%i in ('wmic path win32_systemdriver where "state='running'" get name /value 2^>nul ^| find "=" ^| find /c "=" 2^>nul') do set "_running_driver_count=%%i"
-chcp 65001>nul
-for /f %%i in ("!_running_driver_count!") do (
+for /f %%i in ('wmic path win32_systemdriver where "state='running'" get name /value 2^>nul ^| find "=" ^| find /c "=" 2^>nul') do (
+chcp 65001>nul 
     if %%i gtr 50 (
         echo %c%System drivers: Healthy ^(%%i active^)%u%
     ) else (
@@ -10388,17 +10161,9 @@ for /f %%i in ("!_running_driver_count!") do (
 )
 
 echo %c%• Checking disk health...%u%
-for /f "delims=" %%i in ('powershell -NoProfile -Command "Get-CimInstance -ClassName Win32_DiskDrive -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty Status" 2^>nul') do (
-    if "%%i"=="OK" (
-        echo %c%Storage: Healthy%u%
-    ) else (
-        echo %c%Storage: %%i%u%
-    )
-    goto :disk_done
-)
 chcp 437>nul
 for /f "tokens=2 delims==" %%i in ('wmic diskdrive get status /value 2^>nul ^| find "=" 2^>nul') do (
-chcp 65001>nul
+chcp 65001>nul 
     if "%%i"=="OK" (
         echo %c%Storage: Healthy%u%
     ) else (
@@ -11096,9 +10861,7 @@ echo ╚════════════════════════
 
 echo.
 echo %c%[1/6] Detecting Current Driver...%u%
-set "current_version="
-for /f "delims=" %%i in ('powershell -NoProfile -Command "Get-CimInstance -ClassName Win32_VideoController -ErrorAction SilentlyContinue | Where-Object { $_.Name -like '*NVIDIA*' } | Select-Object -First 1 -ExpandProperty DriverVersion" 2^>nul') do set "current_version=%%i"
-if not defined current_version for /f "tokens=2 delims==" %%i in ('wmic path win32_videocontroller where "name like '%%NVIDIA%%'" get driverversion /value ^| find "="') do set current_version=%%i
+for /f "tokens=2 delims==" %%i in ('wmic path win32_videocontroller where "name like '%%NVIDIA%%'" get driverversion /value ^| find "="') do set current_version=%%i
 if defined current_version (
     echo %c%  ✓ Current version: %current_version%%u%
 ) else (
@@ -11150,12 +10913,12 @@ if exist "%EXTRACT_DIR%" rd /s /q "%EXTRACT_DIR%" >nul 2>&1
 mkdir "%EXTRACT_DIR%" >nul 2>&1
 
 where winrar >nul 2>&1
-if !errorlevel!==0 (
+if %errorlevel%==0 (
     winrar x -o+ "%DRIVER_FILE%" "%EXTRACT_DIR%\" >nul 2>&1
     echo %c%  ✓ Extracted using WinRAR%u%
 ) else (
     where 7z >nul 2>&1
-    if !errorlevel!==0 (
+    if %errorlevel%==0 (
         7z x "%DRIVER_FILE%" -o"%EXTRACT_DIR%" -y >nul 2>&1
         echo %c%  ✓ Extracted using 7-Zip%u%
     ) else (
@@ -12233,8 +11996,8 @@ set DISM_SCAN=%errorlevel%
 if %DISM_SCAN% neq 0 (
     echo %c%Issues detected - running DISM repair...%u%
     dism /online /cleanup-image /restorehealth
-    set "DISM_REPAIR=!errorlevel!"
-    if "!DISM_REPAIR!"=="0" (
+    set DISM_REPAIR=%errorlevel%
+    if %DISM_REPAIR%==0 (
         echo %c%✓ DISM repair completed successfully%u%
     ) else (
         echo %c%⚠ DISM repair encountered some issues%u%
@@ -14853,23 +14616,11 @@ if "!NumberOfCores!" == "2" (
 	goto HyperThreading
 )
 if !NumberOfCores! gtr 4 (
-	set "_aff_vc_found="
-	for /f "delims=" %%i in ('powershell -NoProfile -Command "Get-CimInstance -ClassName Win32_VideoController -ErrorAction SilentlyContinue | Where-Object { $_.PNPDeviceID -like 'PCI\VEN_*' } | Select-Object -ExpandProperty PNPDeviceID" 2^>nul') do (
-		set "_aff_vc_found=1"
-		reg.exe add "HKLM\SYSTEM\CurrentControlSet\Enum\%%i\Device Parameters\Interrupt Management\Affinity Policy" /v "DevicePolicy" /t REG_DWORD /d "3" /f
-		reg.exe delete "HKLM\SYSTEM\CurrentControlSet\Enum\%%i\Device Parameters\Interrupt Management\Affinity Policy" /v "AssignmentSetOverride" /f
-	) >nul 2>nul
-	if not defined _aff_vc_found for /f %%i in ('wmic path Win32_VideoController get PNPDeviceID^| findstr /l "PCI\VEN_"') do (
+	for /f %%i in ('wmic path Win32_VideoController get PNPDeviceID^| findstr /l "PCI\VEN_"') do (
 		reg.exe add "HKLM\SYSTEM\CurrentControlSet\Enum\%%i\Device Parameters\Interrupt Management\Affinity Policy" /v "DevicePolicy" /t REG_DWORD /d "3" /f
 		reg.exe delete "HKLM\SYSTEM\CurrentControlSet\Enum\%%i\Device Parameters\Interrupt Management\Affinity Policy" /v "AssignmentSetOverride" /f
 	) > nul 2> nul
-	set "_aff_na_found="
-	for /f "delims=" %%i in ('powershell -NoProfile -Command "Get-CimInstance -ClassName Win32_NetworkAdapter -ErrorAction SilentlyContinue | Where-Object { $_.PNPDeviceID -like 'PCI\VEN_*' } | Select-Object -ExpandProperty PNPDeviceID" 2^>nul') do (
-		set "_aff_na_found=1"
-		reg.exe add "HKLM\SYSTEM\CurrentControlSet\Enum\%%i\Device Parameters\Interrupt Management\Affinity Policy" /v "DevicePolicy" /t REG_DWORD /d "5" /f
-		reg.exe delete "HKLM\SYSTEM\CurrentControlSet\Enum\%%i\Device Parameters\Interrupt Management\Affinity Policy" /v "AssignmentSetOverride" /f
-	) >nul 2>nul
-	if not defined _aff_na_found for /f %%i in ('wmic path Win32_NetworkAdapter get PNPDeviceID^| findstr /l "PCI\VEN_"') do (
+	for /f %%i in ('wmic path Win32_NetworkAdapter get PNPDeviceID^| findstr /l "PCI\VEN_"') do (
 		reg.exe add "HKLM\SYSTEM\CurrentControlSet\Enum\%%i\Device Parameters\Interrupt Management\Affinity Policy" /v "DevicePolicy" /t REG_DWORD /d "5" /f
 		reg.exe delete "HKLM\SYSTEM\CurrentControlSet\Enum\%%i\Device Parameters\Interrupt Management\Affinity Policy" /v "AssignmentSetOverride" /f
 	) > nul 2> nul
@@ -14878,33 +14629,15 @@ if !NumberOfCores! gtr 4 (
 :: Hyper Threading ; Credits to HoneCtrl
 :HyperThreading
 if !NumberOfLogicalProcessors! gtr !NumberOfCores! (
-set "_ht_usb_found="
-for /f "delims=" %%i in ('powershell -NoProfile -Command "Get-CimInstance -ClassName Win32_USBController -ErrorAction SilentlyContinue | Where-Object { $_.PNPDeviceID -like 'PCI\VEN_*' } | Select-Object -ExpandProperty PNPDeviceID" 2^>nul') do (
-	set "_ht_usb_found=1"
-	reg.exe add "HKLM\SYSTEM\CurrentControlSet\Enum\%%i\Device Parameters\Interrupt Management\Affinity Policy" /v "DevicePolicy" /t REG_DWORD /d "4" /f
-	reg.exe add "HKLM\SYSTEM\CurrentControlSet\Enum\%%i\Device Parameters\Interrupt Management\Affinity Policy" /v "AssignmentSetOverride" /t REG_BINARY /d "C0" /f
-	) >nul 2>nul
-if not defined _ht_usb_found for /f %%i in ('wmic path Win32_USBController get PNPDeviceID^| findstr /l "PCI\VEN_"') do (
+for /f %%i in ('wmic path Win32_USBController get PNPDeviceID^| findstr /l "PCI\VEN_"') do (
 	reg.exe add "HKLM\SYSTEM\CurrentControlSet\Enum\%%i\Device Parameters\Interrupt Management\Affinity Policy" /v "DevicePolicy" /t REG_DWORD /d "4" /f
 	reg.exe add "HKLM\SYSTEM\CurrentControlSet\Enum\%%i\Device Parameters\Interrupt Management\Affinity Policy" /v "AssignmentSetOverride" /t REG_BINARY /d "C0" /f
 	) > nul 2> nul
-set "_ht_vc_found="
-for /f "delims=" %%i in ('powershell -NoProfile -Command "Get-CimInstance -ClassName Win32_VideoController -ErrorAction SilentlyContinue | Where-Object { $_.PNPDeviceID -like 'PCI\VEN_*' } | Select-Object -ExpandProperty PNPDeviceID" 2^>nul') do (
-	set "_ht_vc_found=1"
-	reg.exe add "HKLM\SYSTEM\CurrentControlSet\Enum\%%i\Device Parameters\Interrupt Management\Affinity Policy" /v "DevicePolicy" /t REG_DWORD /d "3" /f
-	reg.exe delete "HKLM\SYSTEM\CurrentControlSet\Enum\%%i\Device Parameters\Interrupt Management\Affinity Policy" /v "AssignmentSetOverride" /f
-	) >nul 2>nul
-if not defined _ht_vc_found for /f %%i in ('wmic path Win32_VideoController get PNPDeviceID^| findstr /l "PCI\VEN_"') do (
+for /f %%i in ('wmic path Win32_VideoController get PNPDeviceID^| findstr /l "PCI\VEN_"') do (
 	reg.exe add "HKLM\SYSTEM\CurrentControlSet\Enum\%%i\Device Parameters\Interrupt Management\Affinity Policy" /v "DevicePolicy" /t REG_DWORD /d "3" /f
 	reg.exe delete "HKLM\SYSTEM\CurrentControlSet\Enum\%%i\Device Parameters\Interrupt Management\Affinity Policy" /v "AssignmentSetOverride" /f
 	) > nul 2> nul
-set "_ht_na_found="
-for /f "delims=" %%i in ('powershell -NoProfile -Command "Get-CimInstance -ClassName Win32_NetworkAdapter -ErrorAction SilentlyContinue | Where-Object { $_.PNPDeviceID -like 'PCI\VEN_*' } | Select-Object -ExpandProperty PNPDeviceID" 2^>nul') do (
-	set "_ht_na_found=1"
-	reg.exe add "HKLM\SYSTEM\CurrentControlSet\Enum\%%i\Device Parameters\Interrupt Management\Affinity Policy" /v "DevicePolicy" /t REG_DWORD /d "4" /f
-	reg.exe add "HKLM\SYSTEM\CurrentControlSet\Enum\%%i\Device Parameters\Interrupt Management\Affinity Policy" /v "AssignmentSetOverride" /t REG_BINARY /d "30" /f
-	) >nul 2>nul
-if not defined _ht_na_found for /f %%i in ('wmic path Win32_NetworkAdapter get PNPDeviceID^| findstr /l "PCI\VEN_"') do (
+for /f %%i in ('wmic path Win32_NetworkAdapter get PNPDeviceID^| findstr /l "PCI\VEN_"') do (
 	reg.exe add "HKLM\SYSTEM\CurrentControlSet\Enum\%%i\Device Parameters\Interrupt Management\Affinity Policy" /v "DevicePolicy" /t REG_DWORD /d "4" /f
 	reg.exe add "HKLM\SYSTEM\CurrentControlSet\Enum\%%i\Device Parameters\Interrupt Management\Affinity Policy" /v "AssignmentSetOverride" /t REG_BINARY /d "30" /f
 	) > nul 2> nul
@@ -14918,46 +14651,22 @@ goto :GameBoosters
 
 :MSIMode
 cls
-set "_msi_usb_found="
-for /f "delims=" %%i in ('powershell -NoProfile -Command "Get-CimInstance -ClassName Win32_USBController -ErrorAction SilentlyContinue | Where-Object { $_.PNPDeviceID -like 'PCI\VEN_*' } | Select-Object -ExpandProperty PNPDeviceID" 2^>nul') do (
-	set "_msi_usb_found=1"
-	reg.exe add "HKLM\SYSTEM\CurrentControlSet\Enum\%%i\Device Parameters\Interrupt Management\MessageSignaledInterruptProperties" /v "MSISupported" /t REG_DWORD /d "1" /f
-	reg.exe delete "HKLM\SYSTEM\CurrentControlSet\Enum\%%i\Device Parameters\Interrupt Management\Affinity Policy" /v "DevicePriority" /f
-) >nul 2>nul
-if not defined _msi_usb_found for /f %%i in ('wmic path Win32_USBController get PNPDeviceID ^| findstr /l "PCI\VEN_"') do (
+for /f %%i in ('wmic path Win32_USBController get PNPDeviceID ^| findstr /l "PCI\VEN_"') do (
 	reg.exe add "HKLM\SYSTEM\CurrentControlSet\Enum\%%i\Device Parameters\Interrupt Management\MessageSignaledInterruptProperties" /v "MSISupported" /t REG_DWORD /d "1" /f
 	reg.exe delete "HKLM\SYSTEM\CurrentControlSet\Enum\%%i\Device Parameters\Interrupt Management\Affinity Policy" /v "DevicePriority" /f
 ) > nul 2> nul
 
-set "_msi_vc_found="
-for /f "delims=" %%i in ('powershell -NoProfile -Command "Get-CimInstance -ClassName Win32_VideoController -ErrorAction SilentlyContinue | Where-Object { $_.PNPDeviceID -like 'PCI\VEN_*' } | Select-Object -ExpandProperty PNPDeviceID" 2^>nul') do (
-	set "_msi_vc_found=1"
-	reg.exe add "HKLM\SYSTEM\CurrentControlSet\Enum\%%i\Device Parameters\Interrupt Management\MessageSignaledInterruptProperties" /v "MSISupported" /t REG_DWORD /d "1" /f
-	reg.exe delete "HKLM\SYSTEM\CurrentControlSet\Enum\%%i\Device Parameters\Interrupt Management\Affinity Policy" /v "DevicePriority" /f
-) >nul 2>nul
-if not defined _msi_vc_found for /f %%i in ('wmic path Win32_VideoController get PNPDeviceID ^| findstr /l "PCI\VEN_"') do (
+for /f %%i in ('wmic path Win32_VideoController get PNPDeviceID ^| findstr /l "PCI\VEN_"') do (
 	reg.exe add "HKLM\SYSTEM\CurrentControlSet\Enum\%%i\Device Parameters\Interrupt Management\MessageSignaledInterruptProperties" /v "MSISupported" /t REG_DWORD /d "1" /f
 	reg.exe delete "HKLM\SYSTEM\CurrentControlSet\Enum\%%i\Device Parameters\Interrupt Management\Affinity Policy" /v "DevicePriority" /f
 ) > nul 2> nul
 
-set "_msi_na_found="
-for /f "delims=" %%i in ('powershell -NoProfile -Command "Get-CimInstance -ClassName Win32_NetworkAdapter -ErrorAction SilentlyContinue | Where-Object { $_.PNPDeviceID -like 'PCI\VEN_*' } | Select-Object -ExpandProperty PNPDeviceID" 2^>nul') do (
-	set "_msi_na_found=1"
-	reg.exe add "HKLM\SYSTEM\CurrentControlSet\Enum\%%i\Device Parameters\Interrupt Management\MessageSignaledInterruptProperties" /v "MSISupported" /t REG_DWORD /d "1" /f
-	reg.exe delete "HKLM\SYSTEM\CurrentControlSet\Enum\%%i\Device Parameters\Interrupt Management\Affinity Policy" /v "DevicePriority" /f
-) >nul 2>nul
-if not defined _msi_na_found for /f %%i in ('wmic path Win32_NetworkAdapter get PNPDeviceID ^| findstr /l "PCI\VEN_"') do (
+for /f %%i in ('wmic path Win32_NetworkAdapter get PNPDeviceID ^| findstr /l "PCI\VEN_"') do (
 	reg.exe add "HKLM\SYSTEM\CurrentControlSet\Enum\%%i\Device Parameters\Interrupt Management\MessageSignaledInterruptProperties" /v "MSISupported" /t REG_DWORD /d "1" /f
 	reg.exe delete "HKLM\SYSTEM\CurrentControlSet\Enum\%%i\Device Parameters\Interrupt Management\Affinity Policy" /v "DevicePriority" /f
 ) > nul 2> nul
 
-set "_msi_ide_found="
-for /f "delims=" %%i in ('powershell -NoProfile -Command "Get-CimInstance -ClassName Win32_IDEController -ErrorAction SilentlyContinue | Where-Object { $_.PNPDeviceID -like 'PCI\VEN_*' } | Select-Object -ExpandProperty PNPDeviceID" 2^>nul') do (
-	set "_msi_ide_found=1"
-	reg.exe add "HKLM\SYSTEM\CurrentControlSet\Enum\%%i\Device Parameters\Interrupt Management\MessageSignaledInterruptProperties" /v "MSISupported" /t REG_DWORD /d "1" /f
-	reg.exe delete "HKLM\SYSTEM\CurrentControlSet\Enum\%%i\Device Parameters\Interrupt Management\Affinity Policy" /v "DevicePriority" /f
-) >nul 2>nul
-if not defined _msi_ide_found for /f %%i in ('wmic path Win32_IDEController get PNPDeviceID ^| findstr /l "PCI\VEN_"') do (
+for /f %%i in ('wmic path Win32_IDEController get PNPDeviceID ^| findstr /l "PCI\VEN_"') do (
 	reg.exe add "HKLM\SYSTEM\CurrentControlSet\Enum\%%i\Device Parameters\Interrupt Management\MessageSignaledInterruptProperties" /v "MSISupported" /t REG_DWORD /d "1" /f
 	reg.exe delete "HKLM\SYSTEM\CurrentControlSet\Enum\%%i\Device Parameters\Interrupt Management\Affinity Policy" /v "DevicePriority" /f
 ) > nul 2> nul
@@ -15905,9 +15614,26 @@ echo %c%Installation process completed.%u%
 timeout /t 3 >nul
 exit /b
 
+:ValidatePackageName
+setlocal EnableDelayedExpansion
+set "candidate=%~1"
+if not defined candidate (
+    endlocal
+    exit /b 1
+)
+echo(!candidate!| findstr /R /C:"^[A-Za-z0-9][A-Za-z0-9._+-]*$" >nul
+set "validationResult=!errorlevel!"
+endlocal & exit /b %validationResult%
+
 :ValidateManagedSnapshotPath
 powershell -NoProfile -Command "try{$base=[IO.Path]::GetFullPath($env:DEX_BACKUPS).TrimEnd('\')+'\';$candidate=[IO.Path]::GetFullPath($env:DEX_RESTORE_PATH).TrimEnd('\')+'\';$leaf=Split-Path $candidate.TrimEnd('\') -Leaf;if($candidate.StartsWith($base,[StringComparison]::OrdinalIgnoreCase)-and$leaf -match '^Managed_[0-9A-Za-z_-]+$'){exit 0}else{exit 1}}catch{exit 1}" >nul 2>&1
 exit /b %errorlevel%
+
+:ConfirmChecksumBypass
+echo %yellow%Chocolatey reported a checksum failure or package validation problem.%u%
+echo %red%Installation stopped because package integrity could not be verified.%u%
+call :LogEvent "BLOCKED" "Chocolatey checksum bypass refused"
+exit /b 1
 
 :Install
 set "package=%~1"
