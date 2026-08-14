@@ -1857,22 +1857,31 @@ call :SetupConsole
 echo.
 echo.
 echo %c%╔══════════════════════════════════════════════════════════════════════════════╗
-echo ║                              SYSTEM CLEANUP UTILITY                          ║
+echo ║                       PREMIUM SYSTEM CLEANUP UTILITY                         ║
 echo ╚══════════════════════════════════════════════════════════════════════════════╝%u%
 echo.
-echo %c%This comprehensive cleanup will remove:%u%
-echo %c%• Temporary files and system caches%u%
-echo %c%• Browser data and download caches%u%
-echo %c%• Application logs and crash reports%u%
+echo %c%This complete cleanup will remove:%u%
+echo %c%• Windows and user temporary files, system caches%u%
+echo %c%• Browser caches: Chrome, Edge, Firefox, Opera, Opera GX, Brave, Vivaldi%u%
+echo %c%• Game and app caches: Steam, Epic, Riot, Battle.net, EA, Ubisoft, GOG,%u%
+echo %c%  Discord, Slack, Teams, Zoom, Spotify, VS Code, Minecraft%u%
+echo %c%• GPU driver shader caches (NVIDIA, AMD, Intel) and DirectX shader cache%u%
+echo %c%• Explorer thumbnail/icon cache, font cache and Windows Store cache%u%
+echo %c%• Windows Error Reporting queue, DNS resolver cache and Recycle Bin%u%
 echo %c%• Registry MRU entries and history%u%
-echo %c%• GPU driver caches and shader files%u%
+echo.
+echo %c%This will NOT touch:%u%
+echo %c%• Your personal documents, pictures, downloads or any user files%u%
+echo %c%• Saved passwords, bookmarks or browser history%u%
+echo %c%• Prefetch, pending Windows Update files or CBS/driver crash logs%u%
+echo %c%  (kept intentionally so update and driver issues can still be diagnosed)%u%
 echo.
 echo %red%%underline%Important Notice:%u%
-echo %c%This operation will permanently delete temporary files, caches, and logs.%u%
-echo %c%Ensure important data is backed up before proceeding.%u%
+echo %c%This operation will permanently delete temporary files, caches, logs and%u%
+echo %c%empty the Recycle Bin. Ensure important data is backed up before proceeding.%u%
 echo.
 echo.
-choice /C YN /M "%c%Proceed with system cleanup? (Y/N)%u%"
+choice /C YN /M "%c%Proceed with premium system cleanup? (Y/N)%u%"
 if errorlevel 2 goto TweaksMenu
 
 echo.
@@ -1881,7 +1890,7 @@ echo ║                            CLEANUP IN PROGRESS                         
 echo ╚══════════════════════════════════════════════════════════════════════════════╝%u%
 
 echo.
-echo %c%[1/8] Cleaning Windows System Files...%u%
+echo %c%[1/14] Cleaning Windows System Files...%u%
 if exist "C:\Windows\Temp" (
     del /f /q "C:\Windows\Temp\*.*" 2>nul
     for /d %%D in ("C:\Windows\Temp\*") do rd /s /q "%%D" 2>nul
@@ -1892,7 +1901,7 @@ del /f /q "C:\Windows\ff*.tmp" 2>nul
 rem Prefetch and Windows Update caches are intentionally preserved. Removing them
 rem can slow application startup or interfere with an update already in progress.
 
-echo %c%[2/8] Cleaning User Temporary Files...%u%
+echo %c%[2/14] Cleaning User Temporary Files...%u%
 if exist "%temp%" (
     del /s /f /q "%temp%\*.*" 2>nul
     for /d %%D in ("%temp%\*") do rd /s /q "%%D" 2>nul
@@ -1901,7 +1910,7 @@ del /s /f /q "%USERPROFILE%\AppData\Local\Temp\*.*" 2>nul
 for /d %%D in ("%USERPROFILE%\AppData\Local\Temp\*") do rd /s /q "%%D" 2>nul
 rem Recent-document history is user data and is not removed by a general cleanup.
 
-echo %c%[3/8] Cleaning Browser Caches...%u%
+echo %c%[3/14] Cleaning Browser Caches...%u%
 del /s /f /q "%LocalAppData%\Google\Chrome\User Data\Default\Cache\*.*" 2>nul
 del /s /f /q "%LocalAppData%\Google\Chrome\User Data\Default\Code Cache\*.*" 2>nul
 del /s /f /q "%LocalAppData%\Google\Chrome\User Data\Default\GPUCache\*.*" 2>nul
@@ -1913,8 +1922,20 @@ for /d %%D in ("%LocalAppData%\Mozilla\Firefox\Profiles\*") do (
     del /s /f /q "%%D\startupCache\*.*" 2>nul
 )
 del /s /f /q "%LocalAppData%\Microsoft\Windows\INetCache\*.*" 2>nul
+del /s /f /q "%AppData%\Opera Software\Opera Stable\Cache\*.*" 2>nul
+del /s /f /q "%AppData%\Opera Software\Opera Stable\Code Cache\*.*" 2>nul
+del /s /f /q "%AppData%\Opera Software\Opera Stable\GPUCache\*.*" 2>nul
+del /s /f /q "%AppData%\Opera Software\Opera GX Stable\Cache\*.*" 2>nul
+del /s /f /q "%AppData%\Opera Software\Opera GX Stable\Code Cache\*.*" 2>nul
+del /s /f /q "%AppData%\Opera Software\Opera GX Stable\GPUCache\*.*" 2>nul
+del /s /f /q "%LocalAppData%\BraveSoftware\Brave-Browser\User Data\Default\Cache\*.*" 2>nul
+del /s /f /q "%LocalAppData%\BraveSoftware\Brave-Browser\User Data\Default\Code Cache\*.*" 2>nul
+del /s /f /q "%LocalAppData%\BraveSoftware\Brave-Browser\User Data\Default\GPUCache\*.*" 2>nul
+del /s /f /q "%LocalAppData%\Vivaldi\User Data\Default\Cache\*.*" 2>nul
+del /s /f /q "%LocalAppData%\Vivaldi\User Data\Default\Code Cache\*.*" 2>nul
+del /s /f /q "%LocalAppData%\Vivaldi\User Data\Default\GPUCache\*.*" 2>nul
 
-echo %c%[4/8] Cleaning GPU Driver Caches...%u%
+echo %c%[4/14] Cleaning GPU Driver and DirectX Shader Caches...%u%
 del /s /f /q "%USERPROFILE%\AppData\LocalLow\NVIDIA\PerDriverVersion\DXCache\*.*" 2>nul
 del /s /f /q "%USERPROFILE%\AppData\Local\NVIDIA\DXCache\*.*" 2>nul
 del /s /f /q "%USERPROFILE%\AppData\Local\NVIDIA\GLCache\*.*" 2>nul
@@ -1923,8 +1944,9 @@ del /s /f /q "%USERPROFILE%\AppData\Local\AMD\DxcCache\*.*" 2>nul
 del /s /f /q "%USERPROFILE%\AppData\Local\AMD\VkCache\*.*" 2>nul
 del /s /f /q "%USERPROFILE%\AppData\LocalLow\AMD\DxCache\*.*" 2>nul
 del /s /f /q "%USERPROFILE%\AppData\Local\Intel\ShaderCache\*.*" 2>nul
+del /s /f /q "%LocalAppData%\D3DSCache\*.*" 2>nul
 
-echo %c%[5/8] Cleaning Application Caches...%u%
+echo %c%[5/14] Cleaning Game and Communication App Caches...%u%
 del /s /f /q "%AppData%\discord\Cache\*.*" 2>nul
 del /s /f /q "%AppData%\discord\Code Cache\*.*" 2>nul
 del /s /f /q "%AppData%\discord\GPUCache\*.*" 2>nul
@@ -1939,19 +1961,74 @@ del /s /f /q "%LocalAppData%\EpicGamesLauncher\Saved\Logs\*.*" 2>nul
 del /s /f /q "%LocalAppData%\EpicGamesLauncher\Saved\webcache\*.*" 2>nul
 del /s /f /q "%AppData%\.minecraft\logs\*.*" 2>nul
 del /s /f /q "%AppData%\.minecraft\crash-reports\*.*" 2>nul
+del /s /f /q "%LocalAppData%\Riot Games\Riot Client\Cache\*.*" 2>nul
+del /s /f /q "%LocalAppData%\Riot Games\Riot Client\Logs\*.*" 2>nul
+del /s /f /q "%ProgramData%\Battle.net\Cache\*.*" 2>nul
+del /s /f /q "%AppData%\Battle.net\Cache\*.*" 2>nul
+del /s /f /q "%ProgramData%\Origin\Logs\*.*" 2>nul
+del /s /f /q "%LocalAppData%\Origin\Logs\*.*" 2>nul
+del /s /f /q "%LocalAppData%\Ubisoft Game Launcher\cache\*.*" 2>nul
+del /s /f /q "%LocalAppData%\GOG.com\Galaxy\tmp\*.*" 2>nul
+del /s /f /q "%LocalAppData%\GOG.com\Galaxy\webcache\*.*" 2>nul
+del /s /f /q "%AppData%\Slack\Cache\*.*" 2>nul
+del /s /f /q "%AppData%\Slack\Code Cache\*.*" 2>nul
+del /s /f /q "%AppData%\Slack\GPUCache\*.*" 2>nul
+del /s /f /q "%LocalAppData%\Microsoft\Teams\Cache\*.*" 2>nul
+del /s /f /q "%LocalAppData%\Microsoft\Teams\GPUCache\*.*" 2>nul
+for /d %%D in ("%LocalAppData%\Packages\MSTeams_*") do del /s /f /q "%%D\LocalCache\Microsoft\MSTeams\*.*" 2>nul
+del /s /f /q "%AppData%\Zoom\logs\*.*" 2>nul
+del /s /f /q "%AppData%\Spotify\Data\*.*" 2>nul
+del /s /f /q "%LocalAppData%\Spotify\Storage\*.*" 2>nul
+del /s /f /q "%AppData%\Code\Cache\*.*" 2>nul
+del /s /f /q "%AppData%\Code\CachedData\*.*" 2>nul
+del /s /f /q "%AppData%\Code\Code Cache\*.*" 2>nul
+del /s /f /q "%AppData%\Code\GPUCache\*.*" 2>nul
 
-echo %c%[6/8] Preserving Windows diagnostic logs and crash dumps...%u%
+echo %c%[6/14] Rebuilding Explorer Thumbnail and Icon Cache...%u%
+taskkill /f /im explorer.exe >nul 2>&1
+del /a /f /q "%LocalAppData%\Microsoft\Windows\Explorer\thumbcache_*.db" 2>nul
+del /a /f /q "%LocalAppData%\Microsoft\Windows\Explorer\iconcache_*.db" 2>nul
+del /a /q "%LocalAppData%\IconCache.db" 2>nul
+start explorer.exe
+timeout /t 2 >nul
+
+echo %c%[7/14] Rebuilding Font Cache...%u%
+net stop FontCache >nul 2>&1
+net stop FontCache3.0.0.0 >nul 2>&1
+del /f /s /q "%windir%\ServiceProfiles\LocalService\AppData\Local\FontCache\*" >nul 2>&1
+net start FontCache >nul 2>&1
+
+echo %c%[8/14] Clearing Windows Error Reporting Queue...%u%
+del /s /f /q "%LocalAppData%\Microsoft\Windows\WER\ReportArchive\*.*" 2>nul
+del /s /f /q "%LocalAppData%\Microsoft\Windows\WER\ReportQueue\*.*" 2>nul
+del /s /f /q "%ProgramData%\Microsoft\Windows\WER\ReportArchive\*.*" 2>nul
+del /s /f /q "%ProgramData%\Microsoft\Windows\WER\ReportQueue\*.*" 2>nul
+
+echo %c%[9/14] Resetting Windows Store Cache...%u%
+wsreset.exe >nul 2>&1
+timeout /t 3 >nul
+taskkill /f /im WinStore.App.exe >nul 2>&1
+
+echo %c%[10/14] Flushing DNS Resolver Cache...%u%
+ipconfig /flushdns >nul 2>&1
+
+echo %c%[11/14] Emptying Recycle Bin...%u%
+powershell -NoProfile -Command "Clear-RecycleBin -Force -ErrorAction SilentlyContinue" >nul 2>&1
+
+echo %c%[12/14] Preserving Windows diagnostic logs and crash dumps...%u%
 rem CBS, setup, driver and crash logs are required to diagnose update, boot and
 rem driver failures. A cleanup tool must not erase that recovery evidence.
 
-echo %c%[7/8] Cleaning Registry History...%u%
+echo %c%[13/14] Cleaning Registry History...%u%
 reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Applets\Regedit" /va /f 2>nul
 reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\ComDlg32\LastVisitedPidlMRU" /va /f 2>nul
 reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\ComDlg32\OpenSavePidlMRU" /va /f 2>nul
 reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\ComDlg32\LastVisitedPidlMRULegacy" /va /f 2>nul
 reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Applets\Paint\Recent File List" /va /f 2>nul
+reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\RunMRU" /va /f 2>nul
+reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\TypedPaths" /va /f 2>nul
 
-echo %c%[8/8] Running Advanced Disk Cleanup...%u%
+echo %c%[14/14] Running Advanced Disk Cleanup...%u%
 echo.
 echo %c%Launching Disk Cleanup utility...%u%
 echo %c%Please select all options EXCEPT 'DirectX Shader Cache' and click OK%u%
@@ -1966,14 +2043,18 @@ echo %c%╔═══════════════════════
 echo ║                            CLEANUP COMPLETED                                 ║
 echo ╚══════════════════════════════════════════════════════════════════════════════╝%u%
 echo.
-echo %c%System cleanup has been completed successfully.%u%
+echo %c%Premium system cleanup has been completed successfully.%u%
 echo.
 echo %c%Summary:%u%
-echo %c%• Temporary files and caches removed%u%
-echo %c%• Browser data cleaned%u%
-echo %c%• Application logs cleared%u%
-echo %c%• GPU driver caches purged%u%
+echo %c%• Windows and user temporary files removed%u%
+echo %c%• Browser data cleaned across 7 supported browsers%u%
+echo %c%• Game, chat and productivity app caches cleared%u%
+echo %c%• GPU driver and DirectX shader caches purged%u%
+echo %c%• Explorer thumbnail/icon cache and font cache rebuilt%u%
+echo %c%• Windows Error Reporting queue and DNS cache cleared%u%
+echo %c%• Windows Store cache reset and Recycle Bin emptied%u%
 echo %c%• Registry history cleaned%u%
+echo %c%• Your personal files were left untouched%u%
 echo %c%• System performance optimized%u%
 echo.
 echo %c%══════════════════════════ PRESS ANY KEY TO CONTINUE ══════════════════════════%u%
