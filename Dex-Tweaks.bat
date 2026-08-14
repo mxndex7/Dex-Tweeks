@@ -5372,12 +5372,15 @@ echo %c%This comprehensive service optimizer includes:%u%
 echo %c%• Telemetry and data collection service management%u%
 echo %c%• OEM manufacturer service optimization (HP, Intel, NVIDIA, etc.)%u%
 echo %c%• Network and sharing service configuration%u%
-echo %c%• Gaming and Xbox service management%u%
+echo %c%• Xbox service management%u%
 echo %c%• Third-party application telemetry control%u%
+echo %c%• Gaming peripheral service management (Razer, Logitech, Corsair, etc.)%u%
 echo %c%• Performance-impacting service optimization%u%
-echo %c%• Hardware peripheral service management%u%
 echo %c%• Automatic update service control%u%
-echo %c%• System security and backup service configuration%u%
+echo %c%• Useless bloat services Windows enables by default%u%
+echo.
+echo %c%Categories that can break sign-in, backups, printing or Bluetooth devices%u%
+echo %c%have been intentionally left out of this optimizer for safety.%u%
 echo.
 echo %red%%underline%Service Notice:%u%
 echo %c%You will be prompted for each major service category.%u%
@@ -5463,18 +5466,20 @@ if errorlevel 2 (
 )
 
 echo.
-echo %c%[4/10] Microsoft Store and Xbox Services%u%
+echo %c%[4/10] Xbox Services%u%
 echo.
-echo %c%This controls Xbox Live, Microsoft Store, Game Bar, and Minecraft online functionality.%u%
-echo %c%Recommended: ENABLE if you use Xbox App, Microsoft Store, or play Minecraft.%u%
+echo %c%This controls Xbox Live, Game Bar, and Minecraft online functionality only.%u%
+echo %c%(Microsoft Store app-licensing services are left untouched to avoid breaking%u%
+echo %c%unrelated Store apps.) Recommended: ENABLE if you use the Xbox App, Game Bar,%u%
+echo %c%or play Minecraft.%u%
 echo.
-choice /C YN /M "%c%Enable Microsoft Store and Xbox services? (Y/N)%u%"
+choice /C YN /M "%c%Enable Xbox services? (Y/N)%u%"
 if errorlevel 2 (
     set "ENABLE_XBOX=false"
-    echo %c%• Microsoft Store and Xbox services will be DISABLED%u%
+    echo %c%• Xbox services will be DISABLED%u%
 ) else (
     set "ENABLE_XBOX=true"
-    echo %c%• Microsoft Store and Xbox services will be ENABLED%u%
+    echo %c%• Xbox services will be ENABLED%u%
 )
 
 echo.
@@ -5539,53 +5544,7 @@ if errorlevel 2 (
 )
 
 echo.
-echo %c%[9/10] Security and Backup Services%u%
-echo.
-echo %c%This disables optional security services like biometrics, smart cards, backup.%u%
-echo %c%Note: Core Windows security (Defender) remains unaffected.%u%
-echo.
-choice /C YN /M "%c%Disable optional security and backup services? (Y/N)%u%"
-if errorlevel 2 (
-    set "DISABLE_SECURITY=false"
-    echo %c%• Security and backup services will remain ENABLED%u%
-) else (
-    set "DISABLE_SECURITY=true"
-    echo %c%• Security and backup services will be DISABLED%u%
-)
-
-echo.
-echo %c%[10/10] Bluetooth Services%u%
-echo.
-echo %c%This disables Bluetooth-related services.%u%
-echo %c%Only disable if you don't use Bluetooth devices.%u%
-echo.
-choice /C YN /M "%c%Disable Bluetooth services? (Y/N)%u%"
-if errorlevel 2 (
-    set "DISABLE_BLUETOOTH=false"
-    echo %c%• Bluetooth services will remain ENABLED%u%
-) else (
-    set "DISABLE_BLUETOOTH=true"
-    echo %c%• Bluetooth services will be DISABLED%u%
-)
-
-echo.
-echo %c%[11/13] Print and Imaging Services%u%
-echo.
-echo %c%This disables Windows print and imaging services: Print Spooler, scanner,%u%
-echo %c%WIA acquisition, and camera frame server.%u%
-echo %c%Only disable if you have NO printers, scanners, or capture devices.%u%
-echo.
-choice /C YN /M "%c%Disable print and imaging services? (Y/N)%u%"
-if errorlevel 2 (
-    set "DISABLE_PRINT=false"
-    echo %c%• Print and imaging services will remain ENABLED%u%
-) else (
-    set "DISABLE_PRINT=true"
-    echo %c%• Print and imaging services will be DISABLED%u%
-)
-
-echo.
-echo %c%[12/13] Hyper-V and Virtual Machine Services%u%
+echo %c%[9/10] Hyper-V and Virtual Machine Services%u%
 echo.
 echo %c%This disables Hyper-V guest integration services (vmicXxx, HvHost).%u%
 echo %c%Safe to disable if you are NOT running inside a Hyper-V virtual machine.%u%
@@ -5600,20 +5559,20 @@ if errorlevel 2 (
 )
 
 echo.
-echo %c%[13/13] Windows Features and App Services%u%
+echo %c%[10/10] Useless Bloat Services%u%
 echo.
-echo %c%This disables a large set of Windows app-platform and feature services:%u%
-echo %c%Phone Link, Timeline, Connected Devices, Push Notifications, Maps, Wallet,%u%
-echo %c%Tablet services, sensor/pen input, remote desktop hosting, and more.%u%
-echo %c%Recommended: DISABLE on a dedicated gaming or clean install machine.%u%
+echo %c%This disables services almost nobody actually uses: Fax, Windows Wallet,%u%
+echo %c%legacy Telephony API, Offline Files sync, Shared PC Account Manager,%u%
+echo %c%Storage Tiers Management and AllJoyn Router (IoT discovery).%u%
+echo %c%Recommended: DISABLE - safe for virtually every home/gaming PC.%u%
 echo.
-choice /C YN /M "%c%Disable Windows features and app services? (Y/N)%u%"
+choice /C YN /M "%c%Disable useless bloat services? (Y/N)%u%"
 if errorlevel 2 (
-    set "DISABLE_WINFEATURES=false"
-    echo %c%• Windows feature services will remain ENABLED%u%
+    set "DISABLE_BLOAT=false"
+    echo %c%• Bloat services will remain ENABLED%u%
 ) else (
-    set "DISABLE_WINFEATURES=true"
-    echo %c%• Windows feature services will be DISABLED%u%
+    set "DISABLE_BLOAT=true"
+    echo %c%• Bloat services will be DISABLED%u%
 )
 
 echo.
@@ -5623,101 +5582,80 @@ echo ╚════════════════════════
 echo.
 
 if "%DISABLE_TELEMETRY%"=="true" (
-    echo %c%[1/15] Disabling Windows Telemetry and Data Collection...%u%
+    echo %c%[1/12] Disabling Windows Telemetry and Data Collection...%u%
     call :DisableTelemetryServices
 ) else (
-    echo %c%[1/15] Preserving Windows Telemetry Services...%u%
+    echo %c%[1/12] Preserving Windows Telemetry Services...%u%
 )
 
 if "%DISABLE_OEM%"=="true" (
-    echo %c%[2/15] Disabling OEM Manufacturer Services...%u%
+    echo %c%[2/12] Disabling OEM Manufacturer Services...%u%
     call :DisableOEMServices
 ) else (
-    echo %c%[2/15] Preserving OEM Manufacturer Services...%u%
+    echo %c%[2/12] Preserving OEM Manufacturer Services...%u%
 )
 
 if "%DISABLE_NETWORK%"=="true" (
-    echo %c%[3/15] Disabling Unused Network Services...%u%
+    echo %c%[3/12] Disabling Unused Network Services...%u%
     call :DisableUnusedNetworkServices
 ) else (
-    echo %c%[3/15] Preserving Network Services...%u%
+    echo %c%[3/12] Preserving Network Services...%u%
 )
 
 if "%ENABLE_XBOX%"=="true" (
-    echo %c%[4/15] Enabling Microsoft Store and Xbox Services...%u%
+    echo %c%[4/12] Enabling Xbox Services...%u%
     call :EnableXboxServices
 ) else (
-    echo %c%[4/15] Disabling Microsoft Store and Xbox Services...%u%
+    echo %c%[4/12] Disabling Xbox Services...%u%
     call :DisableXboxServices
 )
 
 if "%DISABLE_3RD_PARTY%"=="true" (
-    echo %c%[5/15] Disabling Third-Party Application Telemetry...%u%
+    echo %c%[5/12] Disabling Third-Party Application Telemetry...%u%
     call :DisableThirdPartyTelemetry
 ) else (
-    echo %c%[5/15] Preserving Third-Party Application Telemetry...%u%
+    echo %c%[5/12] Preserving Third-Party Application Telemetry...%u%
 )
 
 if "%DISABLE_GAMING_HW%"=="true" (
-    echo %c%[6/15] Disabling Gaming Hardware Background Services...%u%
+    echo %c%[6/12] Disabling Gaming Hardware Background Services...%u%
     call :DisableGamingHardwareServices
 ) else (
-    echo %c%[6/15] Preserving Gaming Hardware Services...%u%
+    echo %c%[6/12] Preserving Gaming Hardware Services...%u%
 )
 
 if "%DISABLE_UPDATES%"=="true" (
-    echo %c%[7/15] Disabling Automatic Update Services...%u%
+    echo %c%[7/12] Disabling Automatic Update Services...%u%
     call :DisableAutomaticUpdateServices
 ) else (
-    echo %c%[7/15] Preserving Automatic Update Services...%u%
+    echo %c%[7/12] Preserving Automatic Update Services...%u%
 )
 
 if "%DISABLE_PERFORMANCE%"=="true" (
-    echo %c%[8/15] Disabling Performance-Impacting Services...%u%
+    echo %c%[8/12] Disabling Performance-Impacting Services...%u%
     call :DisablePerformanceServices
 ) else (
-    echo %c%[8/15] Preserving Performance Services...%u%
-)
-
-if "%DISABLE_SECURITY%"=="true" (
-    echo %c%[9/15] Disabling Optional Security and Backup Services...%u%
-    call :DisableSecurityServices
-) else (
-    echo %c%[9/15] Preserving Security and Backup Services...%u%
-)
-
-if "%DISABLE_BLUETOOTH%"=="true" (
-    echo %c%[10/15] Disabling Bluetooth Services...%u%
-    call :DisableBluetoothServices
-) else (
-    echo %c%[10/15] Preserving Bluetooth Services...%u%
-)
-
-if "%DISABLE_PRINT%"=="true" (
-    echo %c%[11/15] Disabling Print and Imaging Services...%u%
-    call :DisablePrintServices
-) else (
-    echo %c%[11/15] Preserving Print and Imaging Services...%u%
+    echo %c%[8/12] Preserving Performance Services...%u%
 )
 
 if "%DISABLE_HYPERV%"=="true" (
-    echo %c%[12/15] Disabling Hyper-V and VM Services...%u%
+    echo %c%[9/12] Disabling Hyper-V and VM Services...%u%
     call :DisableHyperVServices
 ) else (
-    echo %c%[12/15] Preserving Hyper-V and VM Services...%u%
+    echo %c%[9/12] Preserving Hyper-V and VM Services...%u%
 )
 
-if "%DISABLE_WINFEATURES%"=="true" (
-    echo %c%[13/15] Disabling Windows Features and App Services...%u%
-    call :DisableWindowsFeaturesServices
+if "%DISABLE_BLOAT%"=="true" (
+    echo %c%[10/12] Disabling Useless Bloat Services...%u%
+    call :DisableBloatServices
 ) else (
-    echo %c%[13/15] Preserving Windows Features and App Services...%u%
+    echo %c%[10/12] Preserving Bloat Services...%u%
 )
 
-echo %c%[14/15] Ensuring Critical System Services Remain Enabled...%u%
+echo %c%[11/12] Ensuring Critical System Services Remain Enabled...%u%
 call :EnableCriticalServices
 
-echo %c%[15/15] Applying Final Configurations...%u%
+echo %c%[12/12] Applying Final Configurations...%u%
 call :ApplyFinalServiceConfigurations
 
 echo.
@@ -5744,10 +5682,10 @@ if "%DISABLE_NETWORK%"=="true" (
     echo %c%• Network Services: PRESERVED%u%
 )
 if "%ENABLE_XBOX%"=="true" (
-    echo %c%• Microsoft Store and Xbox: ENABLED%u%
+    echo %c%• Xbox Services: ENABLED%u%
     echo %c%  - Xbox Live, Game Bar, and Minecraft online will work%u%
 ) else (
-    echo %c%• Microsoft Store and Xbox: DISABLED%u%
+    echo %c%• Xbox Services: DISABLED%u%
 )
 if "%DISABLE_3RD_PARTY%"=="true" (
     echo %c%• Third-Party Telemetry: DISABLED%u%
@@ -5769,34 +5707,20 @@ if "%DISABLE_UPDATES%"=="true" (
 )
 if "%DISABLE_PERFORMANCE%"=="true" (
     echo %c%• Performance Services: OPTIMIZED%u%
-    echo %c%  - Superfetch, indexing, and background services disabled%u%
+    echo %c%  - Superfetch and background performance services disabled%u%
 ) else (
     echo %c%• Performance Services: PRESERVED%u%
-)
-if "%DISABLE_SECURITY%"=="true" (
-    echo %c%• Security Services: OPTIMIZED%u%
-) else (
-    echo %c%• Security Services: PRESERVED%u%
-)
-if "%DISABLE_BLUETOOTH%"=="true" (
-    echo %c%• Bluetooth Services: DISABLED%u%
-) else (
-    echo %c%• Bluetooth Services: ENABLED%u%
-)
-if "%DISABLE_PRINT%"=="true" (
-    echo %c%• Print and Imaging Services: DISABLED%u%
-) else (
-    echo %c%• Print and Imaging Services: ENABLED%u%
 )
 if "%DISABLE_HYPERV%"=="true" (
     echo %c%• Hyper-V/VM Services: DISABLED%u%
 ) else (
     echo %c%• Hyper-V/VM Services: ENABLED%u%
 )
-if "%DISABLE_WINFEATURES%"=="true" (
-    echo %c%• Windows Features and App Services: DISABLED%u%
+if "%DISABLE_BLOAT%"=="true" (
+    echo %c%• Useless Bloat Services: DISABLED%u%
+    echo %c%  - Fax, Wallet, Telephony, Offline Files and more disabled%u%
 ) else (
-    echo %c%• Windows Features and App Services: ENABLED%u%
+    echo %c%• Useless Bloat Services: ENABLED%u%
 )
 echo.
 echo %green%Total Services Optimized: Over 250+ background services managed%u%
@@ -6210,9 +6134,7 @@ call :DisableService "diagsvc"
 call :DisableService "DPS"
 call :DisableService "WerSvc"
 call :DisableService "pcasvc"
-call :DisableService "WSearch"
 call :DisableService "MapsBroker"
-call :DisableService "lfsvc"
 call :DisableService "RetailDemo"
 call :DisableService "wisvc"
 call :DisableService "HpTouchpointAnalyticsService"
@@ -6293,7 +6215,6 @@ call :DisableService "FDResPub"
 call :DisableService "lmhosts"
 call :DisableService "NcbService"
 call :DisableService "NcdAutoSetup"
-call :DisableService "Netlogon"
 call :DisableService "Netman"
 call :DisableService "NetSetupSvc"
 call :DisableService "p2pimsvc"
@@ -6310,24 +6231,19 @@ echo %green%    → Network services disabled%u%
 exit /b
 
 :EnableXboxServices
-echo %c%    Enabling Xbox and Microsoft Store services...%u%
+echo %c%    Enabling Xbox services...%u%
 sc config "XblAuthManager" start= manual >nul 2>&1
 sc config "XblGameSave" start= manual >nul 2>&1
 sc config "XboxGipSvc" start= manual >nul 2>&1
 sc config "XboxNetApiSvc" start= manual >nul 2>&1
-sc config "StorSvc" start= auto >nul 2>&1
-sc config "InstallService" start= manual >nul 2>&1
-sc config "ClipSVC" start= manual >nul 2>&1
-sc config "LicenseManager" start= manual >nul 2>&1
-sc config "TokenBroker" start= manual >nul 2>&1
 sc config "GamingServices" start= auto >nul 2>&1
 sc config "GamingServicesNet" start= auto >nul 2>&1
 sc config "GameInputSvc" start= manual >nul 2>&1
-echo %green%    → Xbox and Store services enabled%u%
+echo %green%    → Xbox services enabled%u%
 exit /b
 
 :DisableXboxServices
-echo %c%    Disabling Xbox and Microsoft Store services...%u%
+echo %c%    Disabling Xbox services...%u%
 call :DisableService "XblAuthManager"
 call :DisableService "XblGameSave"
 call :DisableService "XboxGipSvc"
@@ -6335,9 +6251,6 @@ call :DisableService "XboxNetApiSvc"
 call :DisableService "GamingServices"
 call :DisableService "GamingServicesNet"
 call :DisableService "GameInputSvc"
-call :DisableService "InstallService"
-call :DisableService "ClipSVC"
-call :DisableService "LicenseManager"
 exit /b
 
 :DisableThirdPartyTelemetry
@@ -6412,12 +6325,21 @@ exit /b
 :DisablePerformanceServices
 echo %c%    Disabling performance-impacting services...%u%
 call :DisableService "SysMain"
-call :DisableService "WSearch"
 call :DisableService "PimIndexMaintenanceSvc"
 call :DisableService "MapsBroker"
-call :DisableService "lfsvc"
 call :DisableService "GraphicsPerfSvc"
+exit /b
+
+:DisableBloatServices
+echo %c%    Disabling useless bloat services...%u%
+call :DisableService "Fax"
 call :DisableService "WalletService"
+call :DisableService "TapiSrv"
+call :DisableService "CscService"
+call :DisableService "shpamsvc"
+call :DisableService "TieringEngineService"
+call :DisableService "AJRouter"
+echo %green%    → Bloat services disabled%u%
 exit /b
 
 :DisableSecurityServices
