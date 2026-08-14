@@ -7368,30 +7368,28 @@ call :SetupConsole
 call :DisplayBanner
 echo %c%                                 ╔═══════════════════════════════════════════════════╗ %u%
 echo                                  %c%║%u%            [%c%1%u%] Hardware Information               %c%║%u%
-echo                                  %c%║%u%            [%c%2%u%] Storage Acceleration               %c%║%u%
-echo                                  %c%║%u%            [%c%3%u%] NVIDIA Driver Optimizer            %c%║%u%
-echo                                  %c%║%u%            [%c%4%u%] Tweaked NVIDIA Driver              %c%║%u%
-echo                                  %c%║%u%            [%c%5%u%] AMD Driver Optimization            %c%║%u%
-echo                                  %c%║%u%            [%c%6%u%] Hardware Security Center           %c%║%u%
-echo                                  %c%║%u%            [%c%7%u%] Audio Optimization                 %c%║%u%
-echo                                  %c%║%u%            [%c%8%u%] USB Optimization                   %c%║%u%
-echo                                  %c%║%u%            [%c%9%u%] Monitor / Display Optimization     %c%║%u%
+echo                                  %c%║%u%            [%c%2%u%] GPU Driver ^& Performance           %c%║%u%
+echo                                  %c%║%u%            [%c%3%u%] Storage Acceleration               %c%║%u%
+echo                                  %c%║%u%            [%c%4%u%] Memory (XMP/EXPO Check)            %c%║%u%
+echo                                  %c%║%u%            [%c%5%u%] Audio Optimization                 %c%║%u%
+echo                                  %c%║%u%            [%c%6%u%] USB Optimization                   %c%║%u%
+echo                                  %c%║%u%            [%c%7%u%] Monitor / Display Optimization     %c%║%u%
+echo                                  %c%║%u%            [%c%8%u%] Hardware Security Center           %c%║%u%
 echo %c%                                 ╚═══════════════════════════════════════════════════╝
 echo.
-echo                          %u%[%c%10%u%] Colour Presets   [%c%11%u%] Back to Main   [%red%X%u%] Exit Application
+echo                          %u%[%c%9%u%] Colour Presets    [%c%10%u%] Back to Main   [%red%X%u%] Exit Application
 echo.
 set /p M="%c%Choose an option »%u% "
 if "!M!"=="1" goto HardwareInformation
-if "!M!"=="2" goto StorageAcceleration
-if "!M!"=="3" goto NVIDIAOptimizer
-if "!M!"=="4" goto DriverUpdates
-if "!M!"=="5" goto AMDOptimizer
-if "!M!"=="6" goto HardwareSecurityCenter
-if "!M!"=="7" goto AudioOptimization
-if "!M!"=="8" goto USBOptimization
-if "!M!"=="9" goto MonitorOptimization
-if /i "!M!"=="10" goto Presets
-if /i "!M!"=="11" goto menu
+if "!M!"=="2" goto GPUOptimizer
+if "!M!"=="3" goto StorageAcceleration
+if "!M!"=="4" goto MemoryDiagnostics
+if "!M!"=="5" goto AudioOptimization
+if "!M!"=="6" goto USBOptimization
+if "!M!"=="7" goto MonitorOptimization
+if "!M!"=="8" goto HardwareSecurityCenter
+if /i "!M!"=="9" goto Presets
+if /i "!M!"=="10" goto menu
 if /i "!M!"=="X" goto Destruct
 cls
 echo %underline%%red%Invalid Input. Press any key to continue.%u%
@@ -7409,9 +7407,9 @@ echo ╚════════════════════════
 echo.
 echo %c%Monitor optimization includes:%u%
 echo %c%  ^• Disable Display Enhancement Service (adaptive brightness / Night Light)%u%
-echo %c%  ^• Disable monitor DPMS power-off timeout%u%
-echo %c%  ^• Disable HDR for gaming (removes processing overhead)%u%
-echo %c%  ^• Zero GPU monitor latency tolerance (always-on display pipeline)%u%
+echo %c%  ^• Optional: disable monitor DPMS power-off timeout%u%
+echo %c%  ^• Optional: disable HDR for gaming (removes processing overhead)%u%
+echo %c%  ^• Zero GPU monitor latency tolerance (documented display pipeline setting)%u%
 echo %c%  ^• Disable VSync idle timeout (GPU stays active between frames)%u%
 echo %c%  ^• Prioritize display pipeline in MMCSS scheduler%u%
 echo %c%  ^• Disable color calibration auto-update overhead%u%
@@ -7425,6 +7423,18 @@ echo.
 echo.
 choice /C YN /M "Apply monitor / display optimizations"
 if errorlevel 2 goto HardwareMenu
+
+echo.
+echo %red%%underline%OLED Warning:%u%
+echo %c%If your monitor/TV is OLED, a static image left on screen for hours with no%u%
+echo %c%sleep timeout increases the risk of burn-in.%u%
+choice /C YN /M "%c%Disable the monitor power-off (DPMS) timeout anyway? (Y/N)%u%"
+if errorlevel 2 (set "MON_DISABLE_DPMS=false") else (set "MON_DISABLE_DPMS=true")
+
+echo.
+choice /C YN /M "%c%Disable Windows HDR while gaming? (Y/N)%u%"
+if errorlevel 2 (set "MON_DISABLE_HDR=false") else (set "MON_DISABLE_HDR=true")
+
 cls
 call :SetupConsole
 echo.
@@ -7442,16 +7452,24 @@ sc config DisplayEnhancementService start= disabled >nul 2>&1
 reg add "HKLM\SYSTEM\CurrentControlSet\Services\DisplayEnhancementService" /v "Start" /t REG_DWORD /d "4" /f >nul 2>&1
 if !errorlevel!==0 (echo %green%  [+] Done%u%) else (echo %orange%  [!] Failed%u%)
 
-echo %white%[2/7]%u% Disabling monitor power-off timeout (DPMS)...
-powercfg /setacvalueindex SCHEME_CURRENT 7516b95f-f776-4464-8c53-06167f40cc99 3c0bc021-c8a8-4e07-a973-6b14cbcb2b7e 0 >nul 2>&1
-powercfg /setdcvalueindex SCHEME_CURRENT 7516b95f-f776-4464-8c53-06167f40cc99 3c0bc021-c8a8-4e07-a973-6b14cbcb2b7e 0 >nul 2>&1
-powercfg /setactive SCHEME_CURRENT >nul 2>&1
-if !errorlevel!==0 (echo %green%  [+] Done%u%) else (echo %orange%  [!] Failed%u%)
+echo %white%[2/7]%u% Monitor power-off timeout (DPMS)...
+if "!MON_DISABLE_DPMS!"=="true" (
+    powercfg /setacvalueindex SCHEME_CURRENT 7516b95f-f776-4464-8c53-06167f40cc99 3c0bc021-c8a8-4e07-a973-6b14cbcb2b7e 0 >nul 2>&1
+    powercfg /setdcvalueindex SCHEME_CURRENT 7516b95f-f776-4464-8c53-06167f40cc99 3c0bc021-c8a8-4e07-a973-6b14cbcb2b7e 0 >nul 2>&1
+    powercfg /setactive SCHEME_CURRENT >nul 2>&1
+    echo %orange%  [+] DPMS timeout disabled - monitor will not sleep%u%
+) else (
+    echo %c%  → Kept enabled - monitor will still sleep normally%u%
+)
 
-echo %white%[3/7]%u% Disabling Windows HDR for gaming...
-reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\VideoSettings" /v "UseHDRForGaming" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\VideoSettings" /v "EnableHDRForGaming" /t REG_DWORD /d "0" /f >nul 2>&1
-if !errorlevel!==0 (echo %green%  [+] Done%u%) else (echo %orange%  [!] Failed%u%)
+echo %white%[3/7]%u% Windows HDR for gaming...
+if "!MON_DISABLE_HDR!"=="true" (
+    reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\VideoSettings" /v "UseHDRForGaming" /t REG_DWORD /d "0" /f >nul 2>&1
+    reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\VideoSettings" /v "EnableHDRForGaming" /t REG_DWORD /d "0" /f >nul 2>&1
+    echo %green%  [+] Disabled%u%
+) else (
+    echo %c%  → Kept enabled%u%
+)
 
 echo %white%[4/7]%u% Setting GPU monitor latency tolerance to minimum...
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" /v "MonitorLatencyTolerance" /t REG_DWORD /d "1" /f >nul 2>&1
@@ -7462,7 +7480,8 @@ if !errorlevel!==0 (echo %green%  [+] Done%u%) else (echo %orange%  [!] Failed%u
 
 echo %white%[5/7]%u% Disabling VSync idle timeout...
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers\Scheduler" /v "VsyncIdleTimeout" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers\Scheduler" /v "DisablePreemption" /t REG_DWORD /d "1" /f >nul 2>&1
+rem GPU task preemption (DisablePreemption) is intentionally left untouched:
+rem it is an undocumented value that can cause driver TDR crashes.
 if !errorlevel!==0 (echo %green%  [+] Done%u%) else (echo %orange%  [!] Failed%u%)
 
 echo %white%[6/7]%u% Prioritizing display pipeline in MMCSS...
@@ -7492,8 +7511,8 @@ echo %green%Monitor and display optimizations applied successfully!%u%
 echo.
 echo %c%Changes applied:%u%
 echo %c%  [+]%u% Display Enhancement Service disabled (adaptive brightness off)
-echo %c%  [+]%u% Monitor DPMS timeout set to Never
-echo %c%  [+]%u% Windows HDR for gaming disabled
+if "!MON_DISABLE_DPMS!"=="true" (echo %c%  [+]%u% Monitor DPMS timeout set to Never) else (echo %c%  [-]%u% Monitor DPMS timeout kept ^(OLED-safe^))
+if "!MON_DISABLE_HDR!"=="true" (echo %c%  [+]%u% Windows HDR for gaming disabled) else (echo %c%  [-]%u% Windows HDR kept enabled)
 echo %c%  [+]%u% GPU monitor latency tolerance set to zero
 echo %c%  [+]%u% VSync idle timeout disabled (GPU stays at full speed)
 echo %c%  [+]%u% MMCSS display pipeline set to High / Latency Sensitive
@@ -7516,11 +7535,11 @@ echo ╚════════════════════════
 echo.
 echo %c%Audio optimization includes:%u%
 echo %c%  ^• Disable Windows volume auto-ducking%u%
-echo %c%  ^• Disable per-device audio enhancements%u%
 echo %c%  ^• Elevate AudioDG process to High CPU priority%u%
 echo %c%  ^• Disable multimedia scheduler lazy mode%u%
 echo %c%  ^• Set Windows sound scheme to None%u%
 echo %c%  ^• Disable GS Wavetable Synth overhead%u%
+echo %c%  ^• Optional: disable audio/video AI enhancements and DSP effects%u%
 echo.
 echo %orange%%underline%Audio Notice:%u%
 echo %c%These are safe registry and system-level tweaks only.%u%
@@ -7529,6 +7548,15 @@ echo.
 echo.
 choice /C YN /M "Apply audio optimizations"
 if errorlevel 2 goto HardwareMenu
+
+echo.
+echo %orange%%underline%Microphone Quality Notice:%u%
+echo %c%Windows' audio enhancements also include microphone noise suppression used%u%
+echo %c%by Discord, Teams and Zoom. Disabling them can reduce your voice quality%u%
+echo %c%in calls, even though it removes some background processing overhead.%u%
+choice /C YN /M "%c%Disable audio/video AI enhancements and DSP effects? (Y/N)%u%"
+if errorlevel 2 (set "AUDIO_DISABLE_FX=false") else (set "AUDIO_DISABLE_FX=true")
+
 cls
 call :SetupConsole
 echo.
@@ -7544,52 +7572,47 @@ echo %white%[1/6]%u% Disabling Windows volume auto-ducking...
 reg add "HKCU\SOFTWARE\Microsoft\Multimedia\Audio" /v "UserDuckingPreference" /t REG_DWORD /d "3" /f >nul 2>&1
 if !errorlevel!==0 (echo %green%  [+] Done%u%) else (echo %orange%  [!] Failed%u%)
 
-echo %white%[2/6]%u% Disabling per-device audio enhancements...
-chcp 437 >nul
-powershell -NoProfile -Command "$r='HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\MMDevices\Audio\Render'; Get-ChildItem $r -ErrorAction SilentlyContinue | ForEach-Object { $fx=Join-Path $_.PSPath 'FxProperties'; if(-not(Test-Path $fx)){New-Item -Path $fx -Force | Out-Null}; Set-ItemProperty -Path $fx -Name '{1da5d803-d492-4edd-8c23-e0c0ffee7f0e},5' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue }" >nul 2>&1
-chcp 65001 >nul
-if !errorlevel!==0 (echo %green%  [+] Done%u%) else (echo %orange%  [!] Partial - may need specific device selected%u%)
-
-echo %white%[3/6]%u% Elevating AudioDG process priority...
+echo %white%[2/6]%u% Elevating AudioDG process priority...
 reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\audiodg.exe\PerfOptions" /v "CpuPriorityClass" /t REG_DWORD /d "3" /f >nul 2>&1
 reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\audiodg.exe\PerfOptions" /v "IoPriority" /t REG_DWORD /d "3" /f >nul 2>&1
 if !errorlevel!==0 (echo %green%  [+] Done%u%) else (echo %orange%  [!] Failed%u%)
 
-echo %white%[4/6]%u% Disabling multimedia system lazy mode (lower audio latency)...
+echo %white%[3/6]%u% Disabling multimedia system lazy mode (lower audio latency)...
 reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" /v "NoLazyMode" /t REG_DWORD /d "1" /f >nul 2>&1
 reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" /v "AlwaysOn" /t REG_DWORD /d "1" /f >nul 2>&1
 if !errorlevel!==0 (echo %green%  [+] Done%u%) else (echo %orange%  [!] Failed%u%)
 
-echo %white%[5/6]%u% Setting Windows sound scheme to None...
+echo %white%[4/6]%u% Setting Windows sound scheme to None...
 reg add "HKCU\AppEvents\Schemes" /ve /t REG_SZ /d ".None" /f >nul 2>&1
 if !errorlevel!==0 (echo %green%  [+] Done%u%) else (echo %orange%  [!] Failed%u%)
 
-echo %white%[6/6]%u% Disabling GS Wavetable Synth (unused MIDI overhead)...
+echo %white%[5/6]%u% Disabling GS Wavetable Synth (unused MIDI overhead)...
 chcp 437 >nul
 powershell -NoProfile -Command "Get-PnpDevice | Where-Object {$_.FriendlyName -like '*GS Wavetable*'} | Disable-PnpDevice -Confirm:$false -ErrorAction SilentlyContinue" >nul 2>&1
 chcp 65001 >nul
 echo %green%  [+] Done%u%
 
-echo %white%[7/9]%u% Disabling audio AI processing and DSP effects...
-reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Audio" /v "DisableAudioProcessing" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Audio" /v "DisableAudioProcessing" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Audio" /v "DisableAudioEnhancements" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Audio" /v "DisableAudioEnhancements" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Audio" /v "DisableLFX" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Audio" /v "DisableLFX" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Audio" /v "DisableGFX" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Audio" /v "DisableGFX" /t REG_DWORD /d "1" /f >nul 2>&1
-if !errorlevel!==0 (echo %green%  [+] Done%u%) else (echo %orange%  [!] Failed%u%)
-
-echo %white%[8/9]%u% Disabling Speech_OneCore enhanced audio...
-reg add "HKLM\SOFTWARE\Microsoft\Speech_OneCore\AudioProcessing" /v "EnableEnhancedAudio" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\WOW6432Node\Microsoft\Speech_OneCore\AudioProcessing" /v "EnableEnhancedAudio" /t REG_DWORD /d "0" /f >nul 2>&1
-if !errorlevel!==0 (echo %green%  [+] Done%u%) else (echo %orange%  [!] Failed%u%)
-
-echo %white%[9/9]%u% Disabling Windows Studio Effects (noise suppression, eye contact, background blur)...
-reg add "HKLM\SOFTWARE\Microsoft\PolicyManager\default\Experience\AllowVideoFilters" /v "value" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\Microsoft\PolicyManager\default\Camera\AllowCameraEffects" /v "value" /t REG_DWORD /d "0" /f >nul 2>&1
-echo %green%  [+] Done%u%
+echo %white%[6/6]%u% Audio/video AI enhancements and DSP effects...
+if "!AUDIO_DISABLE_FX!"=="true" (
+    chcp 437 >nul
+    powershell -NoProfile -Command "$r='HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\MMDevices\Audio\Render'; Get-ChildItem $r -ErrorAction SilentlyContinue | ForEach-Object { $fx=Join-Path $_.PSPath 'FxProperties'; if(-not(Test-Path $fx)){New-Item -Path $fx -Force | Out-Null}; Set-ItemProperty -Path $fx -Name '{1da5d803-d492-4edd-8c23-e0c0ffee7f0e},5' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue }" >nul 2>&1
+    chcp 65001 >nul
+    reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Audio" /v "DisableAudioProcessing" /t REG_DWORD /d "1" /f >nul 2>&1
+    reg add "HKLM\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Audio" /v "DisableAudioProcessing" /t REG_DWORD /d "1" /f >nul 2>&1
+    reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Audio" /v "DisableAudioEnhancements" /t REG_DWORD /d "1" /f >nul 2>&1
+    reg add "HKLM\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Audio" /v "DisableAudioEnhancements" /t REG_DWORD /d "1" /f >nul 2>&1
+    reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Audio" /v "DisableLFX" /t REG_DWORD /d "1" /f >nul 2>&1
+    reg add "HKLM\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Audio" /v "DisableLFX" /t REG_DWORD /d "1" /f >nul 2>&1
+    reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Audio" /v "DisableGFX" /t REG_DWORD /d "1" /f >nul 2>&1
+    reg add "HKLM\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Audio" /v "DisableGFX" /t REG_DWORD /d "1" /f >nul 2>&1
+    reg add "HKLM\SOFTWARE\Microsoft\Speech_OneCore\AudioProcessing" /v "EnableEnhancedAudio" /t REG_DWORD /d "0" /f >nul 2>&1
+    reg add "HKLM\SOFTWARE\WOW6432Node\Microsoft\Speech_OneCore\AudioProcessing" /v "EnableEnhancedAudio" /t REG_DWORD /d "0" /f >nul 2>&1
+    reg add "HKLM\SOFTWARE\Microsoft\PolicyManager\default\Experience\AllowVideoFilters" /v "value" /t REG_DWORD /d "0" /f >nul 2>&1
+    reg add "HKLM\SOFTWARE\Microsoft\PolicyManager\default\Camera\AllowCameraEffects" /v "value" /t REG_DWORD /d "0" /f >nul 2>&1
+    echo %orange%  [+] Disabled - remember this can affect mic noise suppression in calls%u%
+) else (
+    echo %c%  → Kept enabled ^(recommended if you use Discord/Teams/Zoom often^)%u%
+)
 
 echo.
 echo %c%╔══════════════════════════════════════════════════════════════════════════════╗
@@ -7600,14 +7623,15 @@ echo %green%Audio optimizations applied successfully!%u%
 echo.
 echo %c%Changes applied:%u%
 echo %c%  [+]%u% Volume auto-ducking disabled
-echo %c%  [+]%u% Audio enhancements disabled on all render devices
 echo %c%  [+]%u% AudioDG elevated to High CPU + I/O priority
 echo %c%  [+]%u% Multimedia scheduler lazy mode disabled
 echo %c%  [+]%u% Windows sound scheme set to None
 echo %c%  [+]%u% GS Wavetable Synth disabled
-echo %c%  [+]%u% Audio AI processing and DSP effects disabled (DisableAudioProcessing, LFX, GFX)
-echo %c%  [+]%u% Speech_OneCore enhanced audio disabled
-echo %c%  [+]%u% Windows Studio Effects disabled (video filters, camera effects)
+if "!AUDIO_DISABLE_FX!"=="true" (
+    echo %c%  [+]%u% Audio/video AI enhancements and DSP effects disabled
+) else (
+    echo %c%  [-]%u% Audio/video AI enhancements kept enabled (mic quality preserved)
+)
 echo.
 echo %orange%A restart is recommended for all changes to take full effect.%u%
 echo.
@@ -7625,16 +7649,14 @@ echo ║                           USB OPTIMIZATION                             
 echo ╚══════════════════════════════════════════════════════════════════════════════╝%u%
 echo.
 echo %c%USB optimization includes:%u%
-echo %c%  ^• Disable selective suspend on all USB devices%u%
-echo %c%  ^• Disable USB hub power saving via power plan%u%
-echo %c%  ^• Disable idle and wake power states on USB controllers%u%
-echo %c%  ^• Prevent input stutter from USB devices sleeping%u%
-echo %c%  ^• Applied to all connected USB devices automatically%u%
+echo %c%  ^• Disable selective suspend, but only for input/audio/capture devices%u%
+echo %c%    (mouse, keyboard, controllers, headsets, webcams, capture cards)%u%
+echo %c%  ^• Storage, printers and other USB devices keep their power saving%u%
+echo %c%    (no reason to stop a pendrive or external HDD from sleeping)%u%
 echo.
 echo %orange%%underline%USB Notice:%u%
-echo %c%This disables power saving on ALL USB devices.%u%
-echo %c%Peripherals will no longer sleep - no wake delays or polling drops.%u%
-echo %c%Reconnect USB devices or restart after applying.%u%
+echo %c%Only latency-sensitive peripherals are targeted, not every USB device.%u%
+echo %c%Reconnect the affected devices or restart after applying.%u%
 echo.
 echo.
 choice /C YN /M "Apply USB optimizations"
@@ -7650,31 +7672,19 @@ echo.
 echo %c%Applying USB power management optimizations...%u%
 echo.
 
-echo %white%[1/3]%u% Disabling USB selective suspend per-device...
+echo %white%[1/2]%u% Disabling selective suspend on input/audio/capture devices...
 chcp 437 >nul
-powershell -NoProfile -Command "$usbRoot='HKLM:\SYSTEM\CurrentControlSet\Enum\USB'; $vals=@('EnhancedPowerManagementEnabled','AllowIdleIrpInD3','EnableSelectiveSuspend','DeviceSelectiveSuspended','SelectiveSuspendEnabled','SelectiveSuspendOn','D3ColdSupported'); Get-ChildItem $usbRoot -Recurse -ErrorAction SilentlyContinue | Where-Object {$_.PSChildName -eq 'Device Parameters'} | ForEach-Object { $p=$_.PSPath; foreach($v in $vals){Set-ItemProperty -Path $p -Name $v -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue} }" >nul 2>&1
+powershell -NoProfile -Command "$vals=@('EnhancedPowerManagementEnabled','AllowIdleIrpInD3','EnableSelectiveSuspend','DeviceSelectiveSuspended','SelectiveSuspendEnabled','SelectiveSuspendOn','IdleInWorkingState','WaitWakeEnabled'); $classes='HIDClass','Mouse','Keyboard','AudioEndpoint','Camera','Media'; $touched=New-Object System.Collections.Generic.HashSet[string]; $count=0; Get-PnpDevice -ErrorAction SilentlyContinue | Where-Object { $_.Class -in $classes -and $_.Status -eq 'OK' } | ForEach-Object { $parent=(Get-PnpDeviceProperty -InstanceId $_.InstanceId -KeyName DEVPKEY_Device_Parent -ErrorAction SilentlyContinue).Data; if ($parent -and $parent -like 'USB*' -and $touched.Add($parent)) { $p=\"HKLM:\SYSTEM\CurrentControlSet\Enum\$parent\Device Parameters\"; if (Test-Path $p) { foreach($v in $vals){ Set-ItemProperty -Path $p -Name $v -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue }; $count++ } } }; Write-Host \"COUNT|$count\"" > "%temp%\dex_usb.txt" 2>nul
 chcp 65001 >nul
-echo %green%  [+] Done%u%
+set "USB_TOUCHED=0"
+for /f "usebackq tokens=2 delims=|" %%C in ("%temp%\dex_usb.txt") do set "USB_TOUCHED=%%C"
+del "%temp%\dex_usb.txt" 2>nul
+echo %green%  [+] Selective suspend disabled on !USB_TOUCHED! input/audio/capture device(s)%u%
 
-echo %white%[2/3]%u% Disabling USB hub power management via power plan...
+echo %white%[2/2]%u% Disabling USB selective suspend in the active power plan...
 powercfg /setacvalueindex SCHEME_CURRENT 2a737441-1930-4402-8d77-b2bebba308a3 48e6b7a6-50f5-4782-a5d4-53bb8f07e226 0 >nul 2>&1
 powercfg /setdcvalueindex SCHEME_CURRENT 2a737441-1930-4402-8d77-b2bebba308a3 48e6b7a6-50f5-4782-a5d4-53bb8f07e226 0 >nul 2>&1
 powercfg /setactive SCHEME_CURRENT >nul 2>&1
-if !errorlevel!==0 (echo %green%  [+] Done%u%) else (echo %orange%  [!] Failed%u%)
-
-echo %white%[3/4]%u% Disabling USB controller power saving in device tree...
-chcp 437 >nul
-powershell -NoProfile -Command "$usbhubRoot='HKLM:\SYSTEM\CurrentControlSet\Enum\USB'; Get-ChildItem $usbhubRoot -ErrorAction SilentlyContinue | ForEach-Object { $dp=Join-Path $_.PSPath 'Device Parameters'; if(Test-Path $dp){Set-ItemProperty -Path $dp -Name 'IdleInWorkingState' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue; Set-ItemProperty -Path $dp -Name 'WaitWakeEnabled' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue} }" >nul 2>&1
-chcp 65001 >nul
-echo %green%  [+] Done%u%
-
-echo %white%[4/4]%u% Setting driver thread priorities to real-time class...
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\usbxhci\Parameters" /v "ThreadPriority" /t REG_DWORD /d "31" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\USBHUB3\Parameters" /v "ThreadPriority" /t REG_DWORD /d "31" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\mouclass\Parameters" /v "ThreadPriority" /t REG_DWORD /d "31" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\kbdclass\Parameters" /v "ThreadPriority" /t REG_DWORD /d "31" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\NDIS\Parameters" /v "ThreadPriority" /t REG_DWORD /d "31" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\DXGKrnl\Parameters" /v "ThreadPriority" /t REG_DWORD /d "15" /f >nul 2>&1
 if !errorlevel!==0 (echo %green%  [+] Done%u%) else (echo %orange%  [!] Failed%u%)
 
 echo.
@@ -7685,13 +7695,11 @@ echo.
 echo %green%USB optimizations applied successfully!%u%
 echo.
 echo %c%Changes applied:%u%
-echo %c%  [+]%u% USB selective suspend disabled for all connected devices
-echo %c%  [+]%u% USB hub power saving removed from active power plan
-echo %c%  [+]%u% USB controller idle and wake power states disabled
-echo %c%  [+]%u% Driver thread priorities set (USB/mouse/keyboard/NDIS/DXGKrnl)
-echo %c%  [+]%u% No more input stutter from USB devices sleeping
+echo %c%  [+]%u% Selective suspend disabled only on input/audio/capture devices
+echo %c%  [+]%u% USB selective suspend disabled in the active power plan
+echo %c%  [+]%u% Storage and other USB devices kept their power saving
 echo.
-echo %orange%Reconnect your USB devices or restart for all changes to take effect.%u%
+echo %orange%Reconnect the affected devices or restart for all changes to take effect.%u%
 echo.
 echo                                          %red%[ Press any key to go back ]%u%
 pause >nul
@@ -7867,6 +7875,12 @@ echo ║ [7] Enable Hypervisor Code Integrity       [8] Smart Card Authenticatio
 echo ║ [9] Security Compliance Report             [0] Automated Security Setup      ║
 echo ╚═══════════════════════════════════════════════════════════════════════════════╝%u%
 echo.
+echo %orange%%underline%Performance trade-off:%u%
+echo %c%Options 3, 4, 5, 6, 7 and 0 turn on Virtualization-Based Security/HVCI. This%u%
+echo %c%is real hardening, but it can cost gaming performance and has been known to%u%
+echo %c%conflict with some kernel-level anti-cheats and GPU overclocking tools. Only%u%
+echo %c%enable them if you actually need that security posture on this machine.%u%
+echo.
 echo %c%              [R] Refresh Status   [B] Back to Hardware Menu   [X] Exit%u%
 echo.
 set /p "choice=%c%Choose an option »%u% "
@@ -7912,18 +7926,33 @@ if /i "%tpm_status%"=="TPM_PRESENT" (
     echo.
     set /p "bl_choice=%c%Choose BitLocker option »%u% "
 
-    if "!bl_choice!"=="1" (
-        echo %c%Enabling BitLocker with TPM...%u%
-        manage-bde -protectors -add C: -TPM
-        manage-bde -on C:
-    ) else if "!bl_choice!"=="2" (
-        echo %c%Enabling BitLocker with TPM + PIN...%u%
-        manage-bde -protectors -add C: -TPMAndPIN
-        manage-bde -on C:
-    ) else if "!bl_choice!"=="3" (
-        echo %c%Enabling BitLocker with TPM + USB...%u%
-        manage-bde -protectors -add C: -TPMAndStartupKey
-        manage-bde -on C:
+    set "BL_MODE="
+    if "!bl_choice!"=="1" set "BL_MODE=TPM"
+    if "!bl_choice!"=="2" set "BL_MODE=TPMAndPIN"
+    if "!bl_choice!"=="3" set "BL_MODE=TPMAndStartupKey"
+    if defined BL_MODE (
+        echo %c%Adding protectors ^(!BL_MODE! + recovery password^)...%u%
+        manage-bde -protectors -add C: -!BL_MODE!
+        manage-bde -protectors -add C: -RecoveryPassword >nul 2>&1
+        echo.
+        echo %red%%underline%IMPORTANT - save this recovery key before continuing:%u%
+        manage-bde -protectors -get C: -Type RecoveryPassword
+        set "BL_KEYFILE=%USERPROFILE%\Desktop\BitLocker_Recovery_Key_%computername%.txt"
+        manage-bde -protectors -get C: -Type RecoveryPassword > "!BL_KEYFILE!" 2>nul
+        echo.
+        echo %green%A copy was also saved to: !BL_KEYFILE!%u%
+        echo %c%Move it off this PC - print it, save to a USB drive, or a Microsoft account.%u%
+        echo %c%If Windows ever fails to boot, this key is the only way back into your files.%u%
+        echo.
+        choice /C YN /M "%c%Recovery key saved somewhere safe? Encrypt drive C: now? (Y/N)%u%"
+        if errorlevel 2 (
+            echo %yellow%Encryption cancelled - protectors were added but the drive was NOT encrypted.%u%
+            call :LogEvent "CANCEL" "BitLocker enable cancelled before encryption"
+        ) else (
+            manage-bde -on C: -UsedSpaceOnly
+            call :LogEvent "OK" "BitLocker enabled (!BL_MODE!) with recovery password backed up"
+        )
+        set "BL_MODE="
     ) else if "!bl_choice!"=="4" (
         echo %c%BitLocker status%u%
         manage-bde -status
@@ -8685,979 +8714,174 @@ echo %c%Press any key to return to Hardware Security Center...%u%
 pause >nul
 goto HardwareSecurityCenter
 
-:AMDOptimizer
+:GPUOptimizer
 cls
 call :SetupConsole
 echo.
 echo.
 echo %c%╔══════════════════════════════════════════════════════════════════════════════╗
-echo ║                            AMD DRIVER OPTIMIZER                              ║
+echo ║                         GPU DRIVER & PERFORMANCE                             ║
 echo ╚══════════════════════════════════════════════════════════════════════════════╝%u%
 echo.
-echo %c%AMD optimization includes:%u%
-echo %c%• Disable AMD telemetry and data collection%u%
-echo %c%• Optimize Radeon settings for gaming performance%u%
-echo %c%• Remove unnecessary AMD services and tasks%u%
-echo %c%• Configure power management for performance%u%
-echo %c%• Block AMD telemetry domains%u%
-echo %c%• Safe registry optimizations only%u%
+echo %c%Detecting GPU vendor...%u%
+chcp 437 >nul
+set "GPU_VENDOR=NONE"
+set "GPU_NAME="
+for /f "delims=" %%i in ('powershell -NoProfile -Command "Get-CimInstance -ClassName Win32_VideoController -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Name" 2^>nul') do (
+    echo(%%i| findstr /i "NVIDIA" >nul && (set "GPU_VENDOR=NVIDIA" & set "GPU_NAME=%%i")
+    echo(%%i| findstr /i "AMD Radeon" >nul && (set "GPU_VENDOR=AMD" & set "GPU_NAME=%%i")
+)
+chcp 65001 >nul
+
+if "!GPU_VENDOR!"=="NONE" (
+    echo %red%No dedicated NVIDIA or AMD GPU detected.%u%
+    echo %c%Only vendor-neutral Windows GPU settings will be applied.%u%
+) else (
+    echo %green%Detected: !GPU_NAME! ^(!GPU_VENDOR!^)%u%
+)
 echo.
-echo %red%%underline%AMD Notice:%u%
-echo %c%This script uses safe optimization methods only.%u%
-echo %c%For complete software removal, use AMD Cleanup Utility.%u%
+
+echo %c%This will apply only documented, reversible optimizations:%u%
+echo %c%• Disable vendor telemetry services and scheduled tasks%u%
+echo %c%• Enable Hardware-Accelerated GPU Scheduling (official Windows feature)%u%
+echo %c%• Prioritize the foreground game in the Windows multimedia scheduler%u%
+echo %c%• Block known telemetry domains for your GPU vendor%u%
 echo.
+echo %orange%%underline%What this will NOT do:%u%
+echo %c%• Will not download or install any driver from a third party%u%
+echo %c%• Will not force the GPU to run at maximum clock 24/7%u%
+echo %c%• Will not disable driver crash recovery (TDR) or PCIe protections%u%
 echo.
-choice /C YN /M "%c%Apply AMD driver optimizations? (Y/N)%u%"
+choice /C YN /M "%c%Apply GPU optimizations? (Y/N)%u%"
 if errorlevel 2 goto HardwareMenu
 
 echo.
-echo %c%╔══════════════════════════════════════════════════════════════════════════════╗
-echo ║                           OPTIMIZATION PREFERENCES                           ║
-echo ╚══════════════════════════════════════════════════════════════════════════════╝%u%
-echo.
-echo %c%Choose your optimization preferences:%u%
-echo.
-
-choice /C YN /M "%c%Disable AMD Software services (keeps software installed)? (Y/N)%u%"
-if errorlevel 2 (
-    set "DISABLE_AMD_SERVICES=false"
-    echo %c%  → AMD services will remain active%u%
-) else (
-    set "DISABLE_AMD_SERVICES=true"
-    echo %c%  → AMD services will be stopped/disabled%u%
-)
-
-echo.
-choice /C YN /M "%c%Disable AMD metrics and monitoring? (Y/N)%u%"
-if errorlevel 2 (
-    set "DISABLE_METRICS=false"
-    echo %c%  → AMD metrics will be kept enabled%u%
-) else (
-    set "DISABLE_METRICS=true"
-    echo %c%  → AMD metrics will be disabled%u%
-)
-
-echo.
-choice /C YN /M "%c%Disable automatic driver updates? (Y/N)%u%"
-if errorlevel 2 (
-    set "DISABLE_UPDATES=false"
-    echo %c%  → Automatic updates will be kept%u%
-) else (
-    set "DISABLE_UPDATES=true"
-    echo %c%  → Automatic updates will be disabled%u%
-)
+choice /C YN /M "%c%Also disable the companion app overlay/ShadowPlay and its auto-start? (Y/N)%u%"
+if errorlevel 2 (set "GPU_DISABLE_APP=false") else (set "GPU_DISABLE_APP=true")
 
 echo.
 echo %c%╔══════════════════════════════════════════════════════════════════════════════╗
-echo ║                        AMD OPTIMIZATION IN PROGRESS                          ║
-echo ╚══════════════════════════════════════════════════════════════════════════════╝%u%
-
-call :AMD_Step1_DetectGPU
-if "%AMD_GPU_FOUND%"=="false" (
-    echo.
-    echo %red%No AMD GPU detected! This script is designed for AMD systems only.%u%
-    echo %c%Exiting to prevent potential issues...%u%
-    pause
-    goto HardwareMenu
-)
-
-call :AMD_Step2_DisableServices
-call :AMD_Step3_DisableTelemetry
-call :AMD_Step4_OptimizeSettings
-call :AMD_Step5_BlockDomains
-call :AMD_Step6_CleanTasks
-call :AMD_Step7_SafeTweaks
-
-echo.
-echo %c%╔══════════════════════════════════════════════════════════════════════════════╗
-echo ║                        AMD OPTIMIZATION COMPLETED                            ║
+echo ║                        GPU OPTIMIZATION IN PROGRESS                          ║
 echo ╚══════════════════════════════════════════════════════════════════════════════╝%u%
 echo.
-echo %c%AMD optimizations have been successfully applied.%u%
-echo.
-echo %c%Safe Optimizations Applied:%u%
-echo %c%• Telemetry and data collection disabled%u%
-echo %c%• Safe driver performance tweaks applied%u%
-echo %c%• Power management optimized%u%
-echo %c%• Unnecessary background tasks removed%u%
-echo.
-echo %c%User Preferences Applied:%u%
-if "%DISABLE_AMD_SERVICES%"=="true" (
-    echo %c%• AMD Software services disabled%u%
-) else (
-    echo %c%• AMD Software services kept active%u%
-)
-if "%DISABLE_METRICS%"=="true" (
-    echo %c%• AMD metrics and monitoring disabled%u%
-) else (
-    echo %c%• AMD metrics kept enabled%u%
-)
-if "%DISABLE_UPDATES%"=="true" (
-    echo %c%• Automatic driver updates disabled%u%
-) else (
-    echo %c%• Automatic driver updates kept enabled%u%
-)
+
+echo %c%[1/5] Checking installed driver...%u%
+set "GPU_DRIVER_VERSION="
+chcp 437 >nul
+for /f "delims=" %%i in ('powershell -NoProfile -Command "Get-CimInstance -ClassName Win32_VideoController -ErrorAction SilentlyContinue | Where-Object {$_.Name -eq [Environment]::GetEnvironmentVariable('GPU_NAME')} | Select-Object -ExpandProperty DriverVersion" 2^>nul') do set "GPU_DRIVER_VERSION=%%i"
+chcp 65001 >nul
+if defined GPU_DRIVER_VERSION (echo %c%  Current driver: !GPU_DRIVER_VERSION!%u%) else (echo %c%  Could not read driver version%u%)
+if "!GPU_VENDOR!"=="NVIDIA" echo %c%  Official downloads: https://www.nvidia.com/Download/index.aspx%u%
+if "!GPU_VENDOR!"=="AMD" echo %c%  Official downloads: https://www.amd.com/en/support%u%
 
 echo.
-echo %red%Performance Benefits:%u%
-echo %c%• Reduced background processes and resource usage%u%
-echo %c%• Enhanced privacy with telemetry disabled%u%
-echo %c%• Optimized power management for performance%u%
-echo %c%• Cleaner system with unnecessary tasks removed%u%
-echo.
-echo %red%Note:%u%
-echo %c%• For complete software removal, use AMD Cleanup Utility%u%
-echo %c%• Use AMD Radeon Settings for driver configuration%u%
-echo %c%• A system restart is recommended for full effect%u%
-echo.
-echo %c%══════════════════════════ PRESS ANY KEY TO CONTINUE ══════════════════════════%u%
-pause >nul
-goto HardwareMenu
-
-:AMD_Step1_DetectGPU
-echo %c%[1/7] Detecting AMD GPU...%u%
-set "AMD_GPU_FOUND=false"
-for /f "delims=" %%i in ('powershell -NoProfile -Command "Get-CimInstance -ClassName Win32_VideoController -ErrorAction SilentlyContinue | Where-Object { $_.Name -match 'AMD|Radeon|RX ' } | Select-Object -ExpandProperty Name" 2^>nul') do (
-    if not "%%i"=="" (
-        echo %c%  → Found: %%i%u%
-        set "AMD_GPU_FOUND=true"
-    )
-)
-if "%AMD_GPU_FOUND%"=="false" for /f "tokens=2 delims==" %%i in ('wmic path win32_VideoController where "Name like '%%AMD%%' or Name like '%%Radeon%%' or Name like '%%RX %%'" get Name /value 2^>nul') do (
-    if not "%%i"=="" (
-        echo %c%  → Found: %%i%u%
-        set "AMD_GPU_FOUND=true"
-    )
-)
-if "%AMD_GPU_FOUND%"=="false" (
-    echo %red%  → No AMD GPU detected!%u%
-)
-goto :eof
-
-:AMD_Step2_DisableServices
-echo %c%[2/7] Managing AMD services...%u%
-if "%DISABLE_AMD_SERVICES%"=="true" (
-    set "AMD_SERVICES=AMD Crash Defender Service,AMD External Events Utility,AMD Log Utility"
-    for %%s in (%AMD_SERVICES%) do (
-        sc query "%%s" >nul 2>&1
-        if !errorlevel! equ 0 (
-            sc stop "%%s" >nul 2>&1
-            sc config "%%s" start= demand >nul 2>&1
-            echo %c%  → Set to manual: %%s%u%
-        )
-    )
-    echo %c%  → Note: AMD Radeon Software Service kept active for control panel%u%
-) else (
-    echo %c%  → AMD services kept active%u%
-)
-goto :eof
-
-:AMD_Step3_DisableTelemetry
-echo %c%[3/7] Disabling AMD telemetry...%u%
-reg add "HKLM\SOFTWARE\AMD\Install" /v AUEP /t REG_DWORD /d 0 /f >nul 2>&1
-reg add "HKLM\SOFTWARE\AMD\Install" /v UsageTracking /t REG_DWORD /d 0 /f >nul 2>&1
-reg add "HKLM\SOFTWARE\WOW6432Node\AMD\Install" /v AUEP /t REG_DWORD /d 0 /f >nul 2>&1
-reg add "HKLM\SOFTWARE\WOW6432Node\AMD\Install" /v UsageTracking /t REG_DWORD /d 0 /f >nul 2>&1
-reg add "HKCU\SOFTWARE\AMD\DVR" /v PerformanceMonitorOpacityWA /t REG_DWORD /d 0 /f >nul 2>&1
-if "%DISABLE_METRICS%"=="true" (
-    reg add "HKCU\SOFTWARE\AMD\DVR" /v DvrEnabled /t REG_DWORD /d 0 /f >nul 2>&1
-)
-if "%DISABLE_UPDATES%"=="true" (
-    reg add "HKLM\SOFTWARE\AMD\Install" /v AutoUpdate /t REG_DWORD /d 0 /f >nul 2>&1
-    echo %c%  → Auto-updates disabled%u%
-)
-echo %c%  → Telemetry disabled%u%
-goto :eof
-
-:AMD_Step4_OptimizeSettings
-echo %c%[4/7] Optimizing Radeon settings (safe method)...%u%
-set "AMD_DRIVER_KEY="
-for /f "tokens=1" %%a in ('reg query "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}" /s /v DriverDesc 2^>nul ^| findstr /i "AMD\|Radeon"') do (
-    set "AMD_DRIVER_KEY=%%a"
-    goto :ApplyAMDTweaks
-)
-
-:ApplyAMDTweaks
-if not defined AMD_DRIVER_KEY (
-    echo %c%  → Could not find AMD driver registry key, skipping advanced tweaks%u%
-    goto :eof
-)
-
-echo %c%  → Found AMD driver key, applying safe optimizations...%u%
-reg add "%AMD_DRIVER_KEY%" /v EnableUlps /t REG_DWORD /d 0 /f >nul 2>&1
-reg add "%AMD_DRIVER_KEY%" /v EnableUlps_NA /t REG_DWORD /d 0 /f >nul 2>&1
-reg add "%AMD_DRIVER_KEY%" /v PP_SclkDeepSleepDisable /t REG_DWORD /d 1 /f >nul 2>&1
-echo %c%  → Safe performance settings applied%u%
-goto :eof
-
-:AMD_Step5_BlockDomains
-echo %c%[5/7] Blocking AMD telemetry domains...%u%
-set "hosts_file=%windir%\System32\drivers\etc\hosts"
-set "domains=telemetry.amd.com content-delivery.amd.com survey.amd.com"
-
-for %%d in (%domains%) do (
-    findstr /C:"%%d" "%hosts_file%" >nul 2>&1
-    if errorlevel 1 (
-        echo 0.0.0.0 %%d >> "%hosts_file%" 2>nul
-        echo %c%  → Blocked: %%d%u%
-    )
-)
-echo %c%  → Telemetry domains blocked%u%
-goto :eof
-
-:AMD_Step6_CleanTasks
-echo %c%[6/7] Cleaning AMD scheduled tasks...%u%
-set "AMD_TASKS=AMDLinkUpdate StartCN StartDVR"
-for %%t in (%AMD_TASKS%) do (
-    schtasks /query /tn "%%t" >nul 2>&1
-    if !errorlevel! equ 0 (
-        schtasks /change /tn "%%t" /disable >nul 2>&1
-        echo %c%  → Disabled: %%t%u%
-    )
-)
-if "%DISABLE_METRICS%"=="true" (
-    schtasks /query /tn "*AMD*" >nul 2>&1
-    if !errorlevel! equ 0 (
-        for /f "tokens=1" %%t in ('schtasks /query /fo list ^| findstr /i "TaskName.*AMD"') do (
-            schtasks /change /tn "%%t" /disable >nul 2>&1
-        )
-        echo %c%  → All AMD metrics tasks disabled%u%
-    )
-)
-goto :eof
-
-:AMD_Step7_SafeTweaks
-echo %c%[7/7] Applying safe system tweaks...%u%
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" /v TdrDelay /t REG_DWORD /d 10 /f >nul 2>&1
-if defined AMD_DRIVER_KEY (
-    reg add "%AMD_DRIVER_KEY%" /v PP_AllGraphicLevel_UpHyst /t REG_DWORD /d 0 /f >nul 2>&1
-    reg add "%AMD_DRIVER_KEY%" /v PP_AllGraphicLevel_DownHyst /t REG_DWORD /d 20 /f >nul 2>&1
-    reg add "%AMD_DRIVER_KEY%" /v PP_ActivityTarget /t REG_DWORD /d 30 /f >nul 2>&1
-    reg add "%AMD_DRIVER_KEY%" /v PP_ForceHighDPMLevel /t REG_DWORD /d 1 /f >nul 2>&1
-    reg add "%AMD_DRIVER_KEY%" /v PP_Force3DPerformanceMode /t REG_DWORD /d 1 /f >nul 2>&1
-    reg add "%AMD_DRIVER_KEY%" /v DisableAllClockGating /t REG_DWORD /d 1 /f >nul 2>&1
-    echo %c%  → AMD clock hysteresis tuned%u%
-)
-echo %c%  → Safe system optimizations applied%u%
-goto :eof
-
-:NVIDIAOptimizer
-cls
-call :SetupConsole
-echo.
-echo.
-echo %c%╔══════════════════════════════════════════════════════════════════════════════╗
-echo ║                           NVIDIA DRIVER OPTIMIZER                            ║
-echo ╚══════════════════════════════════════════════════════════════════════════════╝%u%
-echo.
-echo %c%NVIDIA optimization includes:%u%
-echo %c%• Disable NVIDIA telemetry and data collection%u%
-echo %c%• Optional: Remove NVIDIA App/GeForce Experience%u%
-echo %c%• Optional: Disable overlays and ShadowPlay%u%
-echo %c%• Optimize NVIDIA Control Panel settings%u%
-echo %c%• Remove bloatware components and scheduled tasks%u%
-echo %c%• Configure power management for performance%u%
-echo %c%• Apply advanced driver optimizations%u%
-echo.
-echo %red%%underline%NVIDIA Notice:%u%
-echo %c%You can choose what to keep and what to disable.%u%
-echo %c%Core optimizations will always be applied for better performance.%u%
-echo.
-echo.
-choice /C YN /M "%c%Apply NVIDIA driver optimizations? (Y/N)%u%"
-if errorlevel 2 goto HardwareMenu
-
-echo.
-echo %c%╔══════════════════════════════════════════════════════════════════════════════╗
-echo ║                           OPTIMIZATION PREFERENCES                           ║
-echo ╚══════════════════════════════════════════════════════════════════════════════╝%u%
-echo.
-echo %c%Choose your optimization preferences:%u%
-echo.
-
-choice /C YN /M "%c%Disable NVIDIA App/GeForce Experience? (Y/N)%u%"
-if errorlevel 2 (
-    set "DISABLE_NVIDIA_APP=false"
-    echo %c%  → NVIDIA App will be kept enabled%u%
-) else (
-    set "DISABLE_NVIDIA_APP=true"
-    echo %c%  → NVIDIA App will be disabled%u%
-)
-
-echo.
-choice /C YN /M "%c%Disable Gaming Overlay and ShadowPlay? (Y/N)%u%"
-if errorlevel 2 (
-    set "DISABLE_OVERLAY=false"
-    echo %c%  → Gaming features will be kept enabled%u%
-) else (
-    set "DISABLE_OVERLAY=true"
-    echo %c%  → Gaming features will be disabled%u%
-)
-
-echo.
-choice /C YN /M "%c%Disable automatic driver updates? (Y/N)%u%"
-if errorlevel 2 (
-    set "DISABLE_UPDATES=false"
-    echo %c%  → Automatic updates will be kept%u%
-) else (
-    set "DISABLE_UPDATES=true"
-    echo %c%  → Automatic updates will be disabled%u%
-)
-
-echo.
-echo %c%╔══════════════════════════════════════════════════════════════════════════════╗
-echo ║                       NVIDIA OPTIMIZATION IN PROGRESS                        ║
-echo ╚══════════════════════════════════════════════════════════════════════════════╝%u%
-
-call :Step1_DetectGPU
-call :Step2_DiscoverServices
-call :Step3_StopServices
-call :Step4_DisableTelemetry
-call :Step5_ManageStartup
-call :Step6_ManageTasks
-call :Step7_ManageGaming
-call :Step8_CoreOptimizations
-call :Step9_AdvancedTweaks
-call :Step10_NVIDIA3DSettings
-call :Step11_BlockTelemetry
-call :Step12_RestartServices
-
-echo.
-echo %c%╔══════════════════════════════════════════════════════════════════════════════╗
-echo ║                       NVIDIA OPTIMIZATION COMPLETED                          ║
-echo ╚══════════════════════════════════════════════════════════════════════════════╝%u%
-echo.
-echo %c%NVIDIA optimizations have been successfully applied.%u%
-echo.
-echo %c%Core Optimizations Applied:%u%
-echo %c%• Telemetry and data collection disabled%u%
-echo %c%• Driver timeout and stability enhanced%u%
-echo %c%• Advanced driver tweaks applied%u%
-echo %c%• Power management optimized%u%
-echo.
-echo %c%User Preferences Applied:%u%
-if "%DISABLE_NVIDIA_APP%"=="true" (
-    echo %c%• NVIDIA App/GeForce Experience disabled%u%
-) else (
-    echo %c%• NVIDIA App/GeForce Experience kept enabled%u%
-)
-if "%DISABLE_OVERLAY%"=="true" (
-    echo %c%• Gaming overlays and ShadowPlay disabled%u%
-) else (
-    echo %c%• Gaming overlays and ShadowPlay kept enabled%u%
-)
-if "%DISABLE_UPDATES%"=="true" (
-    echo %c%• Automatic driver updates disabled%u%
-) else (
-    echo %c%• Automatic driver updates kept enabled%u%
-)
-
-echo.
-echo %red%Performance Benefits:%u%
-echo %c%• Reduced system resource usage%u%
-echo %c%• Eliminated background telemetry processes%u%
-echo %c%• Improved gaming performance and stability%u%
-echo %c%• Enhanced privacy and reduced data collection%u%
-echo %c%• Maximum GPU performance unlocked%u%
-echo.
-echo %red%Note:%u%
-echo %c%• Use NVIDIA Control Panel for driver settings%u%
-echo %c%• A system restart is recommended for full effect%u%
-echo.
-echo %c%══════════════════════════ PRESS ANY KEY TO CONTINUE ══════════════════════════%u%
-pause >nul
-goto HardwareMenu
-
-:Step1_DetectGPU
-echo.
-echo %c%[1/12] Detecting NVIDIA Graphics Hardware...%u%
-set "NVIDIA_FOUND=false"
-set "_nvidia_probe="
-for /f "delims=" %%i in ('powershell -NoProfile -Command "Get-CimInstance -ClassName Win32_VideoController -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Name" 2^>nul') do echo(%%i| findstr /i "NVIDIA" >nul && set "_nvidia_probe=1"
-if not defined _nvidia_probe (wmic path Win32_VideoController get Name 2>nul | findstr /i "NVIDIA" >nul && set "_nvidia_probe=1")
-if defined _nvidia_probe (
-    set "NVIDIA_FOUND=true"
-    echo %c%  * NVIDIA GPU detected%u%
-) else (
-    echo %c%  * No NVIDIA GPU found%u%
-    echo %c%  * Optimization will continue for future compatibility%u%
-)
-exit /b
-
-:Step2_DiscoverServices
-echo %c%[2/12] Discovering NVIDIA Services...%u%
-
-set "TELEMETRY_SERVICES="
-set "NVIDIA_APP_SERVICES="
-set "ESSENTIAL_SERVICES="
-set "servicesFound=false"
-
-echo %c%  * Checking for known NVIDIA services...%u%
-for %%S in (
-    nvcontainer
-    NVDisplay.Container
-    NvContainerLocalSystem
-    NVDisplay.ContainerLocalSystem
-    NvTelemetryContainer
-    nvdisplay.container
-    GfExperienceService
-    NVIDIAAppService
-    NVIDIA.GeForceExperience.Service
-    NvStreamSvc
-    NVSvc
-) do (
-    sc query "%%S" >nul 2>&1 && (
-        set "servicesFound=true"
-        echo %c%    → Found service: %%S%u%
-        
-        if /i "%%S"=="nvcontainer" set "TELEMETRY_SERVICES=!TELEMETRY_SERVICES! %%S" & echo %c%      * Categorized as: Telemetry/Container%u%
-        if /i "%%S"=="NVDisplay.Container" set "TELEMETRY_SERVICES=!TELEMETRY_SERVICES! %%S" & echo %c%      * Categorized as: Telemetry/Container%u%
-        if /i "%%S"=="NvContainerLocalSystem" set "TELEMETRY_SERVICES=!TELEMETRY_SERVICES! %%S" & echo %c%      * Categorized as: Telemetry/Container%u%
-        if /i "%%S"=="NVDisplay.ContainerLocalSystem" set "TELEMETRY_SERVICES=!TELEMETRY_SERVICES! %%S" & echo %c%      * Categorized as: Telemetry/Container%u%
-        if /i "%%S"=="NvTelemetryContainer" set "TELEMETRY_SERVICES=!TELEMETRY_SERVICES! %%S" & echo %c%      * Categorized as: Telemetry/Container%u%
-        if /i "%%S"=="nvdisplay.container" set "TELEMETRY_SERVICES=!TELEMETRY_SERVICES! %%S" & echo %c%      * Categorized as: Telemetry/Container%u%
-        
-        if /i "%%S"=="GfExperienceService" set "NVIDIA_APP_SERVICES=!NVIDIA_APP_SERVICES! %%S" & echo %c%      * Categorized as: NVIDIA App%u%
-        if /i "%%S"=="NVIDIAAppService" set "NVIDIA_APP_SERVICES=!NVIDIA_APP_SERVICES! %%S" & echo %c%      * Categorized as: NVIDIA App%u%
-        if /i "%%S"=="NVIDIA.GeForceExperience.Service" set "NVIDIA_APP_SERVICES=!NVIDIA_APP_SERVICES! %%S" & echo %c%      * Categorized as: NVIDIA App%u%
-        
-        if /i "%%S"=="NVSvc" set "ESSENTIAL_SERVICES=!ESSENTIAL_SERVICES! %%S" & echo %c%      * Categorized as: Essential%u%
-        if /i "%%S"=="NvStreamSvc" set "ESSENTIAL_SERVICES=!ESSENTIAL_SERVICES! %%S" & echo %c%      * Categorized as: Essential%u%
-    )
-)
-
-echo %c%  * Scanning all services for NVIDIA references...%u%
-for /f "skip=1 tokens=2" %%S in ('sc query type= service state= all ^| findstr "SERVICE_NAME"') do (
-    echo %%S | findstr /i "nvidia\|nvcontainer\|nvdisplay\|geforce" >nul && (
-        set "servicesFound=true"
-        
-        echo !TELEMETRY_SERVICES! !NVIDIA_APP_SERVICES! !ESSENTIAL_SERVICES! | findstr /i "%%S" >nul || (
-            echo %c%    → Found additional NVIDIA service: %%S%u%
-            echo %%S | findstr /i "container\|telemetry\|local" >nul && (
-                set "TELEMETRY_SERVICES=!TELEMETRY_SERVICES! %%S"
-                echo %c%      * Auto-categorized as: Telemetry/Container%u%
-            )
-        )
-    )
-)
-
-echo %c%  * Checking running NVIDIA processes...%u%
-tasklist /svc | findstr /i "nvcontainer\|nvdisplay\|nvidia" >nul 2>&1 && (
-    echo %c%    → NVIDIA processes are currently running%u%
-)
-
-if "%servicesFound%"=="false" (
-    echo %c%  * No NVIDIA services found%u%
-    echo %c%  * This may indicate a clean driver installation%u%
-) else (
-    echo %c%  * Service discovery completed%u%
-)
-
-echo %c%  → Telemetry/Container: %TELEMETRY_SERVICES%%u%
-echo %c%  → App Services:       %NVIDIA_APP_SERVICES%%u%
-echo %c%  → Essential Services: %ESSENTIAL_SERVICES%%u%
-exit /b
-
-:Step3_StopServices
-echo %c%[3/12] Stopping NVIDIA Services...%u%
-
-set "servicesStopped=false"
-
-for %%S in (%TELEMETRY_SERVICES%) do (
-    sc query "%%S" 2>nul | findstr /i "RUNNING" >nul && (
-        net stop "%%S" >nul 2>&1
-        if !errorlevel! equ 0 (
-            echo %c%  * Stopped telemetry service: %%S%u%
-            set "servicesStopped=true"
-        ) else (
-            echo %c%  * Failed to stop: %%S%u%
-        )
-    )
-)
-
-if "%DISABLE_NVIDIA_APP%"=="true" (
-    for %%S in (%NVIDIA_APP_SERVICES%) do (
-        sc query "%%S" 2>nul | findstr /i "RUNNING" >nul && (
-            net stop "%%S" >nul 2>&1
-            if !errorlevel! equ 0 (
-                echo %c%  * Stopped app service: %%S%u%
-                set "servicesStopped=true"
-            ) else (
-                echo %c%  * Failed to stop: %%S%u%
-            )
-        )
-    )
-) else (
-    echo %c%  * NVIDIA App services kept running%u%
-)
-
-if "%servicesStopped%"=="false" echo %c%  * No running services found to stop%u%
-exit /b
-
-:Step4_DisableTelemetry
-echo %c%[4/12] Disabling NVIDIA Telemetry Services...%u%
-
-set "servicesDisabled=false"
-
-for %%S in (%TELEMETRY_SERVICES%) do (
-    sc query "%%S" >nul 2>&1 && (
-        sc qc "%%S" | findstr /i "START_TYPE.*DISABLED" >nul || (
+echo %c%[2/5] Disabling telemetry services and tasks...%u%
+if "!GPU_VENDOR!"=="NVIDIA" (
+    for %%S in (nvcontainer NVDisplay.Container NvContainerLocalSystem NVDisplay.ContainerLocalSystem NvTelemetryContainer) do (
+        sc query "%%S" >nul 2>&1 && (
+            sc stop "%%S" >nul 2>&1
             sc config "%%S" start= disabled >nul 2>&1
-            if !errorlevel! equ 0 (
-                echo %c%  * Disabled telemetry service: %%S%u%
-                set "servicesDisabled=true"
-            ) else (
-                echo %c%  * Failed to disable: %%S%u%
-            )
+            echo %c%  → Disabled: %%S%u%
         )
     )
+    for %%T in ("NvTmRep_CrashReport1_{B2FE1952-0186-46C3-BAEC-A80AA35AC5B8}" "NvTmRep_CrashReport2_{B2FE1952-0186-46C3-BAEC-A80AA35AC5B8}" "NvTmRep_CrashReport3_{B2FE1952-0186-46C3-BAEC-A80AA35AC5B8}" "NvTmRep_CrashReport4_{B2FE1952-0186-46C3-BAEC-A80AA35AC5B8}") do (
+        schtasks /query /tn %%T >nul 2>&1 && schtasks /change /tn %%T /disable >nul 2>&1
+    )
+    reg add "HKLM\SOFTWARE\NVIDIA Corporation\NvControlPanel2\Client" /v "OptInOrOutPreference" /t REG_DWORD /d "0" /f >nul 2>&1
+    reg add "HKLM\SOFTWARE\NVIDIA Corporation\Global\FTS" /v "EnableRID44231" /t REG_DWORD /d "0" /f >nul 2>&1
 )
-
-if "%DISABLE_NVIDIA_APP%"=="true" (
-    for %%S in (%NVIDIA_APP_SERVICES%) do (
-        sc query "%%S" >nul 2>&1 && (
-            sc qc "%%S" | findstr /i "START_TYPE.*DISABLED" >nul || (
-                sc config "%%S" start= disabled >nul 2>&1
-                if !errorlevel! equ 0 (
-                    echo %c%  * Disabled app service: %%S%u%
-                    set "servicesDisabled=true"
-                ) else (
-                    echo %c%  * Failed to disable: %%S%u%
-                )
-            )
+if "!GPU_VENDOR!"=="AMD" (
+    for %%S in ("AMD Crash Defender Service" "AMD External Events Utility" "AMD Log Utility") do (
+        sc query %%S >nul 2>&1 && (
+            sc stop %%S >nul 2>&1
+            sc config %%S start= demand >nul 2>&1
+            echo %c%  → Set to manual: %%S%u%
         )
     )
+    for %%T in (AMDLinkUpdate StartCN StartDVR) do (
+        schtasks /query /tn "%%T" >nul 2>&1 && schtasks /change /tn "%%T" /disable >nul 2>&1
+    )
+    reg add "HKLM\SOFTWARE\AMD\Install" /v AUEP /t REG_DWORD /d 0 /f >nul 2>&1
+    reg add "HKLM\SOFTWARE\AMD\Install" /v UsageTracking /t REG_DWORD /d 0 /f >nul 2>&1
+)
+echo %c%  ✓ Telemetry services and tasks disabled%u%
+
+echo.
+echo %c%[3/5] Managing companion app (GeForce Experience / AMD Software)...%u%
+if "!GPU_DISABLE_APP!"=="true" (
+    if "!GPU_VENDOR!"=="NVIDIA" (
+        for %%S in (GfExperienceService NVIDIAAppService) do (
+            sc query "%%S" >nul 2>&1 && (sc stop "%%S" >nul 2>&1 & sc config "%%S" start= demand >nul 2>&1 & echo %c%  → Set to manual: %%S%u%)
+        )
+        for %%R in ("HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Run") do (
+            for %%V in ("NVIDIA GeForce Experience" "NvBackend" "NVIDIA App") do (
+                reg delete "%%R" /v %%V /f >nul 2>&1
+            )
+        )
+        reg add "HKCU\SOFTWARE\NVIDIA Corporation\NVIDIA GeForce Experience\ShadowPlay" /v "ShadowPlayEnabled" /t REG_DWORD /d "0" /f >nul 2>&1
+        reg add "HKCU\SOFTWARE\NVIDIA Corporation\NVIDIA App\NVIDIAOverlay" /v "OverlayEnabled" /t REG_DWORD /d "0" /f >nul 2>&1
+        echo %c%  ✓ Overlay/ShadowPlay disabled; app kept installed but no longer auto-starts%u%
+    )
+    if "!GPU_VENDOR!"=="AMD" (
+        reg add "HKLM\SOFTWARE\AMD\Install" /v AutoUpdate /t REG_DWORD /d 0 /f >nul 2>&1
+        echo %c%  → AMD Software Service kept active so the control panel still works%u%
+        echo %c%  ✓ Auto-update disabled%u%
+    )
+    if "!GPU_VENDOR!"=="NONE" echo %c%  → No vendor companion app detected%u%
 ) else (
-    echo %c%  * NVIDIA App services kept enabled%u%
+    echo %c%  → Companion app kept fully enabled%u%
 )
 
-if "%servicesDisabled%"=="false" echo %c%  * No services required disabling%u%
-exit /b
-
-:Step5_ManageStartup
-echo %c%[5/12] Managing Startup Programs...%u%
-
-if "%DISABLE_NVIDIA_APP%"=="true" (
-    set "startupRemoved=false"
-    for %%R in (
-        "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Run"
-        "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Run"
-    ) do (
-        for %%V in (
-            "NVIDIA GeForce Experience"
-            "NvBackend"
-            "NVIDIA App"
-        ) do (
-            reg query "%%R" /v "%%~V" >nul 2>&1 && (
-                reg delete "%%R" /v "%%~V" /f >nul 2>&1
-                if !errorlevel! equ 0 (
-                    echo %c%  * Removed from startup: %%~V%u%
-                    set "startupRemoved=true"
-                ) else (
-                    echo %c%  * Failed to remove: %%~V%u%
-                )
-            )
-        )
-    )
-    
-    tasklist | findstr /i "NVIDIA App.exe" >nul 2>&1 && (
-        taskkill /f /im "NVIDIA App.exe" >nul 2>&1
-        if !errorlevel! equ 0 (
-            echo %c%  * Terminated NVIDIA App process%u%
-            set "startupRemoved=true"
-        )
-    )
-    
-    if exist "C:\Program Files\NVIDIA Corporation\NVIDIA App\CEF\NVIDIA App.exe" (
-        echo %c%  * NVIDIA App executable found%u%
-        choice /C YN /M "%c%  Rename NVIDIA App.exe to prevent auto-start? (Y/N)%u%"
-        if !errorlevel! equ 1 (
-            ren "C:\Program Files\NVIDIA Corporation\NVIDIA App\CEF\NVIDIA App.exe" "NVIDIA App.exe.disabled" >nul 2>&1
-            if !errorlevel! equ 0 (
-                echo %c%  * NVIDIA App executable disabled%u%
-                set "startupRemoved=true"
-            ) else (
-                echo %c%  * Failed to disable NVIDIA App executable%u%
-            )
-        )
-    )
-    
-    if "%startupRemoved%"=="false" echo %c%  * No startup entries found to remove%u%
-) else (
-    echo %c%  * NVIDIA App kept in startup%u%
-    
-    if exist "C:\Program Files\NVIDIA Corporation\NVIDIA App\CEF\NVIDIA App.exe.disabled" (
-        ren "C:\Program Files\NVIDIA Corporation\NVIDIA App\CEF\NVIDIA App.exe.disabled" "NVIDIA App.exe" >nul 2>&1
-        if !errorlevel! equ 0 echo %c%  * NVIDIA App executable restored%u%
-    )
-)
-exit /b
-
-:Step6_ManageTasks
-echo %c%[6/12] Managing Scheduled Tasks...%u%
-
-set "telemetryTasksModified=false"
-for %%T in (
-    "NvTmRep_CrashReport1_{B2FE1952-0186-46C3-BAEC-A80AA35AC5B8}"
-    "NvTmRep_CrashReport2_{B2FE1952-0186-46C3-BAEC-A80AA35AC5B8}"
-    "NvTmRep_CrashReport3_{B2FE1952-0186-46C3-BAEC-A80AA35AC5B8}"
-    "NvTmRep_CrashReport4_{B2FE1952-0186-46C3-BAEC-A80AA35AC5B8}"
-) do (
-    schtasks /query /tn "%%~T" >nul 2>&1 && (
-        schtasks /query /tn "%%~T" /fo csv | findstr /i "Disabled" >nul || (
-            schtasks /change /disable /tn "%%~T" >nul 2>&1
-            if !errorlevel! equ 0 (
-                echo %c%  * Disabled telemetry task: %%~T%u%
-                set "telemetryTasksModified=true"
-            ) else (
-                echo %c%  * Failed to disable task: %%~T%u%
-            )
-        )
-    )
-)
-if "%telemetryTasksModified%"=="false" echo %c%  * No telemetry tasks required disabling%u%
-
-if "%DISABLE_UPDATES%"=="true" (
-    set "updateTasksModified=false"
-    for %%T in (
-        "NvDriverUpdateCheckDaily"
-        "NvBatteryBoostCheckOnLogon"
-		"NVIDIA App SelfUpdate_{B2FE1952-0186-46C3-BAEC-A80AA35AC5B8}"
-        "NVIDIA GeForce Experience SelfUpdate_{B2FE1952-0186-46C3-BAEC-A80AA35AC5B8}"
-        "NvProfileUpdaterDaily"
-        "NvProfileUpdaterOnLogon"
-    ) do (
-        schtasks /query /tn "%%~T" >nul 2>&1 && (
-            schtasks /delete /tn "%%~T" /f >nul 2>&1
-            if !errorlevel! equ 0 (
-                echo %c%  * Removed update task: %%~T%u%
-                set "updateTasksModified=true"
-            ) else (
-                echo %c%  * Failed to remove task: %%~T%u%
-            )
-        )
-    )
-    if "%updateTasksModified%"=="false" echo %c%  * No update tasks found to remove%u%
-) else (
-    echo %c%  * Update tasks kept enabled%u%
-)
-exit /b
-
-:Step7_ManageGaming
-echo %c%[7/12] Managing Gaming Features...%u%
-
-if "%DISABLE_OVERLAY%"=="true" (
-    set "gamingFeaturesDisabled=false"
-    
-    for %%K in (
-        "HKLM\SOFTWARE\NVIDIA Corporation\NvStreamSrv|EnableStreaming|0"
-        "HKLM\SOFTWARE\NVIDIA Corporation\Global\FTS|EnableRID66610|0"
-        "HKLM\SOFTWARE\NVIDIA Corporation\Global\FTS|EnableRID64640|0"
-        "HKCU\SOFTWARE\NVIDIA Corporation\NVIDIA GeForce Experience\ShadowPlay|ShadowPlayEnabled|0"
-        "HKLM\SOFTWARE\NVIDIA Corporation\Global\ShadowPlay\NVSPCAPS|DefaultUser|0"
-        "HKCU\SOFTWARE\NVIDIA Corporation\NVIDIA App\NVIDIAOverlay|OverlayEnabled|0"
-    ) do (
-        for /f "tokens=1,2,3 delims=|" %%A in ("%%K") do (
-            reg add "%%A" /v "%%B" /t REG_DWORD /d "%%C" /f >nul 2>&1
-            if !errorlevel! equ 0 (
-                echo %c%  * Disabled gaming feature: %%B%u%
-                set "gamingFeaturesDisabled=true"
-            )
-        )
-    )
-    
-    if "%gamingFeaturesDisabled%"=="true" (
-        echo %c%  * Gaming overlays and recording disabled%u%
-    ) else (
-        echo %c%  * No gaming features required disabling%u%
-    )
-) else (
-    echo %c%  * Gaming features kept enabled%u%
-)
-exit /b
-
-:Step8_CoreOptimizations
-echo %c%[8/12] Applying Core Registry Optimizations...%u%
-
-set "coreOptimizationsApplied=false"
-
-reg add "HKLM\SOFTWARE\NVIDIA Corporation\NvControlPanel2\Client" /v "OptInOrOutPreference" /t REG_DWORD /d "0" /f >nul 2>&1
-if !errorlevel! equ 0 (
-    echo %c%  * Applied optimization: Telemetry opt-out%u%
-    set "coreOptimizationsApplied=true"
-)
-
-reg add "HKLM\SOFTWARE\NVIDIA Corporation\Global\FTS" /v "EnableRID44231" /t REG_DWORD /d "0" /f >nul 2>&1
-if !errorlevel! equ 0 (
-    echo %c%  * Applied optimization: Telemetry collection%u%
-    set "coreOptimizationsApplied=true"
-)
-
-reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games" /v "GPU Priority" /t REG_DWORD /d "8" /f >nul 2>&1
-if !errorlevel! equ 0 (
-    echo %c%  * Applied optimization: High Performance GPU Mode%u%
-    set "coreOptimizationsApplied=true"
-)
-
+echo.
+echo %c%[4/5] Applying documented Windows GPU performance settings...%u%
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" /v "HwSchMode" /t REG_DWORD /d "2" /f >nul 2>&1
-if !errorlevel! equ 0 (
-    echo %c%  * Applied optimization: Enable Hardware GPU Scheduling%u%
-    set "coreOptimizationsApplied=true"
-)
+reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games" /v "GPU Priority" /t REG_DWORD /d "8" /f >nul 2>&1
+reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games" /v "Priority" /t REG_DWORD /d "6" /f >nul 2>&1
+reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games" /v "Scheduling Category" /t REG_SZ /d "High" /f >nul 2>&1
+echo %c%  ✓ Hardware-Accelerated GPU Scheduling enabled%u%
+echo %c%  ✓ Foreground game prioritized in the Windows multimedia scheduler%u%
 
-reg add "HKCU\Software\NVIDIA Corporation\Global\NVTweak\Devices\509901423-0\Color" /v "NvCplUseColorCorrection" /t REG_DWORD /d "0" /f >nul 2>&1
-if !errorlevel! equ 0 (
-    echo %c%  * Applied optimization: Color correction%u%
-    set "coreOptimizationsApplied=true"
-)
-
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" /v "PlatformSupportMiracast" /t REG_DWORD /d "0" /f >nul 2>&1
-if !errorlevel! equ 0 (
-    echo %c%  * Applied optimization: Miracast support%u%
-    set "coreOptimizationsApplied=true"
-)
-
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\NVTweak" /v "DisplayPowerSaving" /t REG_DWORD /d "0" /f >nul 2>&1
-if !errorlevel! equ 0 (
-    echo %c%  * Applied optimization: Display power saving%u%
-    set "coreOptimizationsApplied=true"
-)
-
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" /v "TdrDelay" /t REG_DWORD /d "10" /f >nul 2>&1
-if !errorlevel! equ 0 (
-    echo %c%  * Applied optimization: Driver timeout delay%u%
-    set "coreOptimizationsApplied=true"
-)
-
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" /v "TdrDdiDelay" /t REG_DWORD /d "10" /f >nul 2>&1
-if !errorlevel! equ 0 (
-    echo %c%  * Applied optimization: DDI timeout delay%u%
-    set "coreOptimizationsApplied=true"
-)
-
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" /v "TdrLevel" /t REG_DWORD /d "0" /f >nul 2>&1
-if !errorlevel! equ 0 (
-    echo %c%  * Applied optimization: Timeout detection level%u%
-    set "coreOptimizationsApplied=true"
-)
-
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\FTS" /v "EnableRID61684" /t REG_DWORD /d "1" /f >nul 2>&1
-if !errorlevel! equ 0 (
-    echo %c%  * Applied optimization: Silk smoothness%u%
-    set "coreOptimizationsApplied=true"
-)
-
-if "%coreOptimizationsApplied%"=="true" (
-    echo %c%  * Core optimizations completed%u%
-) else (
-    echo %c%  * Core optimizations already applied%u%
-)
-exit /b
-
-
-:Step9_AdvancedTweaks
-echo %c%[9/12] Applying Advanced Driver Tweaks...%u%
-
-set "tweaksApplied=false"
-set "devicesFound=false"
-set "deviceCount=0"
-
-for /f %%a in ('reg query "HKLM\System\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}" /t REG_SZ /s /e /f "NVIDIA" 2^>nul ^| findstr "HKEY"') do (
-    set "devicesFound=true"
-    set /a "deviceCount=!deviceCount!+1"
-    
-    reg add "%%a" /v "EnableTiledDisplay" /t REG_DWORD /d "0" /f >nul 2>&1
-    if !errorlevel! equ 0 set "tweaksApplied=true"
-    
-    reg add "%%a" /v "TCCSupported" /t REG_DWORD /d "0" /f >nul 2>&1
-    if !errorlevel! equ 0 set "tweaksApplied=true"
-    
-    reg add "%%a" /v "PowerMizerEnable" /t REG_DWORD /d "0" /f >nul 2>&1
-    if !errorlevel! equ 0 set "tweaksApplied=true"
-    
-    reg add "%%a" /v "PowerMizerLevel" /t REG_DWORD /d "1" /f >nul 2>&1
-    reg add "%%a" /v "PowerMizerLevelAC" /t REG_DWORD /d "1" /f >nul 2>&1
-    if !errorlevel! equ 0 set "tweaksApplied=true"
-    
-    reg add "%%a" /v "EnableUlps" /t REG_DWORD /d "0" /f >nul 2>&1
-    if !errorlevel! equ 0 set "tweaksApplied=true"
-    
-    reg add "%%a" /v "EnableMClkSlowdown" /t REG_DWORD /d "0" /f >nul 2>&1
-    if !errorlevel! equ 0 set "tweaksApplied=true"
-
-    reg add "%%a" /v "D3PCLatency" /t REG_DWORD /d "1" /f >nul 2>&1
-    reg add "%%a" /v "F1TransitionLatency" /t REG_DWORD /d "1" /f >nul 2>&1
-    reg add "%%a" /v "LOWLATENCY" /t REG_DWORD /d "1" /f >nul 2>&1
-    reg add "%%a" /v "Node3DLowLatency" /t REG_DWORD /d "1" /f >nul 2>&1
-    reg add "%%a" /v "PciLatencyTimerControl" /t REG_DWORD /d "20" /f >nul 2>&1
-    reg add "%%a" /v "RMDeepL1EntryLatencyUsec" /t REG_DWORD /d "1" /f >nul 2>&1
-    reg add "%%a" /v "RmGspcMaxFtuS" /t REG_DWORD /d "1" /f >nul 2>&1
-    reg add "%%a" /v "RmGspcMinFtuS" /t REG_DWORD /d "1" /f >nul 2>&1
-    reg add "%%a" /v "RmGspcPerioduS" /t REG_DWORD /d "1" /f >nul 2>&1
-    reg add "%%a" /v "RMLpwrEiIdleThresholdUs" /t REG_DWORD /d "1" /f >nul 2>&1
-    reg add "%%a" /v "RMLpwrGrIdleThresholdUs" /t REG_DWORD /d "1" /f >nul 2>&1
-    reg add "%%a" /v "RMLpwrGrRgIdleThresholdUs" /t REG_DWORD /d "1" /f >nul 2>&1
-    reg add "%%a" /v "RMLpwrMsIdleThresholdUs" /t REG_DWORD /d "1" /f >nul 2>&1
-    reg add "%%a" /v "VRDirectFlipDPCDelayUs" /t REG_DWORD /d "1" /f >nul 2>&1
-    reg add "%%a" /v "VRDirectFlipTimingMarginUs" /t REG_DWORD /d "1" /f >nul 2>&1
-    reg add "%%a" /v "VRDirectJITFlipMsHybridFlipDelayUs" /t REG_DWORD /d "1" /f >nul 2>&1
-    reg add "%%a" /v "vrrCursorMarginUs" /t REG_DWORD /d "1" /f >nul 2>&1
-    reg add "%%a" /v "vrrDeflickerMarginUs" /t REG_DWORD /d "1" /f >nul 2>&1
-    reg add "%%a" /v "vrrDeflickerMaxUs" /t REG_DWORD /d "1" /f >nul 2>&1
-    reg add "%%a" /v "RmFbsrPagedDMA" /t REG_DWORD /d "1" /f >nul 2>&1
-    reg add "%%a" /v "RmGpsPsEnablePerCpuCoreDpc" /t REG_DWORD /d "1" /f >nul 2>&1
-    reg add "%%a" /v "RmEccScrubEnable" /t REG_DWORD /d "0" /f >nul 2>&1
-    reg add "%%a" /v "RmIntrLockingMode" /t REG_DWORD /d "1" /f >nul 2>&1
-    reg add "%%a" /v "RMEnableLargePages" /t REG_DWORD /d "1" /f >nul 2>&1
-    reg add "%%a" /v "RMBigPageLimit" /t REG_DWORD /d "0" /f >nul 2>&1
-    reg add "%%a" /v "RmForceCopyEnginePCIeGen4" /t REG_DWORD /d "1" /f >nul 2>&1
-    reg add "%%a" /v "RMTimeSyncMode" /t REG_DWORD /d "1" /f >nul 2>&1
-    reg add "%%a" /v "RMDisablePcieProtections" /t REG_DWORD /d "1" /f >nul 2>&1
-    if !errorlevel! equ 0 set "tweaksApplied=true"
-)
-
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\FTS" /v "EnableRID73779" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\FTS" /v "EnableRID73780" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\FTS" /v "EnableRID74361" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Parameters" /v "ThreadPriority" /t REG_DWORD /d "31" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm" /v "LogWarningEntries" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm" /v "LogPagingEntries" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm" /v "LogEventEntries" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm" /v "LogErrorEntries" /t REG_DWORD /d "0" /f >nul 2>&1
-
-if "%devicesFound%"=="false" (
-    echo %c%  * No NVIDIA devices found in registry%u%
-) else (
-    if "%tweaksApplied%"=="true" (
-        echo %c%  * Disabled tiled display for !deviceCount! NVIDIA device^(s^)%u%
-        echo %c%  * Disabled TCC support for !deviceCount! NVIDIA device^(s^)%u%
-        echo %c%  * Disabled PowerMizer for !deviceCount! NVIDIA device^(s^)%u%
-        echo %c%  * Set maximum performance mode for !deviceCount! NVIDIA device^(s^)%u%
-        echo %c%  * Disabled ULPS power saving for !deviceCount! NVIDIA device^(s^)%u%
-        echo %c%  * Disabled memory clock slowdown for !deviceCount! NVIDIA device^(s^)%u%
-        echo %c%  * Advanced driver tweaks completed%u%
-    ) else (
-        echo %c%  * Advanced tweaks already applied%u%
-    )
-)
-exit /b
-
-
-:Step10_NVIDIA3DSettings
-echo %c%[10/12] Applying NVIDIA Control Panel 3D Settings...%u%
-
-for %%P in (
-    "HKLM\SOFTWARE\NVIDIA Corporation\Global\3D Settings|ThreadedOptimization|1|Threaded Optimization enabled"
-    "HKLM\SOFTWARE\NVIDIA Corporation\Global\3D Settings|MaxPreRenderedFrames|1|Max Pre-Rendered Frames set to 1"
-) do (
-    for /f "tokens=1,2,3,4 delims=|" %%A in ("%%~P") do (
-        reg add "%%A" /v "%%B" /t REG_DWORD /d "%%C" /f >nul 2>&1
-        if !errorlevel! equ 0 (
-            echo %c%  * %%D%u%
-        ) else (
-            echo %c%  * Failed to apply: %%D%u%
+echo.
+echo %c%[5/5] Blocking known telemetry domains...%u%
+set "hosts_file=%windir%\System32\drivers\etc\hosts"
+set "gpu_domains="
+if "!GPU_VENDOR!"=="NVIDIA" set "gpu_domains=telemetry.gfe.nvidia.com services.gfe.nvidia.com events.gfe.nvidia.com telemetry-web.gfe.nvidia.com"
+if "!GPU_VENDOR!"=="AMD" set "gpu_domains=telemetry.amd.com content-delivery.amd.com survey.amd.com"
+if defined gpu_domains (
+    for %%d in (!gpu_domains!) do (
+        findstr /C:"%%d" "%hosts_file%" >nul 2>&1 || (
+            echo 0.0.0.0 %%d >> "%hosts_file%" 2>nul
+            echo %c%  → Blocked: %%d%u%
         )
     )
-)
-
-exit /b
-
-:Step11_BlockTelemetry
-echo %c%[11/12] Blocking Telemetry Hosts...%u%
-
-setlocal
-set "HOSTS=%windir%\System32\drivers\etc\hosts"
-set "TMPHOSTS=%TEMP%\hosts.tmp"
-set "blockedAny=false"
-
-if exist "%HOSTS%" (
-    copy /Y "%HOSTS%" "%TMPHOSTS%" >nul 2>&1
+    echo %c%  ✓ Telemetry domains blocked%u%
 ) else (
-    type NUL > "%HOSTS%"
-    copy /Y "%HOSTS%" "%TMPHOSTS%" >nul 2>&1
+    echo %c%  → No vendor detected, nothing to block%u%
 )
 
-for %%H in (
-    telemetry.gfe.nvidia.com
-    gfwsl.geforce.com
-    services.gfe.nvidia.com
-    accounts.nvgs.nvidia.com
-    events.gfe.nvidia.com
-    telemetry-web.gfe.nvidia.com
-    ota-downloads.nvidia.com
-    rds-assets.nvidia.com
-) do (
-    findstr /IX "127.0.0.1 %%H" "%TMPHOSTS%" >nul 2>&1 || (
-        >>"%HOSTS%" echo 127.0.0.1 %%H
-        echo %c%  * Blocked telemetry host: %%H%u%
-        set "blockedAny=true"
-    )
-)
-
-if "%blockedAny%"=="true" (
-    echo %c%  * Telemetry hosts successfully blocked%u%
-) else (
-    echo %c%  * Telemetry hosts already blocked%u%
-)
-
-del "%TMPHOSTS%" 2>nul
-endlocal & exit /b
-
-
-:Step12_RestartServices
-echo %c%[12/12] Restarting Essential Services...%u%
-
-set "servicesRestarted=false"
-
-for %%S in (%ESSENTIAL_SERVICES%) do (
-    sc query "%%S" 2>nul | findstr /i "STOPPED" >nul && (
-        net start "%%S" >nul 2>&1
-        if !errorlevel! equ 0 (
-            echo %c%  * Started essential service: %%S%u%
-            set "servicesRestarted=true"
-        ) else (
-            echo %c%  * Failed to start: %%S%u%
-        )
-    )
-)
-
-if "%DISABLE_NVIDIA_APP%"=="false" (
-    for %%S in (
-        "NvContainerLocalSystem"
-        "NVDisplay.ContainerLocalSystem"
-    ) do (
-        sc query "%%S" >nul 2>&1 && (
-            sc config "%%S" start= auto >nul 2>&1
-            sc query "%%S" 2>nul | findstr /i "STOPPED" >nul && (
-                net start "%%S" >nul 2>&1
-                if !errorlevel! equ 0 (
-                    echo %c%  * Restarted NVIDIA container service: %%S%u%
-                    set "servicesRestarted=true"
-                ) else (
-                    echo %c%  * Failed to restart: %%S%u%
-                )
-            )
-        )
-    )
-    
-    for %%S in (%NVIDIA_APP_SERVICES%) do (
-        sc query "%%S" >nul 2>&1 && (
-            sc config "%%S" start= auto >nul 2>&1
-            sc query "%%S" 2>nul | findstr /i "STOPPED" >nul && (
-                net start "%%S" >nul 2>&1
-                if !errorlevel! equ 0 (
-                    echo %c%  * Restarted app service: %%S%u%
-                    set "servicesRestarted=true"
-                ) else (
-                    echo %c%  * Failed to restart: %%S%u%
-                )
-            )
-        )
-    )
-)
-
-if "%servicesRestarted%"=="false" echo %c%  * No services required restarting%u%
-exit /b
+echo.
+echo %c%╔══════════════════════════════════════════════════════════════════════════════╗
+echo ║                        GPU OPTIMIZATION COMPLETED                            ║
+echo ╚══════════════════════════════════════════════════════════════════════════════╝%u%
+echo.
+echo %c%Applied (documented and reversible):%u%
+echo %c%• Telemetry services and scheduled tasks disabled%u%
+echo %c%• Hardware-Accelerated GPU Scheduling enabled%u%
+echo %c%• Foreground game prioritized in the Windows scheduler%u%
+echo %c%• Vendor telemetry domains blocked%u%
+if "!GPU_DISABLE_APP!"=="true" echo %c%• Companion app overlay and auto-start disabled%u%
+echo.
+echo %c%Not touched, by design:%u%
+echo %c%• Driver crash recovery (TDR) and PCIe protections%u%
+echo %c%• GPU clock/power state management — use MSI Afterburner or the vendor%u%
+echo %c%  app for that, where the change is visible and reversible%u%
+echo %c%• No third-party driver was downloaded or installed%u%
+echo.
+echo %orange%A restart is recommended for HAGS to take full effect.%u%
+echo.
+echo %c%══════════════════════════ PRESS ANY KEY TO CONTINUE ══════════════════════════%u%
+pause >nul
+goto HardwareMenu
 
 :StorageAcceleration
 cls
@@ -9710,15 +8934,13 @@ if "%NVME_FOUND%"=="true" echo %c%  ✓ NVMe drives detected%u%
 if "%SSD_FOUND%"=="false" echo %c%  • Traditional hard drives detected%u%
 
 
-echo %c%[2/8] Optimizing TRIM and SSD Settings...%u%
+echo %c%[2/8] Verifying TRIM Settings...%u%
+for /f "tokens=*" %%t in ('fsutil behavior query DisableDeleteNotify 2^>nul') do echo %c%  • %%t%u%
 fsutil behavior set DisableDeleteNotify 0 >nul 2>&1
-echo %c%  ✓ TRIM enabled for SSDs%u%
-
-schtasks /change /tn "\Microsoft\Windows\Defrag\ScheduledDefrag" /disable >nul 2>&1
-echo %c%  ✓ Automatic defragmentation disabled for SSDs%u%
-
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\StorageDevicePolicies" /v "WriteProtectPolicy" /t REG_DWORD /d "0" /f >nul 2>&1
-echo %c%  ✓ SSD write caching optimized%u%
+echo %c%  ✓ TRIM confirmed enabled for SSDs%u%
+rem The Windows Optimize Drives scheduled task is left untouched: on SSDs it
+rem performs Retrim maintenance, not classic defragmentation, so disabling it
+rem would also stop that TRIM maintenance from running.
 
 echo %c%[3/8] Configuring File System Performance...%u%
 fsutil behavior set Disable8dot3 1 >nul 2>&1
@@ -9733,18 +8955,19 @@ reg add "HKLM\SYSTEM\CurrentControlSet\Control\FileSystem" /v "NtfsDisableLastAc
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\FileSystem" /v "NtfsDisable8dot3NameCreation" /t REG_DWORD /d "1" /f >nul 2>&1
 echo %c%  ✓ NTFS performance optimizations applied%u%
 
-echo %c%[4/8] Optimizing Disk Write Caching...%u%
-set "_logicaldisk_found="
-for /f "delims=" %%d in ('powershell -NoProfile -Command "Get-CimInstance -ClassName Win32_LogicalDisk -ErrorAction SilentlyContinue | Select-Object -ExpandProperty DeviceID" 2^>nul') do (
-    set "_logicaldisk_found=1"
-    fsutil dirty set %%d >nul 2>&1
-    echo %c%  ✓ Write caching enabled for drive %%d%u%
+echo %c%[4/8] Verifying Disk Write Caching Policy...%u%
+rem Uses the documented "Enable write caching on the device" Device Manager
+rem policy value. fsutil dirty was previously (mis)used here - that command
+rem only flags a volume for a chkdsk on next boot, it does not touch caching.
+chcp 437 >nul
+set "_diskcache_found="
+for /f "delims=" %%b in ('powershell -NoProfile -Command "Get-CimInstance -ClassName Win32_DiskDrive -ErrorAction SilentlyContinue | Select-Object -ExpandProperty PNPDeviceID" 2^>nul') do (
+    set "_diskcache_found=1"
+    reg add "HKLM\SYSTEM\CurrentControlSet\Enum\%%b\Device Parameters\Disk" /v "UserWriteCacheSetting" /t REG_DWORD /d "1" /f >nul 2>&1
+    echo %c%  ✓ Write caching confirmed enabled: %%b%u%
 )
-if not defined _logicaldisk_found for /f "tokens=1" %%d in ('wmic logicaldisk get size^,deviceid /format:table ^| findstr /r "[A-Z]:"') do (
-    fsutil dirty set %%d >nul 2>&1
-	chcp 65001>nul
-    echo %c%  ✓ Write caching enabled for drive %%d%u%
-)
+chcp 65001 >nul
+if not defined _diskcache_found echo %c%  • No disk devices found to verify%u%
 
 echo %c%[5/8] Configuring Prefetch and Superfetch...%u%
 if "%SSD_FOUND%"=="true" (
@@ -9791,33 +9014,29 @@ if not defined _ide_found for /f %%i in ('wmic path Win32_IDEController get PNPD
 
 echo %c%  ✓ Storage controller interrupts optimized%u%
 
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\storahci\Parameters\Device" /v "TreatAsInternalPort" /t REG_MULTI_SZ /d "0\00\01\02\03\04\05" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\storahci\Parameters" /v "EnableDipm" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\storahci\Parameters" /v "EnableHipm" /t REG_DWORD /d "0" /f >nul 2>&1
-echo %c%  ✓ AHCI driver settings optimized%u%
-
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\stornvme\Parameters\Device" /v "IoTimeoutValue" /t REG_DWORD /d "255" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\stornvme\Parameters" /v "EnableLogging" /t REG_DWORD /d "0" /f >nul 2>&1
-echo %c%  ✓ NVMe controller settings optimized%u%
+chcp 437 >nul
+set "_is_laptop=false"
+for /f "delims=" %%L in ('powershell -NoProfile -Command "if(Get-CimInstance Win32_Battery -ErrorAction SilentlyContinue){'true'}else{'false'}" 2^>nul') do set "_is_laptop=%%L"
+chcp 65001 >nul
+if /i "!_is_laptop!"=="true" (
+    echo %c%  • Laptop battery detected - AHCI link power management kept enabled%u%
+) else (
+    reg add "HKLM\SYSTEM\CurrentControlSet\Services\storahci\Parameters" /v "EnableDipm" /t REG_DWORD /d "0" /f >nul 2>&1
+    reg add "HKLM\SYSTEM\CurrentControlSet\Services\storahci\Parameters" /v "EnableHipm" /t REG_DWORD /d "0" /f >nul 2>&1
+    echo %c%  ✓ AHCI link power management disabled (desktop, no battery to drain)%u%
+)
 
 echo %c%[7/8] Configuring Storage Power Management...%u%
-chcp 437>nul
-set "_diskdrive_pnp_found="
-for /f "delims=" %%b in ('powershell -NoProfile -Command "Get-CimInstance -ClassName Win32_DiskDrive -ErrorAction SilentlyContinue | Select-Object -ExpandProperty PNPDeviceID" 2^>nul') do (
-    set "_diskdrive_pnp_found=1"
-    reg add "HKLM\SYSTEM\CurrentControlSet\Enum\%%b\Device Parameters" /v "StorageDevicePolicies" /t REG_DWORD /d "0" /f >nul 2>&1
+if /i "!_is_laptop!"=="true" (
+    powercfg -setdcvalueindex SCHEME_CURRENT 0012ee47-9041-4b5d-9b77-535fba8b1442 6738e2c4-e8a5-4a42-b16a-e040e769756e 20 >nul 2>&1
+    powercfg -setacvalueindex SCHEME_CURRENT 0012ee47-9041-4b5d-9b77-535fba8b1442 6738e2c4-e8a5-4a42-b16a-e040e769756e 0 >nul 2>&1
+    powercfg -setactive SCHEME_CURRENT >nul 2>&1
+    echo %c%  ✓ Disk idle timeout disabled on AC, kept on battery to save power%u%
+) else (
+    powercfg -setacvalueindex SCHEME_CURRENT 0012ee47-9041-4b5d-9b77-535fba8b1442 6738e2c4-e8a5-4a42-b16a-e040e769756e 0 >nul 2>&1
+    powercfg -setactive SCHEME_CURRENT >nul 2>&1
+    echo %c%  ✓ Disk idle timeout disabled (desktop)%u%
 )
-if not defined _diskdrive_pnp_found for /f "tokens=*" %%a in ('wmic diskdrive get PNPDeviceID /format:value ^| find "PNPDeviceID"') do (
-    for /f "tokens=2 delims==" %%b in ("%%a") do (
-        reg add "HKLM\SYSTEM\CurrentControlSet\Enum\%%b\Device Parameters" /v "StorageDevicePolicies" /t REG_DWORD /d "0" /f >nul 2>&1
-    )
-)
-chcp 65001>nul
-
-powercfg -setacvalueindex SCHEME_CURRENT 0012ee47-9041-4b5d-9b77-535fba8b1442 6738e2c4-e8a5-4a42-b16a-e040e769756e 0 >nul 2>&1
-powercfg -setdcvalueindex SCHEME_CURRENT 0012ee47-9041-4b5d-9b77-535fba8b1442 6738e2c4-e8a5-4a42-b16a-e040e769756e 0 >nul 2>&1
-powercfg -setactive SCHEME_CURRENT >nul 2>&1
-echo %c%  ✓ Storage power management disabled%u%
 
 echo %c%[8/8] Running Storage Maintenance...%u%
 del /f /s /q "%temp%\*" >nul 2>&1
@@ -9865,6 +9084,71 @@ echo %c%• Faster file access and application loading%u%
 echo %c%• Reduced storage latency and seek times%u%
 echo %c%• Optimized caching for your storage type%u%
 echo %c%• Enhanced overall system responsiveness%u%
+echo.
+echo %c%══════════════════════════ PRESS ANY KEY TO CONTINUE ══════════════════════════%u%
+pause >nul
+goto HardwareMenu
+
+:MemoryDiagnostics
+cls
+call :SetupConsole
+echo.
+echo.
+echo %c%╔══════════════════════════════════════════════════════════════════════════════╗
+echo ║                        MEMORY - XMP / EXPO CHECK                             ║
+echo ╚══════════════════════════════════════════════════════════════════════════════╝%u%
+echo.
+echo %c%This is a read-only check. XMP (Intel) / EXPO or DOCP (AMD) can only be turned%u%
+echo %c%on in the BIOS/UEFI - no software can safely enable it from inside Windows.%u%
+echo %c%Without it, most kits run at a slow JEDEC default instead of their rated speed.%u%
+echo.
+echo %c%Reading installed memory modules...%u%
+echo.
+chcp 437 >nul
+powershell -NoProfile -Command "$mods = Get-CimInstance Win32_PhysicalMemory -ErrorAction SilentlyContinue; if (-not $mods) { Write-Host 'NO_DATA'; exit }; $totalGB = [math]::Round((($mods | Measure-Object Capacity -Sum).Sum)/1GB,0); Write-Host (\"Installed: {0} module(s), {1} GB total\" -f $mods.Count, $totalGB); Write-Host ''; $anyLow = $false; foreach ($m in $mods) { $rated = $m.Speed; $running = $m.ConfiguredClockSpeed; $tag = 'OK'; if ($running -and $rated -and ($running -lt $rated)) { $tag = 'BELOW RATED SPEED'; $anyLow = $true }; $part = ('' + $m.PartNumber).Trim(); Write-Host (\"  {0}: {1} GB, {2} - rated {3} MHz, running {4} MHz [{5}]\" -f $m.DeviceLocator, [math]::Round($m.Capacity/1GB,0), $part, $rated, $running, $tag) }; Write-Host ''; if ($anyLow) { Write-Host 'VERDICT|LOW' } else { Write-Host 'VERDICT|OK' }" > "%temp%\dex_mem.txt" 2>nul
+chcp 65001 >nul
+
+if not exist "%temp%\dex_mem.txt" (
+    echo %red%Could not read memory information.%u%
+    goto MemoryDiagnosticsEnd
+)
+
+findstr /C:"NO_DATA" "%temp%\dex_mem.txt" >nul 2>&1 && (
+    echo %red%Could not read memory information from WMI.%u%
+    del "%temp%\dex_mem.txt" 2>nul
+    goto MemoryDiagnosticsEnd
+)
+
+for /f "usebackq delims=" %%L in ("%temp%\dex_mem.txt") do (
+    echo %%L | findstr /B "VERDICT|" >nul || echo %c%%%L%u%
+)
+
+set "MEM_VERDICT=OK"
+findstr /C:"VERDICT|LOW" "%temp%\dex_mem.txt" >nul 2>&1 && set "MEM_VERDICT=LOW"
+del "%temp%\dex_mem.txt" 2>nul
+
+echo.
+if "!MEM_VERDICT!"=="LOW" (
+    echo %orange%%underline%At least one module is running below its rated speed.%u%
+    echo %c%This is almost always because XMP/EXPO/DOCP is off in the BIOS - the RAM%u%
+    echo %c%is running at a safe generic speed instead of the speed printed on the kit.%u%
+    echo.
+    echo %c%How to enable it:%u%
+    echo %c%  1. Restart and enter the BIOS/UEFI ^(usually Del or F2 at boot^)%u%
+    echo %c%  2. Look for a memory/overclocking section - often called%u%
+    echo %c%     "Ai Tweaker", "Extreme Memory Profile (XMP)", "EXPO" or "DOCP"%u%
+    echo %c%  3. Select the profile matching your kit's rated speed and enable it%u%
+    echo %c%  4. Save and exit ^(commonly F10^), then boot back into Windows%u%
+    echo %c%  5. Run this check again to confirm the running speed now matches rated%u%
+    echo.
+    echo %orange%Only change one setting at a time and verify the system boots stable.%u%
+) else (
+    echo %green%✓ All detected modules are already running at their rated speed.%u%
+    echo %c%This is the single biggest legitimate memory performance gain available -%u%
+    echo %c%and you already have it. Nothing else to do here.%u%
+)
+
+:MemoryDiagnosticsEnd
 echo.
 echo %c%══════════════════════════ PRESS ANY KEY TO CONTINUE ══════════════════════════%u%
 pause >nul
@@ -11063,222 +10347,6 @@ echo %c%  Location: %USERPROFILE%\Desktop%u%
 
 :skip_save
 
-echo.
-echo %c%══════════════════════════ PRESS ANY KEY TO CONTINUE ══════════════════════════%u%
-pause >nul
-goto HardwareMenu
-
-:DriverUpdates
-cls
-call :SetupConsole
-echo.
-echo.
-echo %c%╔══════════════════════════════════════════════════════════════════════════════╗
-echo ║                         NVIDIA DRIVER INSTALLATION                           ║
-echo ╚══════════════════════════════════════════════════════════════════════════════╝%u%
-echo.
-echo %c%Driver installation includes:%u%
-echo %c%• RTX 580.88 - Exostenza Edition™ (de-bloat)%u%
-echo %c%• Bloatware and telemetry completely removed%u%
-echo %c%• GeForce Experience and overlay eliminated%u%
-echo %c%• Performance optimized for gaming%u%
-echo %c%• Clean installation without unnecessary components%u%
-echo.
-echo %red%%underline%Driver Notice:%u%
-echo %c%This will replace your current NVIDIA driver installation.%u%
-echo %c%A system restart will be required after installation.%u%
-echo.
-echo.
-choice /C YN /M "%c%Install RTX 580.88 Exostenza Edition driver? (Y/N)%u%"
-if errorlevel 2 goto HardwareMenu
-
-echo.
-echo %c%╔══════════════════════════════════════════════════════════════════════════════╗
-echo ║                       DRIVER INSTALLATION IN PROGRESS                        ║
-echo ╚══════════════════════════════════════════════════════════════════════════════╝%u%
-
-echo.
-echo %c%[1/6] Detecting Current Driver...%u%
-set "current_version="
-for /f "delims=" %%i in ('powershell -NoProfile -Command "Get-CimInstance -ClassName Win32_VideoController -ErrorAction SilentlyContinue | Where-Object { $_.Name -like '*NVIDIA*' } | Select-Object -First 1 -ExpandProperty DriverVersion" 2^>nul') do set "current_version=%%i"
-if not defined current_version for /f "tokens=2 delims==" %%i in ('wmic path win32_videocontroller where "name like '%%NVIDIA%%'" get driverversion /value ^| find "="') do set current_version=%%i
-if defined current_version (
-    echo %c%  ✓ Current version: %current_version%%u%
-) else (
-    echo %c%  • No NVIDIA driver detected%u%
-)
-
-echo %c%[2/6] Downloading RTX 580.88 Exostenza Edition...%u%
-set "DRIVER_FILE=%temp%\RTX_580.88_Exostenza.rar"
-set "DRIVER_URL=https://drive.usercontent.google.com/download?id=1GeumQ3s1HqnxDx3mXp8eLWEL4m03OViD&export=download&confirm=t&uuid=b89a74d4-0444-4f09-9e09-bfd5301a3728"
-chcp 437 >nul
-powershell -Command "& {[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; $ProgressPreference = 'SilentlyContinue'; try { Invoke-WebRequest -Uri '%DRIVER_URL%' -OutFile '%DRIVER_FILE%' -UserAgent 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' -UseBasicParsing } catch { exit 1 }}" >nul 2>&1
-chcp 65001 >nul
-if not exist "%DRIVER_FILE%" (
-    echo %c%  ⚠ Primary download failed, trying WebClient method...%u%
-	chcp 437 >nul
-    powershell -Command "& {[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; $client = New-Object System.Net.WebClient; $client.Headers.Add('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'); try { $client.DownloadFile('%DRIVER_URL%', '%DRIVER_FILE%') } catch { exit 1 } finally { $client.Dispose() }}" >nul 2>&1
-	chcp 65001 >nul
-)
-
-if not exist "%DRIVER_FILE%" (
-    echo %c%  ❌ Automatic download failed!%u%
-    echo %c%  Please manually download the driver from:%u%
-    echo %c%  https://drive.google.com/file/d/1GeumQ3s1HqnxDx3mXp8eLWEL4m03OViD/view%u%
-    echo %c%  Save it as: RTX 580.88 Exostenza Edition.rar in your Downloads folder%u%
-    echo.
-    echo %c%  Press any key when download is complete...%u%
-    pause >nul
-    
-    if exist "%USERPROFILE%\Downloads\RTX 580.88 Exostenza Edition.rar" (
-        copy "%USERPROFILE%\Downloads\RTX 580.88 Exostenza Edition.rar" "%DRIVER_FILE%" >nul
-        echo %c%  ✓ Driver file found in Downloads%u%
-    ) else if exist "%USERPROFILE%\Downloads\RTX_580.88_Exostenza.rar" (
-        copy "%USERPROFILE%\Downloads\RTX_580.88_Exostenza.rar" "%DRIVER_FILE%" >nul
-        echo %c%  ✓ Driver file found in Downloads%u%
-    ) else (
-        echo %c%  ❌ Driver file not found! Please download and try again.%u%
-        echo.
-        echo %c%══════════════════════════ PRESS ANY KEY TO CONTINUE ══════════════════════════%u%
-        pause >nul
-        goto HardwareMenu
-    )
-) else (
-    echo %c%  ✓ RTX 580.88 Exostenza Edition downloaded%u%
-)
-
-echo %c%[3/6] Extracting Driver Package...%u%
-set "EXTRACT_DIR=%temp%\RTX_580.88_Extract"
-if exist "%EXTRACT_DIR%" rd /s /q "%EXTRACT_DIR%" >nul 2>&1
-mkdir "%EXTRACT_DIR%" >nul 2>&1
-
-where winrar >nul 2>&1
-if !errorlevel!==0 (
-    winrar x -o+ "%DRIVER_FILE%" "%EXTRACT_DIR%\" >nul 2>&1
-    echo %c%  ✓ Extracted using WinRAR%u%
-) else (
-    where 7z >nul 2>&1
-    if !errorlevel!==0 (
-        7z x "%DRIVER_FILE%" -o"%EXTRACT_DIR%" -y >nul 2>&1
-        echo %c%  ✓ Extracted using 7-Zip%u%
-    ) else (
-		chcp 437 >nul
-        powershell -Command "& {try { Add-Type -AssemblyName System.IO.Compression.FileSystem; [System.IO.Compression.ZipFile]::ExtractToDirectory('%DRIVER_FILE%', '%EXTRACT_DIR%') } catch { try { $shell = New-Object -ComObject Shell.Application; $zip = $shell.NameSpace('%DRIVER_FILE%'); if ($zip -ne $null) { $dest = $shell.NameSpace('%EXTRACT_DIR%'); $dest.CopyHere($zip.Items(), 4) } } catch { exit 1 } }}" >nul 2>&1
-        chcp 65001 >nul 
-		echo %c%  ✓ Extracted using PowerShell%u%
-    )
-)
-
-if not exist "%EXTRACT_DIR%\setup.exe" (
-    for /d %%d in ("%EXTRACT_DIR%\*") do (
-        if exist "%%d\setup.exe" (
-            set "EXTRACT_DIR=%%d"
-            goto :found_setup
-        )
-    )
-    
-    for /r "%EXTRACT_DIR%" %%f in (setup.exe) do (
-        if exist "%%f" (
-            for %%d in ("%%~dpf.") do set "EXTRACT_DIR=%%~fd"
-            goto :found_setup
-        )
-    )
-    
-    echo %c%  ❌ setup.exe not found in extracted files!%u%
-    echo %c%  Checking Downloads folder for manual extraction...%u%
-    
-    if exist "%USERPROFILE%\Downloads\RTX 580.88 Exostenza Edition" (
-        set "EXTRACT_DIR=%USERPROFILE%\Downloads\RTX 580.88 Exostenza Edition"
-        if exist "%EXTRACT_DIR%\setup.exe" goto :found_setup
-    )
-    
-    echo %c%  setup.exe was not found in the verified extraction folder.%u%
-    echo %red%  Installation cancelled; arbitrary installer paths are not accepted.%u%
-    call :LogEvent "BLOCKED" "NVIDIA driver package did not contain setup.exe"
-    echo.
-    pause
-    goto HardwareMenu
-)
-
-:found_setup
-echo %c%  ✓ Driver package extracted successfully%u%
-
-echo %c%  • Verifying NVIDIA installer signature...%u%
-powershell -NoProfile -Command "$s=Get-AuthenticodeSignature -LiteralPath '%EXTRACT_DIR%\setup.exe' -ErrorAction SilentlyContinue; if($s.Status -eq 'Valid' -and $s.SignerCertificate.Subject -match 'NVIDIA'){exit 0}else{exit 1}" >nul 2>&1
-if errorlevel 1 (
-    echo %red%  X Installation blocked: setup.exe does not have a valid NVIDIA signature.%u%
-    call :LogEvent "BLOCKED" "Unsigned or unexpected NVIDIA driver installer"
-    pause
-    goto HardwareMenu
-)
-echo %c%  ✓ Valid NVIDIA digital signature detected%u%
-
-echo %c%[4/6] Preparing Installation Environment...%u%
-taskkill /f /im "NVIDIA GeForce Experience.exe" >nul 2>&1
-taskkill /f /im "NVIDIA Share.exe" >nul 2>&1
-taskkill /f /im "nvcontainer.exe" >nul 2>&1
-taskkill /f /im "NVIDIA Web Helper.exe" >nul 2>&1
-echo %c%  ✓ NVIDIA processes terminated%u%
-
-echo %c%[5/6] Starting Driver Installation...%u%
-echo %c%  • The setup installer will now appear%u%
-echo %c%  • Configure your installation preferences in the setup window%u%
-echo %c%  • This script will wait for installation to complete%u%
-echo %c%  • Do not close this window during installation%u%
-echo.
-echo %c%  ✓ Launching setup.exe - please complete the installation%u%
-
-pushd "%EXTRACT_DIR%"
-call "%EXTRACT_DIR%\setup.exe" >nul 2>&1
-set "install_result=%errorlevel%"
-popd
-
-echo.
-echo %c%  • Installation process completed%u%
-echo %c%  • Returning to script for final cleanup...%u%
-
-timeout /t 2 >nul
-
-del "%DRIVER_FILE%" >nul 2>&1
-if exist "%temp%\RTX_580.88_Extract" rd /s /q "%temp%\RTX_580.88_Extract" >nul 2>&1
-
-if "%install_result%"=="0" (
-    echo %c%  ✓ RTX 580.88 Exostenza Edition installation completed%u%
-) else (
-    echo %c%  ⚠ Installation process finished ^(Exit code: %install_result%^)%u%
-)
-
-
-echo %c%[6/6] Applying Final Optimizations...%u%
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\NVTweak" /v "DisplayPowerSaving" /t REG_DWORD /d 0 /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" /v "TdrLevel" /t REG_DWORD /d 0 /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" /v "HwSchMode" /t REG_DWORD /d 2 /f >nul 2>&1
-echo %c%  ✓ Performance registry tweaks applied%u%
-
-echo.
-echo %c%╔══════════════════════════════════════════════════════════════════════════════╗
-echo ║                       DRIVER INSTALLATION COMPLETED                          ║
-echo ╚══════════════════════════════════════════════════════════════════════════════╝%u%
-echo.
-echo %c%RTX 580.88 - Exostenza Edition™ has been successfully installed.%u%
-echo.
-echo %c%Installation Features:%u%
-echo %c%• Complete bloatware removal (GeForce Experience eliminated)%u%
-echo %c%• Telemetry and data collection disabled%u%
-echo %c%• NVIDIA Web Helper and background services removed%u%
-echo %c%• Optimized for pure gaming performance%u%
-echo %c%• Clean driver installation without unnecessary components%u%
-echo.
-echo %red%Performance Benefits:%u%
-echo %c%• Reduced system resource usage and RAM consumption%u%
-echo %c%• Eliminated background processes and startup bloat%u%
-echo %c%• Enhanced gaming performance and frame rates%u%
-echo %c%• Faster driver response and reduced input lag%u%
-echo %c%• Cleaner system with no NVIDIA overlay interference%u%
-echo.
-echo %red%%underline%Important:%u%
-echo %c%A system restart is recommended to complete the installation.%u%
-echo %c%The debloated driver will provide optimal gaming performance.%u%
 echo.
 echo %c%══════════════════════════ PRESS ANY KEY TO CONTINUE ══════════════════════════%u%
 pause >nul
