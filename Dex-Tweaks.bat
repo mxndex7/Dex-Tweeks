@@ -16193,10 +16193,15 @@ if defined DEX_TEST_BUILD (
     set "DEX_PRODUCT_TYPE=1"
     set "DEX_OS_64BIT=1"
 )
-if not defined DEX_TEST_BUILD for /f "delims=" %%b in ('powershell -NoProfile -ExecutionPolicy Bypass -Command "try { [Environment]::OSVersion.Version.Build } catch { 0 }" 2^>nul') do set "_OS_BUILD=%%b"
-if not defined DEX_TEST_BUILD for /f "tokens=1,2 delims=|" %%P in ('powershell -NoProfile -Command "try {$i=(Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion' -ErrorAction Stop).InstallationType;$p=if($i-eq'Client'){1}else{3};'{0}|{1}' -f $p,[int][Environment]::Is64BitOperatingSystem} catch {'0|0'}" 2^>nul') do (
-    set "DEX_PRODUCT_TYPE=%%P"
-    set "DEX_OS_64BIT=%%Q"
+if not defined DEX_TEST_BUILD for /f "tokens=3" %%b in ('reg query "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion" /v CurrentBuildNumber 2^>nul ^| findstr /I "CurrentBuildNumber"') do set "_OS_BUILD=%%b"
+if not defined DEX_TEST_BUILD (
+    set "_OS_INSTALLTYPE="
+    for /f "tokens=3" %%t in ('reg query "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion" /v InstallationType 2^>nul ^| findstr /I "InstallationType"') do set "_OS_INSTALLTYPE=%%t"
+    if /I "!_OS_INSTALLTYPE!"=="Client" (set "DEX_PRODUCT_TYPE=1") else (set "DEX_PRODUCT_TYPE=3")
+    set "DEX_OS_64BIT=0"
+    if defined PROCESSOR_ARCHITEW6432 set "DEX_OS_64BIT=1"
+    if /I "%PROCESSOR_ARCHITECTURE%"=="AMD64" set "DEX_OS_64BIT=1"
+    if /I "%PROCESSOR_ARCHITECTURE%"=="ARM64" set "DEX_OS_64BIT=1"
 )
 set /a _OS_BUILD_NUM=_OS_BUILD+0
 set "DEX_OS_FAMILY=Unsupported"
