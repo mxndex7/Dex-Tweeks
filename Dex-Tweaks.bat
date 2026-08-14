@@ -12423,12 +12423,11 @@ echo %c%                       ╔═══════════════�
 echo                        %c%║%u%           [%c%1%u%] Dex Toolbox                      %c%║%u%
 echo                        %c%║%u%           [%c%2%u%] Game Boosters                      %c%║%u%
 echo                        %c%║%u%           [%c%3%u%] Scheduled Tasks                    %c%║%u%
-echo                        %c%║%u%           [%c%4%u%] MSI Mode                           %c%║%u%
+echo                        %c%║%u%           [%c%4%u%] Interrupt %u%^&%c% Scheduling Lab           %c%║%u%
 echo                        %c%║%u%           [%c%5%u%] Program Debloat                    %c%║%u%
-echo                        %c%║%u%           [%c%6%u%] Affinity                           %c%║%u%
-echo                        %c%║%u%           [%c%7%u%] DirectX Optimization               %c%║%u%
-echo                        %c%║%u%           [%c%8%u%] OBS Optimizer                      %c%║%u%
-echo                        %c%║%u%           [%c%10%u%] Stream Optimizer                  %c%║%u%
+echo                        %c%║%u%           [%c%6%u%] DirectX Optimization               %c%║%u%
+echo                        %c%║%u%           [%c%7%u%] OBS Optimizer                      %c%║%u%
+echo                        %c%║%u%           [%c%8%u%] Capture Priority Tool              %c%║%u%
 echo %c%                       ╚══════════════════════════════════════════════════╝
 echo %c%                             ║  %u%[%c%9%u%] Theme Presets    [%c%0%u%] Go Back    %c%║%u%
 echo %c%                             ║            %u% [%c%Quit%u%] Leave%c%             ║
@@ -12442,13 +12441,12 @@ set /p M="%c%Choose an option »%u% "
 if "!M!"=="1" goto Toolbox
 if "!M!"=="2" goto Boosters
 if "!M!"=="3" goto ScheduledTasks
-if "!M!"=="4" goto MSIMode
+if "!M!"=="4" goto InterruptSchedulingLab
 if "!M!"=="5" goto ProgramDebloat
-if "!M!"=="6" goto Affinity
-if "!M!"=="7" goto DirectXOptimization
-if "!M!"=="8" goto OBSOptimizer
+if "!M!"=="6" goto DirectXOptimization
+if "!M!"=="7" goto OBSOptimizer
+if "!M!"=="8" goto CapturePriorityTool
 if "!M!"=="9" goto Presets
-if "!M!"=="10" goto StreamOptimizer
 if "!M!"=="0" goto menu
 if "!M!"=="Quit" goto Destruct
 if "!M!"=="quit" goto Destruct
@@ -12457,148 +12455,57 @@ echo %underline%%red%Invalid Input. Press any key to continue.%u%
 pause >nul
 goto AdvancedMenu
 
-:StreamOptimizer
+:CapturePriorityTool
 cls
 call :SetupConsole
 echo.
 echo.
 echo %c%╔══════════════════════════════════════════════════════════════════════════════╗
-echo ║                          STREAM OPTIMIZER                                    ║
+echo ║                        CAPTURE PRIORITY TOOL                                 ║
 echo ╚══════════════════════════════════════════════════════════════════════════════╝%u%
 echo.
-echo %c%Optimizes your system for gaming while live streaming:%u%
-echo %c%• Sets process priority: game High, streaming tools Normal/BelowNormal%u%
-echo %c%• Pins TikTok Studio and Tikinfinity to background CPU cores%u%
-echo %c%• Disables Tikinfinity browser hardware acceleration (WebView bloat)%u%
-echo %c%• Disables Xbox Game Bar and Game DVR capture overhead%u%
-echo %c%• Enables Hardware-Accelerated GPU Scheduling (HAGS) for RTX%u%
-echo %c%• Optimizes page file for low-RAM streaming sessions%u%
-echo %c%• Disables HPET for Ryzen CPU stutter reduction%u%
-echo %c%• Disables background apps to free RAM and CPU%u%
-echo %c%• Clears TikTok Studio cache bloat%u%
-echo %c%• Enables Fortnite Performance Mode via registry%u%
+echo %c%Works with ANY capture/streaming app — OBS, Tikinfinity, Streamlabs, etc.%u%
+echo %c%Pick the app's .exe and this will apply:%u%
+echo %c%• CPU priority: Above Normal for that process (Image File Execution Options)%u%
+echo %c%• Hardware-Accelerated GPU Scheduling (HAGS): enabled system-wide%u%
+echo %c%• Xbox Game Bar / Game DVR capture overhead: disabled system-wide%u%
 echo.
-echo %red%Note: Run this AFTER launching Fortnite, TikTok Studio and Tikinfinity.%u%
+echo %c%Running this again on the same app UNDOES its priority boost.%u%
+echo %c%HAGS and Game DVR are shared system settings, so they are not reverted per app.%u%
 echo.
-choice /C YN /M "%c%Apply Stream Optimizer? (Y/N)%u%"
-if errorlevel 2 goto AdvancedMenu
-
-echo.
-echo %c%[1/10] Setting process priorities...%u%
+echo Please select the capture/streaming app executable:
 chcp 437 >nul
-powershell -NoProfile -Command ^
-  "$games = @('FortniteClient-Win64-Shipping','FortniteClient-Win64-Shipping_EAC','FortniteLauncher'); ^
-   $streaming = @('TikTok LIVE Studio'); ^
-   $overlay = @('tikfinity'); ^
-   foreach ($n in $games)   { $p = Get-Process $n -EA SilentlyContinue; if ($p) { $p.PriorityClass = 'High' } } ^
-   foreach ($n in $streaming){ $p = Get-Process $n -EA SilentlyContinue; if ($p) { $p.PriorityClass = 'Normal' } } ^
-   foreach ($n in $overlay)  { $p = Get-Process $n -EA SilentlyContinue; if ($p) { $p.PriorityClass = 'BelowNormal' } }" >nul 2>&1
+for /f "delims=" %%p in ('powershell -NoProfile -Command "Add-Type -AssemblyName System.Windows.Forms; $d=New-Object System.Windows.Forms.OpenFileDialog; $d.Filter='Executable Files (*.exe)|*.exe'; if($d.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK){ Write-Output $d.FileName }"') do set "file=%%p"
 chcp 65001 >nul
-echo %c%✓ Process priorities applied%u%
+if "%file%"=="" (
+    echo No file was selected.
+    pause
+    goto AdvancedMenu
+)
+cls
 
-echo.
-echo %c%[2/10] Pinning streaming tools to background CPU cores (cores 8-11)...%u%
-chcp 437 >nul
-powershell -NoProfile -Command ^
-  "$cores = 0x0F00; ^
-   $overlayMask = 0x0C00; ^
-   $streaming = @('TikTok LIVE Studio'); ^
-   $overlay = @('tikfinity'); ^
-   foreach ($n in $streaming){ $p = Get-Process $n -EA SilentlyContinue; if ($p) { $p.ProcessorAffinity = $cores } } ^
-   foreach ($n in $overlay)  { $p = Get-Process $n -EA SilentlyContinue; if ($p) { $p.ProcessorAffinity = $overlayMask } }" >nul 2>&1
-chcp 65001 >nul
-echo %c%✓ Affinity applied (TikTok Studio: cores 8-11, Tikinfinity: cores 10-11)%u%
-
-echo.
-echo %c%[3/10] Disabling Tikinfinity WebView hardware acceleration...%u%
-if not exist "%LOCALAPPDATA%\Programs\tikfinity\User Data" mkdir "%LOCALAPPDATA%\Programs\tikfinity\User Data" >nul 2>&1
-(
-    echo {
-    echo   "hardware_acceleration_mode": {
-    echo     "enabled": false
-    echo   }
-    echo }
-) > "%LOCALAPPDATA%\Programs\tikfinity\User Data\Local State" 2>nul
-echo %c%✓ Tikinfinity hardware acceleration disabled%u%
-
-echo.
-echo %c%[4/10] Disabling Xbox Game Bar and Game DVR capture overhead...%u%
+for %%F in ("%file%") do (
+    reg query "HKLM\Software\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\%%~nxF\PerfOptions" /v "CpuPriorityClass" >nul 2>&1 && (
+        reg delete "HKLM\Software\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\%%~nxF\PerfOptions" /v "CpuPriorityClass" /f >nul 2>&1
+        echo Undid CPU priority boost for %%~nxF
+    ) || (
+        reg add "HKLM\Software\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\%%~nxF\PerfOptions" /v "CpuPriorityClass" /t REG_DWORD /d "6" /f >nul 2>&1
+        echo Applied Above Normal CPU priority for %%~nxF
+    )
+)
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" /v "HwSchMode" /t REG_DWORD /d 2 /f >nul 2>&1
 reg add "HKCU\System\GameConfigStore" /v "GameDVR_Enabled" /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKCU\System\GameConfigStore" /v "GameDVR_FSEBehavior" /t REG_DWORD /d 2 /f >nul 2>&1
 reg add "HKCU\System\GameConfigStore" /v "GameDVR_FSEBehaviorMode" /t REG_DWORD /d 2 /f >nul 2>&1
-reg add "HKCU\System\GameConfigStore" /v "GameDVR_HonorUserFSEBehaviorMode" /t REG_DWORD /d 1 /f >nul 2>&1
 reg add "HKCU\Software\Microsoft\GameBar" /v "AutoGameModeEnabled" /t REG_DWORD /d 1 /f >nul 2>&1
-reg add "HKCU\Software\Microsoft\GameBar" /v "UseNexusForGameBarEnabled" /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\GameDVR" /v "AllowGameDVR" /t REG_DWORD /d 0 /f >nul 2>&1
-echo %c%✓ Game DVR and Xbox overlay disabled%u%
-
-echo.
-echo %c%[5/10] Enabling Hardware-Accelerated GPU Scheduling (HAGS) for RTX...%u%
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" /v "HwSchMode" /t REG_DWORD /d 2 /f >nul 2>&1
-echo %c%✓ HAGS enabled (takes effect after reboot)%u%
-
-echo.
-echo %c%[6/10] Optimizing page file for streaming workload...%u%
-chcp 437 >nul
-powershell -NoProfile -Command "$cs=Get-CimInstance Win32_ComputerSystem;Set-CimInstance -InputObject $cs -Property @{AutomaticManagedPagefile=$true}" >nul 2>&1
-chcp 65001 >nul
-echo %c%Windows automatic page-file management enabled.%u%
-
-echo.
-echo %c%[7/10] Restoring Windows timer selection defaults...%u%
-bcdedit /deletevalue useplatformclock >nul 2>&1
-bcdedit /deletevalue disabledynamictick >nul 2>&1
-bcdedit /deletevalue useplatformtick >nul 2>&1
-echo %c%Timer selection returned to Windows defaults (takes effect after reboot).%u%
-
-echo.
-echo %c%[8/10] Disabling background apps (frees RAM and CPU for game/stream)...%u%
-reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications" /v "GlobalUserDisabled" /t REG_DWORD /d 1 /f >nul 2>&1
-reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Search" /v "BackgroundAppGlobalToggle" /t REG_DWORD /d 0 /f >nul 2>&1
-echo %c%✓ Background apps disabled%u%
-
-echo.
-echo %c%[9/10] Clearing TikTok LIVE Studio cache bloat...%u%
-set "_cleared=0"
-if exist "C:\Program Files\TikTok LIVE Studio\Cache" (
-    rd /s /q "C:\Program Files\TikTok LIVE Studio\Cache" >nul 2>&1
-    set "_cleared=1"
-)
-if exist "%LOCALAPPDATA%\TikTok LIVE Studio\Cache" (
-    rd /s /q "%LOCALAPPDATA%\TikTok LIVE Studio\Cache" >nul 2>&1
-    set "_cleared=1"
-)
-if exist "%APPDATA%\TikTok LIVE Studio\Cache" (
-    rd /s /q "%APPDATA%\TikTok LIVE Studio\Cache" >nul 2>&1
-    set "_cleared=1"
-)
-if "%_cleared%"=="1" (
-    echo %c%✓ TikTok LIVE Studio cache cleared%u%
-) else (
-    echo %c%  TikTok LIVE Studio cache folder not found, skipping%u%
-)
-
-echo.
-echo %c%[10/10] Enabling Fortnite Performance Mode (DX11 low-level rendering)...%u%
-reg add "HKCU\Software\Epic Games\Unreal Engine\Identifiers\Fortnite" /v "PreferD3D12" /t REG_DWORD /d 0 /f >nul 2>&1
-reg add "HKCU\Software\Epic Games\Unreal Engine\Identifiers\Fortnite" /v "sg.AntiAliasingQuality" /t REG_DWORD /d 0 /f >nul 2>&1
-reg add "HKCU\Software\Epic Games\Unreal Engine\Identifiers\Fortnite" /v "sg.ViewDistanceQuality" /t REG_DWORD /d 1 /f >nul 2>&1
-reg add "HKCU\Software\Epic Games\Unreal Engine\Identifiers\Fortnite" /v "sg.ShadowQuality" /t REG_DWORD /d 0 /f >nul 2>&1
-reg add "HKCU\Software\Epic Games\Unreal Engine\Identifiers\Fortnite" /v "sg.TexturesQuality" /t REG_DWORD /d 0 /f >nul 2>&1
-reg add "HKCU\Software\Epic Games\Unreal Engine\Identifiers\Fortnite" /v "sg.EffectsQuality" /t REG_DWORD /d 0 /f >nul 2>&1
-reg add "HKCU\Software\Epic Games\Unreal Engine\Identifiers\Fortnite" /v "sg.bSmoothFrameRate" /t REG_DWORD /d 0 /f >nul 2>&1
-echo %c%✓ Fortnite low-latency settings applied (enable Performance Mode in-game)%u%
+call :LogEvent "OK" "Capture Priority Tool applied to %file%"
 
 echo.
 echo.
 echo.                                         %c%═══════════════════════════════════════════════════════
-echo.                                           %c%  Stream Optimizer complete! Reboot recommended.%u%
+echo.                                           %c%  Operation Completed, Press any key to continue%u%
 echo.                                         %c%═══════════════════════════════════════════════════════%u%
-echo.
-echo %c%Manual steps to do in-app after rebooting:%u%
-echo %c%  TikTok Studio : Encoder=NVENC H.264, CBR, 4500 kbps, disable scene preview%u%
-echo %c%  Fortnite      : Enable Performance Mode in Settings > Video > Rendering Mode%u%
-echo %c%  Tikinfinity   : Use simple overlays, unload sources when not visible%u%
 pause >nul
 goto AdvancedMenu
 
@@ -12614,7 +12521,7 @@ echo.
 echo %c%This will optimize DirectX rendering settings for lower latency and better fps:%u%
 echo %c%• Enable flip-queue bypass (FlipNoVsync) for Direct3D%u%
 echo %c%• Force GPU-local video memory for Direct3D and DirectDraw%u%
-echo %c%• Enable Multiplane Overlay (MPO) Direct Flip (OverlayTestMode=5)%u%
+echo %c%• Disable Fullscreen Optimizations (FSO) for exclusive fullscreen%u%
 echo %c%• Apply to both 64-bit and 32-bit subsystems%u%
 echo.
 choice /C YN /M "%c%Apply DirectX optimizations? (Y/N)%u%"
@@ -12645,12 +12552,7 @@ reg add "HKLM\SOFTWARE\Wow6432Node\Microsoft\DirectDraw" /v "DisableAGPSupport" 
 echo %c%✓ DirectDraw settings applied%u%
 
 echo.
-echo %c%[3/4] Enabling MPO Direct Flip...%u%
-reg add "HKLM\SOFTWARE\Microsoft\Windows\Dwm" /v "OverlayTestMode" /t REG_DWORD /d "5" /f >nul 2>&1
-echo %c%✓ MPO Direct Flip enabled (OverlayTestMode=5)%u%
-
-echo.
-echo %c%[4/4] Disabling Fullscreen Optimizations (FSO)...%u%
+echo %c%[3/3] Disabling Fullscreen Optimizations (FSO)...%u%
 reg add "HKCU\System\GameConfigStore" /v "GameDVR_DXGIHonorFSEWindowsCompatible" /t REG_DWORD /d "1" /f >nul 2>&1
 reg add "HKCU\System\GameConfigStore" /v "GameDVR_Enabled" /t REG_DWORD /d "0" /f >nul 2>&1
 echo %c%✓ FSO disabled (DXGIHonorFSEWindowsCompatible=1, GameDVR=0)%u%
@@ -12663,7 +12565,6 @@ echo.
 echo %c%Applied:%u%
 echo %c%• Direct3D FlipNoVsync and GPU-local memory (64-bit + 32-bit)%u%
 echo %c%• DirectDraw local memory and AGP enabled (64-bit + 32-bit)%u%
-echo %c%• MPO Direct Flip via OverlayTestMode=5%u%
 echo %c%• Fullscreen Optimizations (FSO) disabled for exclusive fullscreen%u%
 echo.
 echo %c%══════════════════════════ PRESS ANY KEY TO CONTINUE ══════════════════════════%u%
@@ -12717,22 +12618,22 @@ if "!ENC_PICK!"=="3" set "ENC_NAME=obs_x264"
 if not defined ENC_NAME set "ENC_NAME=jim_nvenc"
 
 if "!QUAL_PICK!"=="1" (
-    set "OBS_PRESET=performance"
+    set "OBS_PRESET=veryfast"
     set "OBS_BITRATE=4000"
     set "OBS_RECQUALITY=Small"
 )
 if "!QUAL_PICK!"=="2" (
-    set "OBS_PRESET=quality"
+    set "OBS_PRESET=fast"
     set "OBS_BITRATE=6000"
     set "OBS_RECQUALITY=Stream"
 )
 if "!QUAL_PICK!"=="3" (
-    set "OBS_PRESET=slow"
+    set "OBS_PRESET=medium"
     set "OBS_BITRATE=8000"
     set "OBS_RECQUALITY=Lossless"
 )
 if not defined OBS_PRESET (
-    set "OBS_PRESET=quality"
+    set "OBS_PRESET=fast"
     set "OBS_BITRATE=6000"
     set "OBS_RECQUALITY=Stream"
 )
@@ -12744,6 +12645,7 @@ echo %c%[1/2] Updating OBS profile settings...%u%
     echo $encName = '%ENC_NAME%'
     echo $recQuality = '%OBS_RECQUALITY%'
     echo $vBitrate = '%OBS_BITRATE%'
+    echo $x264Preset = '%OBS_PRESET%'
     echo Get-ChildItem $profilesPath -Directory ^| ForEach-Object {
     echo     $f = Join-Path $_.FullName 'basic.ini'
     echo     if ^(Test-Path $f^) {
@@ -12752,6 +12654,9 @@ echo %c%[1/2] Updating OBS profile settings...%u%
     echo         if ^($c -match 'RecEncoder'^) { $c = $c -replace '(?m)^RecEncoder=.*', "RecEncoder=$encName" } else { $c += "`r`nRecEncoder=$encName" }
     echo         if ^($c -match 'RecQuality'^) { $c = $c -replace '(?m)^RecQuality=.*', "RecQuality=$recQuality" } else { $c += "`r`nRecQuality=$recQuality" }
     echo         if ^($c -match 'VBitrate'^) { $c = $c -replace '(?m)^VBitrate=.*', "VBitrate=$vBitrate" } else { $c += "`r`nVBitrate=$vBitrate" }
+    echo         if ^($encName -eq 'obs_x264'^) {
+    echo             if ^($c -match '(?m)^Preset='^) { $c = $c -replace '(?m)^Preset=.*', "Preset=$x264Preset" } else { $c += "`r`nPreset=$x264Preset" }
+    echo         }
     echo         Set-Content $f $c -NoNewline
     echo     }
     echo }
@@ -12831,6 +12736,9 @@ echo %c%• Google Update services and updater files preserved%u%
 echo %c%• Chrome reporting and telemetry preferences reduced%u%
 echo.
 echo.
+choice /C YN /M "%c%Apply Chrome debloat? (Y/N)%u%"
+if errorlevel 2 goto ProgramDebloat
+
 rem Browser update services are intentionally preserved to keep security fixes flowing.
 
 reg add "HKLM\SOFTWARE\Policies\Google\Chrome" /v "CloudReportingEnabled" /t REG_DWORD /d "0" /f >nul 2>&1
@@ -12853,20 +12761,21 @@ echo %c%╔═══════════════════════
 echo ║                           FIREFOX DEBLOAT                                   ║
 echo ╚══════════════════════════════════════════════════════════════════════════════╝%u%
 echo.
-echo %c%Removing Firefox telemetry and updater components:%u%
-echo %c%• Crash reporter, minidump analyzer and pingsender removed%u%
-echo %c%• Maintenance service and updater removed%u%
-echo %c%• Background update and default browser agent tasks deleted%u%
-echo %c%• Mozilla Maintenance Service uninstalled%u%
+echo %c%Reducing Firefox telemetry and background tasks (reversible, updater kept):%u%
+echo %c%• Crash reporter and minidump analyzer removed (crash-report tooling only)%u%
+echo %c%• Background update and default browser agent scheduled tasks deleted%u%
+echo %c%• Auto-update disabled via the official DisableAppUpdate policy%u%
+echo %c%• updater.exe / maintenanceservice.exe are KEPT — deleting them would%u%
+echo %c%  permanently block Firefox from receiving security fixes%u%
 echo.
 echo.
+choice /C YN /M "%c%Apply Firefox debloat? (Y/N)%u%"
+if errorlevel 2 goto ProgramDebloat
+
 del "C:\Program Files\Mozilla Firefox\crashreporter.exe" /f /q >nul 2>&1
 del "C:\Program Files\Mozilla Firefox\crashreporter.ini" /f /q >nul 2>&1
-del "C:\Program Files\Mozilla Firefox\maintenanceservice.exe" /f /q >nul 2>&1
-del "C:\Program Files\Mozilla Firefox\maintenanceservice_installer.exe" /f /q >nul 2>&1
 del "C:\Program Files\Mozilla Firefox\minidump-analyzer.exe" /f /q >nul 2>&1
 del "C:\Program Files\Mozilla Firefox\pingsender.exe" /f /q >nul 2>&1
-del "C:\Program Files\Mozilla Firefox\updater.exe" /f /q >nul 2>&1
 
 reg.exe delete "HKLM\Software\Microsoft\Windows NT\CurrentVersion\Schedule\TaskCache\Plain\{88088F95-5F8F-4603-8303-B2881ED6D9FD}" /f >nul 2>&1
 reg.exe delete "HKLM\Software\Microsoft\Windows NT\CurrentVersion\Schedule\TaskCache\Plain\{8F3A56F1-410F-41E7-B9CE-4F12A1417CF1}" /f >nul 2>&1
@@ -12875,13 +12784,13 @@ reg.exe delete "HKLM\Software\Microsoft\Windows NT\CurrentVersion\Schedule\TaskC
 reg.exe delete "HKLM\Software\Microsoft\Windows NT\CurrentVersion\Schedule\TaskCache\Tree\Mozilla\Firefox Background Update 308046B0AF4A39CB" /f >nul 2>&1
 reg.exe delete "HKLM\Software\Microsoft\Windows NT\CurrentVersion\Schedule\TaskCache\Tree\Mozilla\Firefox Default Browser Agent 308046B0AF4A39CB" /f >nul 2>&1
 
-chcp 437 >nul
-powershell -NoProfile -Command "Get-Package 'Mozilla Maintenance Service' -ErrorAction SilentlyContinue | Uninstall-Package -Force" >nul 2>&1
-chcp 65001 >nul
+rem Auto-update is disabled through Mozilla's supported policy instead of
+rem deleting updater.exe/maintenanceservice.exe, so security fixes can still
+rem be installed manually and the setting can be reverted by removing this key.
+reg add "HKLM\SOFTWARE\Policies\Mozilla\Firefox" /v "DisableAppUpdate" /t REG_DWORD /d 1 /f >nul 2>&1
 
 cd /d "C:\Program Files\Mozilla Firefox">nul 2>&1
 del /f crash*.* >nul 2>&1
-del /f maintenance*.* >nul 2>&1
 del /f install.log >nul 2>&1
 del /f minidump*.* >nul 2>&1
 cls
@@ -12903,11 +12812,23 @@ echo ╚════════════════════════
 echo.
 echo %c%Stripping Spotify bloat:%u%
 echo %c%• Unused locale packs removed (keeps en-US only)%u%
-echo %c%• Crash reporters, migrators and D3D/Vulkan files deleted%u%
-echo %c%• Unused .spa app modules removed%u%
+echo %c%• Crash reporter cache and unused .spa app modules removed%u%
 echo %c%• Spotify startup entry removed from registry%u%
+echo %c%• D3D/Vulkan/EGL renderer files are KEPT — deleting them risks breaking%u%
+echo %c%  the Spotify UI, which is not worth the disk-space saving%u%
 echo.
+chcp 437 >nul
+for /f "delims=" %%L in ('powershell -NoProfile -Command "(Get-Culture).Name"') do set "DEX_OS_LOCALE=%%L"
+chcp 65001 >nul
+if /i not "!DEX_OS_LOCALE:~0,2!"=="en" (
+    echo %red%[!] Your Windows display language is not English (%DEX_OS_LOCALE%).%u%
+    echo %red%    Removing every locale except en-US will leave Spotify's UI in English%u%
+    echo %red%    only, even if Windows itself is in another language.%u%
+)
 echo.
+choice /C YN /M "%c%Apply Spotify debloat? (Y/N)%u%"
+if errorlevel 2 goto ProgramDebloat
+
 cd /d "%APPDATA%\Spotify" >NUL 2>&1
 copy "%APPDATA%\Spotify\locales\en-US.pak" "%APPDATA%\Spotify" >NUL 2>&1
 rmdir "%APPDATA%\Spotify\locales" /s /q >NUL 2>&1
@@ -12918,13 +12839,7 @@ del /f chrome_2*.* >NUL 2>&1
 del /f crash*.* >NUL 2>&1
 del /f SpotifyMigrator.exe >NUL 2>&1
 del /f SpotifyStartupTask.exe >NUL 2>&1
-del /f d3d*.* >NUL 2>&1
 del /f debug.log >NUL 2>&1
-del /f libegl.dll >NUL 2>&1
-del /f libgle*.* >NUL 2>&1
-del /f snapshot*.* >NUL 2>&1
-del /f vk*.* >NUL 2>&1
-del /f vulkan*.* >NUL 2>&1
 del /f/s/q "%appdata%\Spotify\SpotifyMigrator.exe" >NUL 2>&1
 del /f/s/q "%appdata%\Spotify\SpotifyStartupTask.exe" >NUL 2>&1
 del /f/s/q "%appdata%\Spotify\Apps\Buddy-list.spa" >NUL 2>&1
@@ -13036,6 +12951,9 @@ echo %c%• H264 hardware acceleration and DPI scaling disabled%u%
 echo %c%• Steam startup entry removed from registry%u%
 echo.
 echo.
+choice /C YN /M "%c%Apply Steam debloat? (Y/N)%u%"
+if errorlevel 2 goto ProgramDebloat
+
 reg add "HKCU\SOFTWARE\Valve\Steam" /v "SmoothScrollWebViews" /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKCU\SOFTWARE\Valve\Steam" /v "DWriteEnable" /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKCU\SOFTWARE\Valve\Steam" /v "StartupMode" /t REG_DWORD /d 0 /f >nul 2>&1
@@ -13082,6 +13000,8 @@ echo %c%• CCleaner monitoring, updates and offers disabled%u%
 echo %c%• 3D Objects removed from File Explorer sidebar%u%
 echo.
 echo.
+choice /C YN /M "%c%Apply Program debloat? (Y/N)%u%"
+if errorlevel 2 goto ProgramDebloat
 @echo off
 
 reg add "HKLM\Software\Policies\Microsoft\VisualStudio\SQM" /v "OptIn" /t REG_DWORD /d 0 /f
@@ -13202,14 +13122,113 @@ echo.                                         %c%══════════�
 pause >nul
 goto ProgramDebloat
 
-:Affinity
+:InterruptSchedulingLab
+cls
+call :SetupConsole
+echo.
+echo.
+echo %c%╔══════════════════════════════════════════════════════════════════════════════╗
+echo ║                    INTERRUPT %u%^&%c% SCHEDULING LAB                              ║
+echo ╚══════════════════════════════════════════════════════════════════════════════╝%u%
+echo.
+echo %c%Applies the "HoneCtrl" interrupt-routing tweak in one pass:%u%
+echo %c%• MSI Mode: enables Message-Signaled Interrupts for USB/GPU/Network/IDE%u%
+echo %c%• IRQ Affinity: steers GPU/USB/Network interrupts away from CPU core 0%u%
+echo %c%• Hyper-Threading systems get extra affinity tuning for USB/GPU/Network%u%
+echo.
+echo %c%This edits low-level hardware interrupt registry keys. A revert snapshot%u%
+echo %c%of every key touched is captured automatically before anything changes.%u%
+echo.
+echo  [1] Apply
+echo  [2] Revert last snapshot
+echo  [0] Back
+echo.
+set /p M="%c%Choose an option »%u% "
+if "!M!"=="0" goto AdvancedMenu
+if "!M!"=="2" goto InterruptLabRevert
+if not "!M!"=="1" goto InterruptSchedulingLab
+
+call :RequireExpertMode "Interrupt and Scheduling Lab (MSI Mode + IRQ Affinity)"
+if errorlevel 1 (
+    echo.
+    echo Interrupt and Scheduling Lab was not applied.
+    pause
+    goto InterruptSchedulingLab
+)
+call :InterruptLabSnapshot
+call :ApplyInterruptAffinity
+call :ApplyHyperThreadingAffinity
+call :ApplyMSIMode
+call :MarkRebootRequired "Interrupt and Scheduling Lab applied"
+call :LogEvent "OK" "Interrupt Scheduling Lab applied"
+echo.
+echo.                                         %yellow%═══════════════════════════════════════════════════════
+echo.                                           %c%  Operation Completed, Press any key to continue%u%
+echo.                                         %yellow%═══════════════════════════════════════════════════════
+echo %c%Reboot to apply the new interrupt routing. Use [2] Revert if a device misbehaves.%u%
+pause >nul
+goto InterruptSchedulingLab
+
+:InterruptLabSnapshot
+for /f "delims=" %%T in ('powershell -NoProfile -Command "Get-Date -Format yyyyMMdd_HHmmss_fff" 2^>nul') do set "DEX_IRQ_TIME=%%T"
+if not defined DEX_IRQ_TIME set "DEX_IRQ_TIME=%RANDOM%"
+set "DEX_IRQ_SNAPSHOT=%DEX_BACKUPS%\InterruptLab_%DEX_IRQ_TIME%"
+mkdir "%DEX_IRQ_SNAPSHOT%" >nul 2>&1
+set "DEX_IRQ_DEVLIST=%TEMP%\dex_irq_devices.txt"
+chcp 437 >nul
+powershell -NoProfile -Command "@(Get-CimInstance Win32_USBController,Win32_VideoController,Win32_NetworkAdapter,Win32_IDEController -ErrorAction SilentlyContinue | Where-Object { $_.PNPDeviceID -like 'PCI\VEN_*' } | Select-Object -ExpandProperty PNPDeviceID -Unique) | Set-Content -Encoding ASCII -LiteralPath '%DEX_IRQ_DEVLIST%'" >nul 2>&1
+chcp 65001 >nul
+set /a DEX_IRQ_IDX=0
+if exist "%DEX_IRQ_DEVLIST%" for /f "usebackq delims=" %%i in ("%DEX_IRQ_DEVLIST%") do (
+    set /a DEX_IRQ_IDX+=1
+    reg export "HKLM\SYSTEM\CurrentControlSet\Enum\%%i\Device Parameters\Interrupt Management" "%DEX_IRQ_SNAPSHOT%\dev_!DEX_IRQ_IDX!.reg" /y >nul 2>&1
+    >>"%DEX_IRQ_SNAPSHOT%\devices.txt" echo %%i
+)
+del "%DEX_IRQ_DEVLIST%" >nul 2>&1
+> "%DEX_IRQ_SNAPSHOT%\metadata.txt" echo Created=%date% %time%
+> "%DEX_IRQ_SNAPSHOT_FILE%" echo %DEX_IRQ_SNAPSHOT%
+call :LogEvent "BACKUP" "Interrupt Lab snapshot created: %DEX_IRQ_SNAPSHOT%"
+exit /b 0
+
+:InterruptLabRevert
+if not exist "%DEX_IRQ_SNAPSHOT_FILE%" (
+    echo.
+    echo No Interrupt Lab snapshot is registered yet. Apply the tweak once first.
+    pause
+    goto InterruptSchedulingLab
+)
+set "DEX_IRQ_RESTORE="
+set /p DEX_IRQ_RESTORE=<"%DEX_IRQ_SNAPSHOT_FILE%"
+if not defined DEX_IRQ_RESTORE (
+    echo Invalid Interrupt Lab snapshot state.
+    pause
+    goto InterruptSchedulingLab
+)
+if not exist "!DEX_IRQ_RESTORE!\metadata.txt" (
+    echo Snapshot folder was not found: "!DEX_IRQ_RESTORE!"
+    pause
+    goto InterruptSchedulingLab
+)
+echo.
+echo Latest Interrupt Lab snapshot: "!DEX_IRQ_RESTORE!"
+choice /C YN /N /M "Restore the interrupt routing captured in this snapshot? [Y/N]: "
+if errorlevel 2 goto InterruptSchedulingLab
+for %%R in ("!DEX_IRQ_RESTORE!\*.reg") do reg import "%%~fR" >nul 2>&1
+call :MarkRebootRequired "Interrupt Lab snapshot restored"
+call :LogEvent "RESTORE" "Interrupt Lab snapshot restored: !DEX_IRQ_RESTORE!"
+echo.
+echo Snapshot restored. Restart Windows to complete the rollback.
+pause
+goto InterruptSchedulingLab
+
+:ApplyInterruptAffinity
 cls
 chcp 437 >nul
 for /f %%f in ('powershell -NoProfile -Command "(Get-CimInstance Win32_Processor).NumberOfCores"') do set "NumberOfCores=%%f"
 for /f %%f in ('powershell -NoProfile -Command "(Get-CimInstance Win32_Processor).NumberOfLogicalProcessors"') do set "NumberOfLogicalProcessors=%%f"
 chcp 65001 >nul
 if "!NumberOfCores!" == "2" (
-	goto HyperThreading
+	exit /b 0
 )
 if !NumberOfCores! gtr 4 (
 	set "_aff_vc_found="
@@ -13233,9 +13252,10 @@ if !NumberOfCores! gtr 4 (
 		reg.exe delete "HKLM\SYSTEM\CurrentControlSet\Enum\%%i\Device Parameters\Interrupt Management\Affinity Policy" /v "AssignmentSetOverride" /f
 	) > nul 2> nul
 )
+exit /b 0
 
 :: Hyper Threading ; Credits to HoneCtrl
-:HyperThreading
+:ApplyHyperThreadingAffinity
 if !NumberOfLogicalProcessors! gtr !NumberOfCores! (
 set "_ht_usb_found="
 for /f "delims=" %%i in ('powershell -NoProfile -Command "Get-CimInstance -ClassName Win32_USBController -ErrorAction SilentlyContinue | Where-Object { $_.PNPDeviceID -like 'PCI\VEN_*' } | Select-Object -ExpandProperty PNPDeviceID" 2^>nul') do (
@@ -13268,14 +13288,9 @@ if not defined _ht_na_found for /f %%i in ('wmic path Win32_NetworkAdapter get P
 	reg.exe add "HKLM\SYSTEM\CurrentControlSet\Enum\%%i\Device Parameters\Interrupt Management\Affinity Policy" /v "AssignmentSetOverride" /t REG_BINARY /d "30" /f
 	) > nul 2> nul
 )
-echo.
-echo.                                         %yellow%═══════════════════════════════════════════════════════
-echo.                                           %c%  Operation Completed, Press any key to continue%u% 
-echo.                                         %yellow%═══════════════════════════════════════════════════════
-pause >nul
-goto :GameBoosters
+exit /b 0
 
-:MSIMode
+:ApplyMSIMode
 cls
 set "_msi_usb_found="
 for /f "delims=" %%i in ('powershell -NoProfile -Command "Get-CimInstance -ClassName Win32_USBController -ErrorAction SilentlyContinue | Where-Object { $_.PNPDeviceID -like 'PCI\VEN_*' } | Select-Object -ExpandProperty PNPDeviceID" 2^>nul') do (
@@ -13332,89 +13347,103 @@ for /f "delims=" %%# in ('powershell -NoProfile -Command "(Get-CimInstance Win32
 	reg.exe add "HKLM\SYSTEM\CurrentControlSet\Enum\%%i\Device Parameters\Interrupt Management\Affinity Policy" /v "DevicePriority" /t REG_DWORD /d "2" /f
 ) > nul 2> nul
 chcp 65001 >nul
-echo.
-echo.                                         %yellow%═══════════════════════════════════════════════════════
-echo.                                           %c%  Operation Completed, Press any key to continue%u% 
-echo.                                         %yellow%═══════════════════════════════════════════════════════
-pause >nul
-goto :GameBoosters
+exit /b 0
 
 :ScheduledTasks
 cls
-schtasks /change /tn "\Microsoft\Windows\Customer Experience Improvement Program\Consolidator" /disable >nul 2>&1
-schtasks /change /tn "\Microsoft\Windows\Customer Experience Improvement Program\BthSQM" /disable >nul 2>&1
-schtasks /change /tn "\Microsoft\Windows\Customer Experience Improvement Program\KernelCeipTask" /disable >nul 2>&1
-schtasks /change /tn "\Microsoft\Windows\Customer Experience Improvement Program\UsbCeip" /disable >nul 2>&1
-schtasks /change /tn "\Microsoft\Windows\Customer Experience Improvement Program\Uploader" /disable >nul 2>&1
-schtasks /change /tn "\Microsoft\Windows\Application Experience\Microsoft Compatibility Appraiser" /disable >nul 2>&1
-schtasks /change /tn "\Microsoft\Windows\Application Experience\ProgramDataUpdater" /disable >nul 2>&1
-schtasks /change /tn "\Microsoft\Windows\Application Experience\StartupAppTask" /disable >nul 2>&1
-schtasks /change /tn "\Microsoft\Windows\DiskDiagnostic\Microsoft-Windows-DiskDiagnosticDataCollector" /disable >nul 2>&1
-schtasks /change /tn "\Microsoft\Windows\DiskDiagnostic\Microsoft-Windows-DiskDiagnosticResolver" /disable >nul 2>&1
-schtasks /change /tn "\Microsoft\Windows\Power Efficiency Diagnostics\AnalyzeSystem" /disable >nul 2>&1
-schtasks /change /tn "\Microsoft\Windows\Shell\FamilySafetyMonitor" /disable >nul 2>&1
-schtasks /change /tn "\Microsoft\Windows\Shell\FamilySafetyRefresh" /disable >nul 2>&1
-schtasks /change /tn "\Microsoft\Windows\Shell\FamilySafetyUpload" /disable >nul 2>&1
-schtasks /change /tn "\Microsoft\Windows\Autochk\Proxy" /disable >nul 2>&1
-schtasks /change /tn "\Microsoft\Windows\Maintenance\WinSAT" /disable >nul 2>&1
-schtasks /change /tn "\Microsoft\Windows\Application Experience\AitAgent" /disable >nul 2>&1
-schtasks /change /tn "\Microsoft\Windows\Windows Error Reporting\QueueReporting" /disable >nul 2>&1
-schtasks /change /tn "\Microsoft\Windows\CloudExperienceHost\CreateObjectTask" /disable >nul 2>&1
-schtasks /change /tn "\Microsoft\Windows\DiskFootprint\Diagnostics" /disable >nul 2>&1
-schtasks /change /tn "\Microsoft\Windows\FileHistory\File History (maintenance mode)" /disable >nul 2>&1
-schtasks /change /tn "\Microsoft\Windows\PI\Sqm-Tasks" /disable >nul 2>&1
-schtasks /change /tn "\Microsoft\Windows\NetTrace\GatherNetworkInfo" /disable >nul 2>&1
-schtasks /change /tn "\Microsoft\Windows\AppID\SmartScreenSpecific" /disable >nul 2>&1
-schtasks /change /tn "\Microsoft\Office\OfficeTelemetryAgentFallBack2016" /disable >nul 2>&1
-schtasks /change /tn "\Microsoft\Office\OfficeTelemetryAgentLogOn2016" /disable >nul 2>&1
-schtasks /change /tn "\Microsoft\Office\OfficeTelemetryAgentLogOn" /disable >nul 2>&1
-schtasks /change /tn "\Microsoft\Office\OfficeTelemetryAgentFallBack" /disable >nul 2>&1
-schtasks /change /tn "\Microsoft\Office\Office 15 Subscription Heartbeat" /disable >nul 2>&1
-schtasks /change /tn "\Microsoft\Windows\Time Synchronization\ForceSynchronizeTime" /disable >nul 2>&1
-schtasks /change /tn "\Microsoft\Windows\Time Synchronization\SynchronizeTime" /disable >nul 2>&1
-schtasks /change /tn "\Microsoft\Windows\WindowsUpdate\Automatic App Update" /disable >nul 2>&1
-schtasks /change /tn "\Microsoft\Windows\Device Information\Device" /disable >nul 2>&1
-schtasks /change /tn "\Microsoft\Windows\ErrorDetails\EnableErrorDetailsUpdate" /disable >nul 2>&1
-schtasks /change /tn "\Microsoft\Windows\ExploitGuard\ExploitGuard MDM policy Refresh" /disable >nul 2>&1
-schtasks /change /tn "\Microsoft\Windows\Windows Defender\Windows Defender Cache Maintenance" /disable >nul 2>&1
-schtasks /change /tn "\Microsoft\Windows\Windows Defender\Windows Defender Cleanup" /disable >nul 2>&1
-schtasks /change /tn "\Microsoft\Windows\Windows Defender\Windows Defender Scheduled Scan" /disable >nul 2>&1
-schtasks /change /tn "\Microsoft\Windows\Windows Defender\Windows Defender Verification" /disable >nul 2>&1
-schtasks /change /tn "\Microsoft\Windows\Diagnosis\Scheduled" /disable >nul 2>&1
-schtasks /change /tn "\Microsoft\Windows\InstallService\ScanForUpdates" /disable >nul 2>&1
-schtasks /change /tn "\Microsoft\Windows\InstallService\ScanForUpdatesAsUser" /disable >nul 2>&1
-schtasks /change /tn "\Microsoft\Windows\Registry\RegIdleBackup" /disable >nul 2>&1
-schtasks /change /tn "\Microsoft\Windows\StateRepository\MaintenanceTasks" /disable >nul 2>&1
-schtasks /change /tn "\Microsoft\Windows\SystemRestore\SR" /disable >nul 2>&1
-schtasks /change /tn "\Microsoft\Windows\WDI\ResolutionHost" /disable >nul 2>&1
-schtasks /change /tn "\Microsoft\Windows\ApplicationData\appuriverifierdaily" /disable >nul 2>&1
-schtasks /change /tn "\Microsoft\Windows\Application Experience\MareBackup" /disable >nul 2>&1
-schtasks /change /tn "\Microsoft\Windows\Feedback\Siuf\DmClient" /disable >nul 2>&1
-schtasks /change /tn "\Microsoft\Windows\Feedback\Siuf\DmClientOnScenarioDownload" /disable >nul 2>&1
-schtasks /change /tn "\Microsoft\Windows\Flighting\FeatureConfig\ReconcileFeatures" /disable >nul 2>&1
-schtasks /change /tn "\Microsoft\Windows\Flighting\FeatureConfig\UsageDataFlushing" /disable >nul 2>&1
-schtasks /change /tn "\Microsoft\Windows\Flighting\FeatureConfig\UsageDataReporting" /disable >nul 2>&1
-schtasks /change /tn "\Microsoft\Windows\Input\InputSettingsRestoreDataAvailable" /disable >nul 2>&1
-schtasks /change /tn "\Microsoft\Windows\Input\LocalUserSyncDataAvailable" /disable >nul 2>&1
-schtasks /change /tn "\Microsoft\Windows\Input\MouseSyncDataAvailable" /disable >nul 2>&1
-schtasks /change /tn "\Microsoft\Windows\Input\PenSyncDataAvailable" /disable >nul 2>&1
-schtasks /change /tn "\Microsoft\Windows\Input\syncpensettings" /disable >nul 2>&1
-schtasks /change /tn "\Microsoft\Windows\Input\TouchpadSyncDataAvailable" /disable >nul 2>&1
-schtasks /change /tn "\Microsoft\Windows\Location\Notifications" /disable >nul 2>&1
-schtasks /change /tn "\Microsoft\Windows\Location\WindowsActionDialog" /disable >nul 2>&1
-schtasks /change /tn "\Microsoft\Windows\ApplicationData\DsSvcCleanup" /disable >nul 2>&1
-schtasks /change /tn "\Microsoft\Windows\Shell\IndexerAutomaticMaintenance" /disable >nul 2>&1
-schtasks /change /tn "\Microsoft\Windows\Maps\MapsToastTask" /disable >nul 2>&1
-schtasks /change /tn "\Microsoft\Windows\Maps\MapsUpdateTask" /disable >nul 2>&1
-schtasks /change /tn "\Microsoft\Windows\MemoryDiagnostic\ProcessMemoryDiagnosticEvents" /disable >nul 2>&1
-schtasks /change /tn "\Microsoft\Windows\MemoryDiagnostic\RunFullMemoryDiagnostic" /disable >nul 2>&1
-schtasks /Change /TN "\Microsoft\Windows\WS\CrossDeviceResume" /Disable >nul 2>&1
-schtasks /Change /TN "\Microsoft\Windows\WS\CrossDeviceResumeTrigger" /Disable >nul 2>&1
+call :SetupConsole
+set "DEX_TASK_LIST=%TEMP%\dex_scheduled_tasks.txt"
+> "%DEX_TASK_LIST%" (
+echo \Microsoft\Windows\Customer Experience Improvement Program\Consolidator
+echo \Microsoft\Windows\Customer Experience Improvement Program\BthSQM
+echo \Microsoft\Windows\Customer Experience Improvement Program\KernelCeipTask
+echo \Microsoft\Windows\Customer Experience Improvement Program\UsbCeip
+echo \Microsoft\Windows\Customer Experience Improvement Program\Uploader
+echo \Microsoft\Windows\Application Experience\Microsoft Compatibility Appraiser
+echo \Microsoft\Windows\Application Experience\ProgramDataUpdater
+echo \Microsoft\Windows\Application Experience\StartupAppTask
+echo \Microsoft\Windows\DiskDiagnostic\Microsoft-Windows-DiskDiagnosticDataCollector
+echo \Microsoft\Windows\DiskDiagnostic\Microsoft-Windows-DiskDiagnosticResolver
+echo \Microsoft\Windows\Power Efficiency Diagnostics\AnalyzeSystem
+echo \Microsoft\Windows\Shell\FamilySafetyMonitor
+echo \Microsoft\Windows\Shell\FamilySafetyRefresh
+echo \Microsoft\Windows\Shell\FamilySafetyUpload
+echo \Microsoft\Windows\Autochk\Proxy
+echo \Microsoft\Windows\Maintenance\WinSAT
+echo \Microsoft\Windows\Application Experience\AitAgent
+echo \Microsoft\Windows\Windows Error Reporting\QueueReporting
+echo \Microsoft\Windows\CloudExperienceHost\CreateObjectTask
+echo \Microsoft\Windows\DiskFootprint\Diagnostics
+echo \Microsoft\Windows\FileHistory\File History (maintenance mode^)
+echo \Microsoft\Windows\PI\Sqm-Tasks
+echo \Microsoft\Windows\NetTrace\GatherNetworkInfo
+echo \Microsoft\Windows\AppID\SmartScreenSpecific
+echo \Microsoft\Office\OfficeTelemetryAgentFallBack2016
+echo \Microsoft\Office\OfficeTelemetryAgentLogOn2016
+echo \Microsoft\Office\OfficeTelemetryAgentLogOn
+echo \Microsoft\Office\OfficeTelemetryAgentFallBack
+echo \Microsoft\Office\Office 15 Subscription Heartbeat
+echo \Microsoft\Windows\Time Synchronization\ForceSynchronizeTime
+echo \Microsoft\Windows\Time Synchronization\SynchronizeTime
+echo \Microsoft\Windows\WindowsUpdate\Automatic App Update
+echo \Microsoft\Windows\Device Information\Device
+echo \Microsoft\Windows\ErrorDetails\EnableErrorDetailsUpdate
+echo \Microsoft\Windows\ExploitGuard\ExploitGuard MDM policy Refresh
+echo \Microsoft\Windows\Diagnosis\Scheduled
+echo \Microsoft\Windows\InstallService\ScanForUpdates
+echo \Microsoft\Windows\InstallService\ScanForUpdatesAsUser
+echo \Microsoft\Windows\StateRepository\MaintenanceTasks
+echo \Microsoft\Windows\WDI\ResolutionHost
+echo \Microsoft\Windows\ApplicationData\appuriverifierdaily
+echo \Microsoft\Windows\Application Experience\MareBackup
+echo \Microsoft\Windows\Feedback\Siuf\DmClient
+echo \Microsoft\Windows\Feedback\Siuf\DmClientOnScenarioDownload
+echo \Microsoft\Windows\Flighting\FeatureConfig\ReconcileFeatures
+echo \Microsoft\Windows\Flighting\FeatureConfig\UsageDataFlushing
+echo \Microsoft\Windows\Flighting\FeatureConfig\UsageDataReporting
+echo \Microsoft\Windows\Input\InputSettingsRestoreDataAvailable
+echo \Microsoft\Windows\Input\LocalUserSyncDataAvailable
+echo \Microsoft\Windows\Input\MouseSyncDataAvailable
+echo \Microsoft\Windows\Input\PenSyncDataAvailable
+echo \Microsoft\Windows\Input\syncpensettings
+echo \Microsoft\Windows\Input\TouchpadSyncDataAvailable
+echo \Microsoft\Windows\Location\Notifications
+echo \Microsoft\Windows\Location\WindowsActionDialog
+echo \Microsoft\Windows\ApplicationData\DsSvcCleanup
+echo \Microsoft\Windows\Shell\IndexerAutomaticMaintenance
+echo \Microsoft\Windows\Maps\MapsToastTask
+echo \Microsoft\Windows\Maps\MapsUpdateTask
+echo \Microsoft\Windows\MemoryDiagnostic\ProcessMemoryDiagnosticEvents
+echo \Microsoft\Windows\MemoryDiagnostic\RunFullMemoryDiagnostic
+echo \Microsoft\Windows\WS\CrossDeviceResume
+echo \Microsoft\Windows\WS\CrossDeviceResumeTrigger
+)
+echo.
+echo %c%The following diagnostic/telemetry scheduled tasks will be disabled:%u%
+echo.
+for /f "usebackq delims=" %%T in ("%DEX_TASK_LIST%") do echo   %%T
+echo.
+echo %red%Kept ON purpose (recovery/security, not touched by Dex Tweaks):%u%
+echo %red%  \Microsoft\Windows\SystemRestore\SR%u%
+echo %red%  \Microsoft\Windows\Registry\RegIdleBackup%u%
+echo %red%  \Microsoft\Windows\Windows Defender\Windows Defender Cache Maintenance%u%
+echo %red%  \Microsoft\Windows\Windows Defender\Windows Defender Cleanup%u%
+echo %red%  \Microsoft\Windows\Windows Defender\Windows Defender Scheduled Scan%u%
+echo %red%  \Microsoft\Windows\Windows Defender\Windows Defender Verification%u%
+echo.
+choice /C YN /M "%c%Disable the scheduled tasks listed above? (Y/N)%u%"
+if errorlevel 2 (
+    del "%DEX_TASK_LIST%" >nul 2>&1
+    goto AdvancedMenu
+)
+for /f "usebackq delims=" %%T in ("%DEX_TASK_LIST%") do schtasks /change /tn "%%T" /disable >nul 2>&1
+del "%DEX_TASK_LIST%" >nul 2>&1
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\CrossDeviceResume" /v "Enabled" /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\CrossDeviceResume" /v "UsePerformanceMode" /t REG_DWORD /d 0 /f >nul 2>&1
+call :LogEvent "OK" "Scheduled diagnostic tasks disabled"
 echo.
 echo.                                         %yellow%═══════════════════════════════════════════════════════
-echo.                                           %c%  Operation Completed, Press any key to continue%u% 
+echo.                                           %c%  Operation Completed, Press any key to continue%u%
 echo.                                         %yellow%═══════════════════════════════════════════════════════
 pause >nul
 goto :GameBoosters
@@ -13573,9 +13602,17 @@ echo %c%Applying Fortnite-specific optimizations:%u%
 echo %c%• FortniteClient CPU priority set to High%u%
 echo %c%• Junk cache cleared from LocalAppData%u%
 echo %c%• Priority separation and multimedia priority tweaked%u%
-echo %c%• Low-quality Unreal Engine settings applied for max FPS%u%
+echo %c%• Render resolution scale set to 50%% of native (safe floor for readability)%u%
+echo %c%• Shadows, effects, textures, and view distance set to lowest for max FPS%u%
 echo %c%• Game DVR and Fullscreen Optimizations disabled%u%
 echo.
+set "DEX_FN_RES=50"
+echo %c%Dropping render resolution further to 30%% of native gains a few extra FPS%u%
+echo %c%but noticeably blurs the image and can hurt target visibility.%u%
+choice /C YN /M "%c%Use the aggressive 30%% resolution scale instead of the 50%% safe floor? (Y/N)%u%"
+if not errorlevel 2 set "DEX_FN_RES=30"
+echo.
+echo %c%Resolution scale will be set to !DEX_FN_RES!%% of native.%u%
 echo.
 reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\FortniteClient-Win64-Shipping.exe\PerfOptions" /t REG_DWORD /v CpuPriorityClass /d 3 /f >nul 2>&1
 for %%D in ("%localappdata%\FortniteGame\Saved\Logs" "%localappdata%\FortniteGame\Saved\Crashes" "%localappdata%\FortniteGame\Saved\webcache" "%localappdata%\FortniteGame\Saved\PersistentDownloadDir") do if exist "%%~D" (
@@ -13584,7 +13621,7 @@ for %%D in ("%localappdata%\FortniteGame\Saved\Logs" "%localappdata%\FortniteGam
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\PriorityControl" /v "Win32PrioritySeparation" /t REG_DWORD /d 38 /f >nul 2>&1
 reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\WMPlayer" /v "Priority" /t REG_DWORD /d 2 /f >nul 2>&1
 reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\Audio" /v "Priority" /t REG_DWORD /d 1 /f >nul 2>&1
-reg add "HKCU\Software\Epic Games\Unreal Engine\Identifiers\Fortnite" /v "sg.ResolutionQuality" /t REG_DWORD /d 30 /f >nul 2>&1
+reg add "HKCU\Software\Epic Games\Unreal Engine\Identifiers\Fortnite" /v "sg.ResolutionQuality" /t REG_DWORD /d !DEX_FN_RES! /f >nul 2>&1
 reg add "HKCU\Software\Epic Games\Unreal Engine\Identifiers\Fortnite" /v "sg.ShadowQuality" /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKCU\Software\Epic Games\Unreal Engine\Identifiers\Fortnite" /v "sg.EffectsQuality" /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKCU\Software\Epic Games\Unreal Engine\Identifiers\Fortnite" /v "sg.TexturesQuality" /t REG_DWORD /d 0 /f >nul 2>&1
@@ -14529,6 +14566,7 @@ set "DEX_LOG=%DEX_LOG_DIR%\Session_%DEX_SESSION%.log"
 set "DEX_QUEUE=%DEX_STATE_DIR%\pending.queue"
 set "DEX_PROFILE_FILE=%DEX_STATE_DIR%\last_profile.txt"
 set "DEX_SNAPSHOT_FILE=%DEX_STATE_DIR%\latest_snapshot.txt"
+set "DEX_IRQ_SNAPSHOT_FILE=%DEX_STATE_DIR%\latest_irq_snapshot.txt"
 set "DEX_REBOOT_FILE=%DEX_STATE_DIR%\reboot_required.flag"
 set "DEX_BASELINE=%DEX_REPORTS%\benchmark_baseline.txt"
 set "DEX_AFTER=%DEX_REPORTS%\benchmark_after.txt"
