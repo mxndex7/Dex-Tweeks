@@ -703,13 +703,20 @@ echo %c%• Chromium-based browser universal configuration%u%
 echo %c%• Custom DNS and ad-blocking configuration%u%
 echo.
 echo %red%%underline%Browser Notice:%u%
-echo %c%This will modify browser settings and automatically install privacy extensions.%u%
-echo %c%Extensions will be force-installed and configured for maximum privacy.%u%
+echo %c%This will modify browser settings for privacy and performance.%u%
 echo %c%For best results, close all browsers before proceeding.%u%
 echo.
 echo.
 choice /C YN /M "%c%Apply comprehensive browser privacy optimization? (Y/N)%u%"
 if errorlevel 2 goto TweaksMenu
+
+echo.
+echo %c%Extensions (uBlock Origin, Privacy Badger, Decentraleyes) can be installed%u%
+echo %c%through each browser's official policy mechanism. Once installed this way,%u%
+echo %c%you cannot disable/remove them from the browser's own UI - only by running%u%
+echo %c%this tool again or editing the policy yourself.%u%
+choice /C YN /M "%c%Install privacy extensions automatically? (Y/N)%u%"
+if errorlevel 2 (set "BROWSER_INSTALL_EXT=false") else (set "BROWSER_INSTALL_EXT=true")
 
 echo.
 echo %c%╔══════════════════════════════════════════════════════════════════════════════╗
@@ -781,9 +788,11 @@ if "%EDGE_FOUND%"=="true" (
     reg add "HKLM\SOFTWARE\Policies\Microsoft\Edge" /v "SiteSafetyServicesEnabled" /t REG_DWORD /d "0" /f >nul 2>&1
     reg add "HKLM\SOFTWARE\Policies\Microsoft\Edge" /v "ResolveNavigationErrorsUseWebService" /t REG_DWORD /d "0" /f >nul 2>&1
     
-    echo %c%• Force installing uBlock Origin in Edge...%u%
-    reg add "HKLM\SOFTWARE\Policies\Microsoft\Edge\ExtensionInstallForcelist" /v "1" /t REG_SZ /d "odfafepnkmbhccpbejgmiehpchacaeak;https://edge.microsoft.com/extensionwebstorebase/v1/crx" /f >nul 2>&1
-    reg add "HKLM\SOFTWARE\Policies\Microsoft\Edge\ExtensionInstallForcelist" /v "2" /t REG_SZ /d "bhhhlbepdkbapadjdnnojkbgioiodbic;https://edge.microsoft.com/extensionwebstorebase/v1/crx" /f >nul 2>&1
+    if "!BROWSER_INSTALL_EXT!"=="true" (
+        echo %c%• Force installing uBlock Origin in Edge...%u%
+        reg add "HKLM\SOFTWARE\Policies\Microsoft\Edge\ExtensionInstallForcelist" /v "1" /t REG_SZ /d "odfafepnkmbhccpbejgmiehpchacaeak;https://edge.microsoft.com/extensionwebstorebase/v1/crx" /f >nul 2>&1
+        reg add "HKLM\SOFTWARE\Policies\Microsoft\Edge\ExtensionInstallForcelist" /v "2" /t REG_SZ /d "bhhhlbepdkbapadjdnnojkbgioiodbic;https://edge.microsoft.com/extensionwebstorebase/v1/crx" /f >nul 2>&1
+    )
     
     echo %c%• Disabling Copilot and AI features...%u%
     reg add "HKLM\SOFTWARE\Policies\Microsoft\Edge" /v "CopilotCDPPageContext" /t REG_DWORD /d "0" /f >nul 2>&1
@@ -889,12 +898,14 @@ if "%CHROME_FOUND%"=="true" (
     reg add "HKLM\SOFTWARE\Policies\Google\Chrome" /v "SubmitSafeBrowsingDownloadVerdicts" /t REG_DWORD /d "0" /f >nul 2>&1
     reg add "HKLM\SOFTWARE\Policies\Google\Chrome" /v "UrlKeyedAnonymizedDataCollectionEnabled" /t REG_DWORD /d "0" /f >nul 2>&1
     
-    echo %c%• Disabling location and sensor access...%u%
+    echo %c%• Disabling location, sensor and notification access...%u%
     reg add "HKLM\SOFTWARE\Policies\Google\Chrome" /v "DefaultGeolocationSetting" /t REG_DWORD /d "2" /f >nul 2>&1
     reg add "HKLM\SOFTWARE\Policies\Google\Chrome" /v "DefaultSensorsSetting" /t REG_DWORD /d "2" /f >nul 2>&1
     reg add "HKLM\SOFTWARE\Policies\Google\Chrome" /v "DefaultNotificationsSetting" /t REG_DWORD /d "2" /f >nul 2>&1
-    reg add "HKLM\SOFTWARE\Policies\Google\Chrome" /v "DefaultMediaStreamSetting" /t REG_DWORD /d "2" /f >nul 2>&1
-    
+    rem DefaultMediaStreamSetting is intentionally left alone - blocking it
+    rem blocks camera/mic for every site by default, breaking Meet/Discord
+    rem web/Zoom web until the user manually allows each site.
+
     echo %c%• Disabling predictive features and suggestions...%u%
     reg add "HKLM\SOFTWARE\Policies\Google\Chrome" /v "NetworkPredictionOptions" /t REG_DWORD /d "2" /f >nul 2>&1
     reg add "HKLM\SOFTWARE\Policies\Google\Chrome" /v "SearchSuggestEnabled" /t REG_DWORD /d "0" /f >nul 2>&1
@@ -902,14 +913,17 @@ if "%CHROME_FOUND%"=="true" (
     reg add "HKLM\SOFTWARE\Policies\Google\Chrome" /v "SpellCheckServiceEnabled" /t REG_DWORD /d "0" /f >nul 2>&1
     reg add "HKLM\SOFTWARE\Policies\Google\Chrome" /v "AutofillAddressEnabled" /t REG_DWORD /d "0" /f >nul 2>&1
     reg add "HKLM\SOFTWARE\Policies\Google\Chrome" /v "AutofillCreditCardEnabled" /t REG_DWORD /d "0" /f >nul 2>&1
-    reg add "HKLM\SOFTWARE\Policies\Google\Chrome" /v "PasswordManagerEnabled" /t REG_DWORD /d "0" /f >nul 2>&1
-    
+    rem PasswordManagerEnabled is intentionally left alone - disabling it turns
+    rem off Chrome's built-in password manager entirely, not just autofill.
+
     echo %c%• Disabling Google AI and experimental features...%u%
     reg add "HKLM\SOFTWARE\Policies\Google\Chrome" /v "AIGenerativeGoogleSearchFeatureEnabled" /t REG_DWORD /d "0" /f >nul 2>&1
     reg add "HKLM\SOFTWARE\Policies\Google\Chrome" /v "AIGenerativeGoogleLensFeatureEnabled" /t REG_DWORD /d "0" /f >nul 2>&1
     reg add "HKLM\SOFTWARE\Policies\Google\Chrome" /v "SafeBrowsingAIDataCollectionEnabled" /t REG_DWORD /d "0" /f >nul 2>&1
-    reg add "HKLM\SOFTWARE\Policies\Google\Chrome" /v "ComponentUpdatesEnabled" /t REG_DWORD /d "0" /f >nul 2>&1
-    
+    rem ComponentUpdatesEnabled is intentionally left alone - it also delivers
+    rem security-relevant components (e.g. Widevine, cert revocation data),
+    rem not just feature updates.
+
     echo %c%• Disabling Chrome promotional and tracking features...%u%
     reg add "HKLM\SOFTWARE\Policies\Google\Chrome" /v "PromotionalTabsEnabled" /t REG_DWORD /d "0" /f >nul 2>&1
     reg add "HKLM\SOFTWARE\Policies\Google\Chrome" /v "WelcomePageOnOSUpgradeEnabled" /t REG_DWORD /d "0" /f >nul 2>&1
@@ -936,10 +950,12 @@ if "%CHROME_FOUND%"=="true" (
     reg add "HKLM\SOFTWARE\Policies\Google\Chrome" /v "SafeBrowsingEnabled" /t REG_DWORD /d "1" /f >nul 2>&1
     reg add "HKLM\SOFTWARE\Policies\Google\Chrome" /v "SSLErrorOverrideAllowed" /t REG_DWORD /d "0" /f >nul 2>&1
     
-    echo %c%• Force installing uBlock Origin in Chrome...%u%
-    reg add "HKLM\SOFTWARE\Policies\Google\Chrome\ExtensionInstallForcelist" /v "1" /t REG_SZ /d "cjpalhdlnbpafiamejdnhcphjbkeiagm" /f >nul 2>&1
-    reg add "HKLM\SOFTWARE\Policies\Google\Chrome\ExtensionInstallForcelist" /v "2" /t REG_SZ /d "pkehgijcmpdhfbdbbnkijodmdjhbjlgp" /f >nul 2>&1
-    reg add "HKLM\SOFTWARE\Policies\Google\Chrome\ExtensionInstallForcelist" /v "3" /t REG_SZ /d "ldpochfccmkkmhdbclfhpagapcfdljkj" /f >nul 2>&1
+    if "!BROWSER_INSTALL_EXT!"=="true" (
+        echo %c%• Force installing uBlock Origin in Chrome...%u%
+        reg add "HKLM\SOFTWARE\Policies\Google\Chrome\ExtensionInstallForcelist" /v "1" /t REG_SZ /d "cjpalhdlnbpafiamejdnhcphjbkeiagm" /f >nul 2>&1
+        reg add "HKLM\SOFTWARE\Policies\Google\Chrome\ExtensionInstallForcelist" /v "2" /t REG_SZ /d "pkehgijcmpdhfbdbbnkijodmdjhbjlgp" /f >nul 2>&1
+        reg add "HKLM\SOFTWARE\Policies\Google\Chrome\ExtensionInstallForcelist" /v "3" /t REG_SZ /d "ldpochfccmkkmhdbclfhpagapcfdljkj" /f >nul 2>&1
+    )
     
     echo %c%• Keeping Chrome security updates enabled...%u%
     reg delete "HKLM\SOFTWARE\Policies\Google\Update" /v "AutoUpdateCheckPeriodMinutes" /f >nul 2>&1
@@ -1000,10 +1016,12 @@ if "%FIREFOX_FOUND%"=="true" (
     reg add "HKLM\SOFTWARE\Policies\Mozilla\Firefox" /v "ExtensionRecommendations" /t REG_DWORD /d "0" /f >nul 2>&1
     reg add "HKLM\SOFTWARE\Policies\Mozilla\Firefox" /v "FirefoxHome" /t REG_DWORD /d "0" /f >nul 2>&1
     
-    echo %c%• Installing uBlock Origin and privacy extensions...%u%
-    reg add "HKLM\SOFTWARE\Policies\Mozilla\Firefox\Extensions\Install" /v "1" /t REG_SZ /d "https://addons.mozilla.org/firefox/downloads/latest/ublock-origin/latest.xpi" /f >nul 2>&1
-    reg add "HKLM\SOFTWARE\Policies\Mozilla\Firefox\Extensions\Install" /v "2" /t REG_SZ /d "https://addons.mozilla.org/firefox/downloads/latest/privacy-badger17/latest.xpi" /f >nul 2>&1
-    reg add "HKLM\SOFTWARE\Policies\Mozilla\Firefox\Extensions\Install" /v "3" /t REG_SZ /d "https://addons.mozilla.org/firefox/downloads/latest/decentraleyes/latest.xpi" /f >nul 2>&1
+    if "!BROWSER_INSTALL_EXT!"=="true" (
+        echo %c%• Installing uBlock Origin and privacy extensions...%u%
+        reg add "HKLM\SOFTWARE\Policies\Mozilla\Firefox\Extensions\Install" /v "1" /t REG_SZ /d "https://addons.mozilla.org/firefox/downloads/latest/ublock-origin/latest.xpi" /f >nul 2>&1
+        reg add "HKLM\SOFTWARE\Policies\Mozilla\Firefox\Extensions\Install" /v "2" /t REG_SZ /d "https://addons.mozilla.org/firefox/downloads/latest/privacy-badger17/latest.xpi" /f >nul 2>&1
+        reg add "HKLM\SOFTWARE\Policies\Mozilla\Firefox\Extensions\Install" /v "3" /t REG_SZ /d "https://addons.mozilla.org/firefox/downloads/latest/decentraleyes/latest.xpi" /f >nul 2>&1
+    )
     
     echo %c%• Keeping Firefox security updates enabled...%u%
     reg delete "HKLM\SOFTWARE\Policies\Mozilla\Firefox" /v "DisableAppUpdate" /f >nul 2>&1
@@ -1092,12 +1110,15 @@ if exist "%FIREFOX_PREF_DIR%" (
         echo pref^("geo.provider.use_gpsd", false^);
         echo pref^("geo.provider.use_geoclue", false^);
         echo pref^("permissions.default.geo", 2^);
-        echo pref^("permissions.default.camera", 2^);
-        echo pref^("permissions.default.microphone", 2^);
         echo pref^("permissions.default.desktop-notification", 2^);
+        rem camera/microphone permissions are intentionally left on their
+        rem default (ask-per-site) - blocking them globally breaks Meet,
+        rem Discord web and Zoom web until manually allowed per site.
         echo.
         echo // === DNS AND NETWORK ===
-        echo pref^("network.trr.mode", 5^);
+        rem network.trr.mode is intentionally NOT set to 5 - that explicitly
+        rem DISABLES DNS-over-HTTPS, the opposite of a privacy hardening step.
+        rem Firefox's own default (mode 2, TRR-first with fallback) is kept.
         echo pref^("network.dns.disablePrefetch", true^);
         echo pref^("network.dns.disablePrefetchFromHTTPS", true^);
         echo pref^("network.predictor.enabled", false^);
@@ -1125,7 +1146,9 @@ if exist "%FIREFOX_PREF_DIR%" (
         echo pref^("network.http.referer.XOriginTrimmingPolicy", 2^);
         echo.
         echo // === WEBGL AND CANVAS ===
-        echo pref^("webgl.disabled", true^);
+        rem webgl.disabled is intentionally NOT set to true - it breaks web
+        rem games, 3D maps and any site that legitimately uses WebGL, which
+        rem is most of the modern web now.
         echo pref^("privacy.resistFingerprinting.block_mozAddonManager", true^);
         echo pref^("privacy.resistFingerprinting", true^);
         echo.
@@ -1199,8 +1222,10 @@ if "%OPERAGX_FOUND%"=="true" (
     reg add "HKLM\SOFTWARE\Policies\Opera Software\Opera GX Stable" /v "UserFeedbackAllowed" /t REG_DWORD /d "0" /f >nul 2>&1
     reg add "HKLM\SOFTWARE\Policies\Opera Software\Opera GX Stable" /v "DefaultSearchProviderEnabled" /t REG_DWORD /d "1" /f >nul 2>&1
     
-    echo %c%• Force installing uBlock Origin in Opera GX...%u%
-    reg add "HKLM\SOFTWARE\Policies\Opera Software\Opera GX Stable\ExtensionInstallForcelist" /v "1" /t REG_SZ /d "cjpalhdlnbpafiamejdnhcphjbkeiagm" /f >nul 2>&1
+    if "!BROWSER_INSTALL_EXT!"=="true" (
+        echo %c%• Force installing uBlock Origin in Opera GX...%u%
+        reg add "HKLM\SOFTWARE\Policies\Opera Software\Opera GX Stable\ExtensionInstallForcelist" /v "1" /t REG_SZ /d "cjpalhdlnbpafiamejdnhcphjbkeiagm" /f >nul 2>&1
+    )
     
     echo %c%• Configuring Opera GX gaming optimizations...%u%
     reg add "HKLM\SOFTWARE\Policies\Opera Software\Opera GX Stable" /v "BackgroundModeEnabled" /t REG_DWORD /d "0" /f >nul 2>&1
@@ -1218,9 +1243,11 @@ if "%BRAVE_FOUND%"=="true" (
     reg add "HKLM\SOFTWARE\Policies\BraveSoftware\Brave" /v "SpellCheckServiceEnabled" /t REG_DWORD /d "0" /f >nul 2>&1
     reg add "HKLM\SOFTWARE\Policies\BraveSoftware\Brave" /v "SafeBrowsingExtendedReportingEnabled" /t REG_DWORD /d "0" /f >nul 2>&1
     
-    echo %c%• Installing additional privacy extensions in Brave...%u%
-    reg add "HKLM\SOFTWARE\Policies\BraveSoftware\Brave\ExtensionInstallForcelist" /v "1" /t REG_SZ /d "pkehgijcmpdhfbdbbnkijodmdjhbjlgp" /f >nul 2>&1
-    reg add "HKLM\SOFTWARE\Policies\BraveSoftware\Brave\ExtensionInstallForcelist" /v "2" /t REG_SZ /d "ldpochfccmkkmhdbclfhpagapcfdljkj" /f >nul 2>&1
+    if "!BROWSER_INSTALL_EXT!"=="true" (
+        echo %c%• Installing additional privacy extensions in Brave...%u%
+        reg add "HKLM\SOFTWARE\Policies\BraveSoftware\Brave\ExtensionInstallForcelist" /v "1" /t REG_SZ /d "pkehgijcmpdhfbdbbnkijodmdjhbjlgp" /f >nul 2>&1
+        reg add "HKLM\SOFTWARE\Policies\BraveSoftware\Brave\ExtensionInstallForcelist" /v "2" /t REG_SZ /d "ldpochfccmkkmhdbclfhpagapcfdljkj" /f >nul 2>&1
+    )
     
     echo %c%• Optimizing Brave for performance...%u%
     reg add "HKLM\SOFTWARE\Policies\BraveSoftware\Brave" /v "BackgroundModeEnabled" /t REG_DWORD /d "0" /f >nul 2>&1
@@ -1237,9 +1264,11 @@ if "%VIVALDI_FOUND%"=="true" (
     reg add "HKLM\SOFTWARE\Policies\Vivaldi" /v "MetricsReportingEnabled" /t REG_DWORD /d "0" /f >nul 2>&1
     reg add "HKLM\SOFTWARE\Policies\Vivaldi" /v "UserFeedbackAllowed" /t REG_DWORD /d "0" /f >nul 2>&1
     
-    echo %c%• Installing privacy extensions in Vivaldi...%u%
-    reg add "HKLM\SOFTWARE\Policies\Vivaldi\ExtensionInstallForcelist" /v "1" /t REG_SZ /d "cjpalhdlnbpafiamejdnhcphjbkeiagm" /f >nul 2>&1
-    reg add "HKLM\SOFTWARE\Policies\Vivaldi\ExtensionInstallForcelist" /v "2" /t REG_SZ /d "pkehgijcmpdhfbdbbnkijodmdjhbjlgp" /f >nul 2>&1
+    if "!BROWSER_INSTALL_EXT!"=="true" (
+        echo %c%• Installing privacy extensions in Vivaldi...%u%
+        reg add "HKLM\SOFTWARE\Policies\Vivaldi\ExtensionInstallForcelist" /v "1" /t REG_SZ /d "cjpalhdlnbpafiamejdnhcphjbkeiagm" /f >nul 2>&1
+        reg add "HKLM\SOFTWARE\Policies\Vivaldi\ExtensionInstallForcelist" /v "2" /t REG_SZ /d "pkehgijcmpdhfbdbbnkijodmdjhbjlgp" /f >nul 2>&1
+    )
     
     echo %c%• Configuring Vivaldi privacy settings...%u%
     reg add "HKLM\SOFTWARE\Policies\Vivaldi" /v "NetworkPredictionOptions" /t REG_DWORD /d "2" /f >nul 2>&1
@@ -1324,14 +1353,16 @@ echo %c%• Hosts file updated with ad-blocking entries%u%
 echo %c%• Internet Explorer security hardened%u%
 echo %c%• Browser telemetry and tracking disabled across all browsers%u%
 echo.
-echo %c%Auto-Installed Extensions:%u%
-echo %c%• uBlock Origin - Advanced ad and tracker blocker%u%
-echo %c%• Privacy Badger - Intelligent tracker protection%u%
-echo %c%• Decentraleyes - CDN request protection%u%
-echo.
+if "!BROWSER_INSTALL_EXT!"=="true" (
+    echo %c%Auto-Installed Extensions:%u%
+    echo %c%• uBlock Origin - Advanced ad and tracker blocker%u%
+    echo %c%• Privacy Badger - Intelligent tracker protection%u%
+    echo %c%• Decentraleyes - CDN request protection%u%
+    echo.
+)
 echo %red%Next Steps:%u%
 echo %c%• Restart all browsers to apply configurations%u%
-echo %c%• Extensions will automatically install on browser restart%u%
+if "!BROWSER_INSTALL_EXT!"=="true" echo %c%• Extensions will automatically install on browser restart%u%
 echo %c%• Configure extension settings as needed%u%
 echo.
 echo %red%Performance Benefits:%u%
@@ -1429,6 +1460,8 @@ echo %c%This plan prioritizes maximum performance over power efficiency.%u%
 echo %c%Power consumption will be high - designed for desktop gaming PCs.%u%
 echo %c%Includes secret Windows performance tweaks not available in GUI.%u%
 echo %c%AMD Ryzen CPUs will boost to maximum frequencies under load.%u%
+echo %orange%The monitor will never turn off by itself - if it is OLED, a static%u%
+echo %orange%image left on screen for hours raises the risk of burn-in.%u%
 echo.
 echo.
 choice /C YN /M "%c%Create Desktop Ultimate Performance plan? (Y/N)%u%"
@@ -1734,8 +1767,10 @@ echo ║                     LAPTOP POWER PLAN OPTIMIZATION IN PROGRESS         
 echo ╚══════════════════════════════════════════════════════════════════════════════╝%u%
 
 echo.
-echo %c%[1/10] Restoring Default Power Schemes...%u%
-powercfg -restoredefaultschemes >nul 2>&1
+echo %c%[1/10] Preparing Power Scheme Slot...%u%
+rem powercfg -restoredefaultschemes is intentionally NOT run here - it wipes
+rem every custom power plan on the system, including any other plan you or
+rem this tool created earlier. Only this plan's own GUID is cleared below.
 
 echo %c%[2/10] Creating Dex Laptop Balanced Performance Plan...%u%
 powercfg /d 44444444-4444-4444-4444-444444444442 >nul 2>&1
@@ -2222,95 +2257,12 @@ pause >nul
 goto C
 
 :INTELGPU
-cls
-call :SetupConsole
-echo.
-echo.
-echo %c%╔══════════════════════════════════════════════════════════════════════════════╗
-echo ║                         %blue%INTEL%u%%c% GRAPHICS OPTIMIZATION                          ║
-echo ╚══════════════════════════════════════════════════════════════════════════════╝%u%
-echo.
-echo %c%Applying Intel-specific performance optimizations:%u%
-echo %c%• Memory and power management tweaks%u%
-echo %c%• Display compositor optimizations%u%
-echo %c%• Hardware acceleration enhancements%u%
-echo %c%• System timer and scheduling improvements%u%
-echo.
-echo %red%%underline%Performance Notice:%u%
-echo %c%These optimizations prioritize performance over power efficiency.%u%
-echo %c%Your system may run warmer and consume more power.%u%
-echo.
-echo.
-choice /C YN /M "%c%Apply Intel GPU optimizations? (Y/N)%u%"
-if errorlevel 2 goto C
-
-echo.
-echo %c%╔══════════════════════════════════════════════════════════════════════════════╗
-echo ║                        %blue%INTEL%u%%c% OPTIMIZATION IN PROGRESS                        ║
-echo ╚══════════════════════════════════════════════════════════════════════════════╝%u%
-
-echo.
-echo %c%[1/6] Preserving Windows boot memory and isolation settings...%u%
-rem GPU tuning must not alter BCD memory or security isolation.
-
-echo %c%[2/6] Optimizing System Timers...%u%
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\kernel" /v "DistributeTimers" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Power" /v "CoalescingTimerInterval" /t REG_DWORD /d "0" /f >nul 2>&1
-
-echo %c%[3/6] Configuring Display and DWM Settings...%u%
-reg add "HKLM\SOFTWARE\Microsoft\Windows\DWM" /v "DisableIndependentFlip" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\Microsoft\DirectDraw" /v "DisableAGPSupport" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\Microsoft\DirectDraw" /v "EnableDebugging" /t REG_DWORD /d "0" /f >nul 2>&1
-
-echo %c%[4/6] Enhancing CPU Performance Features...%u%
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\kernel" /v "DisableTsx" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power\PowerThrottling" /v "PowerThrottlingOff" /t REG_DWORD /d "1" /f >nul 2>&1
-
-echo %c%[5/6] Disabling Power Management Features...%u%
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power" /v "EnergyEstimationEnabled" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power" /v "EventProcessorEnabled" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power" /v "CsEnabled" /t REG_DWORD /d "0" /f >nul 2>&1
-
-echo %c%[6/6] Applying Intel-Specific Graphics Tweaks...%u%
-reg add "HKLM\SOFTWARE\Intel\GMM" /v "DedicatedSegmentSize" /t REG_DWORD /d "1024" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\igfx\Parameters" /v "EnablePreemption" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\DXGKrnl" /v "MonitorLatencyTolerance" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\DXGKrnl" /v "MonitorRefreshLatencyTolerance" /t REG_DWORD /d "1" /f >nul 2>&1
-
-echo %c%[7/9] Disabling Intel driver-level image scaling (XeSS, Super Resolution)...%u%
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\igfx" /v "SuperResolutionEnable" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\igfx" /v "XeSSDriverEnable" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\igfx" /v "EnableDynamicScaling" /t REG_DWORD /d "0" /f >nul 2>&1
-
-echo %c%[8/9] Disabling Intel ray tracing support...%u%
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\igfx" /v "RayTracingEnable" /t REG_DWORD /d "0" /f >nul 2>&1
-
-echo %c%[9/9] Disabling Intel driver-level anti-aliasing...%u%
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\igfx" /v "MSAAEnable" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\igfx" /v "PreRenderAALevel" /t REG_DWORD /d "0" /f >nul 2>&1
-
-echo.
-echo %c%╔══════════════════════════════════════════════════════════════════════════════╗
-echo ║                      %blue%INTEL%u%%c% OPTIMIZATION COMPLETED                            ║
-echo ╚══════════════════════════════════════════════════════════════════════════════╝%u%
-echo.
-echo %c%Intel GPU optimizations have been successfully applied.%u%
-echo.
-echo %c%Applied Optimizations:%u%
-echo %c%• Memory allocation and context isolation%u%
-echo %c%• System timer distribution and coalescing%u%
-echo %c%• Display manager and DirectDraw enhancements%u%
-echo %c%• CPU performance and power throttling%u%
-echo %c%• Graphics driver preemption and latency%u%
-echo %c%• Intel XeSS and Super Resolution scaling disabled%u%
-echo %c%• Intel ray tracing disabled%u%
-echo %c%• Intel MSAA and pre-render AA disabled%u%
-echo.
-echo %red%Recommendation:%u% %c%Restart your system for optimal performance gains.%u%
-echo.
-echo %c%══════════════════════════ PRESS ANY KEY TO CONTINUE ══════════════════════════%u%
-pause >nul
-goto TweaksMenu
+rem Intel graphics now share the vendor-neutral, documented-only GPU optimizer
+rem (HAGS + game-priority scheduling). The old version here forced off XeSS,
+rem Super Resolution, ray tracing and anti-aliasing at the driver level, which
+rem actively hurt visual quality and performance on modern Intel Arc GPUs.
+set "GPU_RETURN=C"
+goto GPUOptimizer
 
 :NVIDIAGPU
 cls
@@ -2342,582 +2294,14 @@ echo %red%Invalid option. Please try again.%u%
 timeout /t 1 >nul
 goto NVIDIAGPU
 
+
 :NVIDIAGPUStandard
-cls
-call :SetupConsole
-echo.
-echo.
-echo %c%╔══════════════════════════════════════════════════════════════════════════════╗
-echo ║                         %green%NVIDIA%u%%c% GPU PERFORMANCE OPTIMIZER                     ║
-echo ╚══════════════════════════════════════════════════════════════════════════════╝%u%
-echo.
-echo %c%This optimization will apply comprehensive NVIDIA performance tweaks:%u%
-echo %c%• Download and configure NVIDIA Profile Inspector%u%
-echo %c%• Disable GPU preemption and CUDA context switching%u%
-echo %c%• Optimize thread priorities and DPC handling%u%
-echo %c%• Configure power management and latency settings%u%
-echo %c%• Apply driver-specific performance enhancements%u%
-echo.
-echo %red%%underline%Performance Notice:%u%
-echo %c%These optimizations prioritize performance over power efficiency.%u%
-echo %c%Your system may run warmer and consume more power.%u%
-echo.
-echo.
-choice /C YN /M "%c%Apply NVIDIA GPU optimizations? (Y/N)%u%"
-if errorlevel 2 goto NVIDIAGPU
-
-echo.
-echo %c%╔══════════════════════════════════════════════════════════════════════════════╗
-echo ║                      %green%NVIDIA%u%%c% OPTIMIZATION IN PROGRESS                         ║
-echo ╚══════════════════════════════════════════════════════════════════════════════╝%u%
-
-echo.
-echo %c%[1/8] Checking NVIDIA profile import availability...%u%
-set "DEX_NVIDIA_PROFILE_READY=0"
-echo %yellow%  NVIDIA profile import skipped: a verified profile is not bundled.%u%
-call :LogEvent "SKIP" "NVIDIA Profile Inspector import unavailable"
-
-echo %c%[2/8] Configuring Driver Thread Priorities...%u%
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Parameters" /v "ThreadPriority" /t REG_DWORD /d "31" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\DXGKrnl\Parameters" /v "ThreadPriority" /t REG_DWORD /d "15" /f >nul 2>&1
-
-echo %c%[3/8] Optimizing DPC and Core Distribution...%u%
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\FTS" /v "EnableRID61684" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" /v "RmGpsPsEnablePerCpuCoreDpc" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers\Power" /v "RmGpsPsEnablePerCpuCoreDpc" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm" /v "RmGpsPsEnablePerCpuCoreDpc" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\NVAPI" /v "RmGpsPsEnablePerCpuCoreDpc" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\NVTweak" /v "RmGpsPsEnablePerCpuCoreDpc" /t REG_DWORD /d "1" /f >nul 2>&1
-
-echo %c%[4/8] Enhancing System Performance Features...%u%
-reg add "HKLM\SOFTWARE\NVIDIA Corporation\Global\System" /v "TurboQueue" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\NVIDIA Corporation\Global\System" /v "EnableVIASBA" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\NVIDIA Corporation\Global\System" /v "EnableIrongateSBA" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\NVIDIA Corporation\Global\System" /v "EnableAGPSBA" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\NVIDIA Corporation\Global\System" /v "EnableAGPFW" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\NVIDIA Corporation\Global\System" /v "FastVram" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\NVIDIA Corporation\Global\System" /v "ShadowFB" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\NVIDIA Corporation\Global\System" /v "TexturePrecache" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\NVIDIA Corporation\Global\System" /v "EnableFastCopyPixels" /t REG_DWORD /d "1" /f >nul 2>&1
-
-echo %c%[5/8] Configuring GPU Preemption for Multi-Monitor Compatibility...%u%
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\FTS" /v "EnablePreemption" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\FTS" /v "GPUPreemptionLevel" /t REG_DWORD /d "2" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\FTS" /v "ComputePreemption" /t REG_DWORD /d "2" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\FTS" /v "DisablePreemption" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\FTS" /v "DisableCudaContextPreemption" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\FTS" /v "DisablePreemptionOnS3S4" /t REG_DWORD /d "0" /f >nul 2>&1
-
-echo %c%[6/8] Configuring Graphics Driver Settings...%u%
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" /v "RMDisablePostL2Compression" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" /v "RmDisableRegistryCaching" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" /v "DisableWriteCombining" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" /v "MonitorLatencyTolerance" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" /v "MonitorRefreshLatencyTolerance" /t REG_DWORD /d "1" /f >nul 2>&1
-
-echo %c%[7/8] Optimizing Power Management and Latency...%u%
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power" /v "ExitLatency" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power" /v "Latency" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power" /v "LatencyToleranceDefault" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power" /v "HighPerformance" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power" /v "MaximumPerformancePercent" /t REG_DWORD /d "100" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power" /v "MinimumThrottlePercent" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power" /v "InterruptSteeringDisabled" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm" /v "EnableHDAudioD3Cold" /t REG_DWORD /d "0" /f >nul 2>&1
-
-echo %c%[8/8] Applying NVIDIA Profile Configuration...%u%
-if "!DEX_NVIDIA_PROFILE_READY!"=="1" (
-    pushd "%TEMP%\nvidiaProfileInspector" >nul 2>&1
-    nvidiaProfileInspector.exe "NVIDIAProfileInspector.nip" >nul 2>&1
-    popd
-) else (
-    echo %yellow%  Profile import was not run because no verified profile is available.%u%
-)
-reg add "HKCU\Software\NVIDIA Corporation\NvTray" /v "StartOnLogin" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\FTS" /v "EnableGR535" /t REG_DWORD /d "0" /f >nul 2>&1
-
-echo %c%[9/12] Locking GPU to Maximum P-State (eliminates clock micro-stutters)...%u%
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "DisableDynamicPstate" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "DisableAsyncPstates" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "SlideMCLK" /t REG_DWORD /d "0" /f >nul 2>&1
-
-echo %c%[10/12] Disabling GPU Engine Gating (prevents mid-frame power-gating)...%u%
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "RMElcg" /t REG_DWORD /d "1431655765" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "RMBlcg" /t REG_DWORD /d "286331153" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "RMElpg" /t REG_DWORD /d "4095" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "RMSlcg" /t REG_DWORD /d "262131" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "RMFspg" /t REG_DWORD /d "15" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "RMGCOffFeature" /t REG_DWORD /d "2" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "PreferSystemMemoryContiguous" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm" /v "PreferSystemMemoryContiguous" /t REG_DWORD /d "1" /f >nul 2>&1
-
-echo %c%[11/12] Disabling NVIDIA Driver Diagnostic Logging (reduces overhead)...%u%
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "RmRcWatchdog" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "RmLogonRC" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "RMIntrDetailedLogs" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "RMCtxswLog" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "RMNvLog" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "RMSuppressGPIOIntrErrLog" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "RMEnableEventTracer" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "RMUsbcDebugMode" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Parameters" /v "LogWarningEntries" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Parameters" /v "LogPagingEntries" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Parameters" /v "LogEventEntries" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Parameters" /v "LogErrorEntries" /t REG_DWORD /d "0" /f >nul 2>&1
-
-echo %c%[12/12] Disabling PCIe ASPM for GPU (reduces PCIe power-state latency)...%u%
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "RmOverrideSupportChipsetAspm" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "RMEnableASPMDT" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "RMDisableGpuASPMFlags" /t REG_DWORD /d "3" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "RMEnableASPMAtLoad" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" /v "TdrLevel" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" /v "DpiMapIommuContiguous" /t REG_DWORD /d "1" /f >nul 2>&1
-
-echo %c%[13/15] Applying NVIDIA driver scheduling latency suite...%u%
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "D3PCLatency" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "F1TransitionLatency" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "LOWLATENCY" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "Node3DLowLatency" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "PciLatencyTimerControl" /t REG_DWORD /d "20" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "RMDeepL1EntryLatencyUsec" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "RmGspcMaxFtuS" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "RmGspcMinFtuS" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "RmGspcPerioduS" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "RMLpwrEiIdleThresholdUs" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "RMLpwrGrIdleThresholdUs" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "RMLpwrGrRgIdleThresholdUs" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "RMLpwrMsIdleThresholdUs" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "VRDirectFlipDPCDelayUs" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "VRDirectFlipTimingMarginUs" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "VRDirectJITFlipMsHybridFlipDelayUs" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "vrrCursorMarginUs" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "vrrDeflickerMarginUs" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "vrrDeflickerMaxUs" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "RMHdcpKeyGlobZero" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "Acceleration.Level" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "DesktopStereoShortcuts" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "FeatureControl" /t REG_DWORD /d "4" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\NVTweak" /v "DisplayPowerSaving" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm" /v "DisableWriteCombining" /t REG_DWORD /d "1" /f >nul 2>&1
-
-echo %c%[14/15] Applying GraphicsDrivers power state latency floor (all transitions)...%u%
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers\Power" /v "DefaultD3TransitionLatencyActivelyUsed" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers\Power" /v "DefaultD3TransitionLatencyIdleLongTime" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers\Power" /v "DefaultD3TransitionLatencyIdleMonitorOff" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers\Power" /v "DefaultD3TransitionLatencyIdleNoContext" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers\Power" /v "DefaultD3TransitionLatencyIdleShortTime" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers\Power" /v "DefaultD3TransitionLatencyIdleVeryLongTime" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers\Power" /v "DefaultLatencyToleranceIdle0" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers\Power" /v "DefaultLatencyToleranceIdle0MonitorOff" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers\Power" /v "DefaultLatencyToleranceIdle1" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers\Power" /v "DefaultLatencyToleranceIdle1MonitorOff" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers\Power" /v "DefaultLatencyToleranceMemory" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers\Power" /v "DefaultLatencyToleranceNoContext" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers\Power" /v "DefaultLatencyToleranceNoContextMonitorOff" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers\Power" /v "DefaultLatencyToleranceOther" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers\Power" /v "DefaultLatencyToleranceTimerPeriod" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers\Power" /v "DefaultMemoryRefreshLatencyToleranceActivelyUsed" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers\Power" /v "DefaultMemoryRefreshLatencyToleranceMonitorOff" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers\Power" /v "DefaultMemoryRefreshLatencyToleranceNoContext" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers\Power" /v "Latency" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers\Power" /v "MaxIAverageGraphicsLatencyInOneBucket" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers\Power" /v "MiracastPerfTrackGraphicsLatency" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers\Power" /v "TransitionLatency" /t REG_DWORD /d "1" /f >nul 2>&1
-
-echo %c%[15/16] Disabling GPU energy measurement driver...%u%
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\GpuEnergyDrv" /v "Start" /t REG_DWORD /d "4" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\GpuEnergyDr" /v "Start" /t REG_DWORD /d "4" /f >nul 2>&1
-
-echo %c%[16/16] Applying ECC, interrupt locking, large pages, and PCIe tweaks...%u%
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "RmEccScrubEnable" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "RmIntrLockingMode" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "RMEnableLargePages" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "RMBigPageLimit" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "RmForceCopyEnginePCIeGen4" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "RMTimeSyncMode" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "RMDisablePcieProtections" /t REG_DWORD /d "1" /f >nul 2>&1
-
-echo %c%[17/22] Increasing DirectX layer performance...%u%
-reg add "HKLM\SOFTWARE\Microsoft\Direct3D" /v "D3D10Debug" /t REG_DWORD /d "2" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\WOW6432Node\Microsoft\Direct3D" /v "D3D10Debug" /t REG_DWORD /d "2" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\Microsoft\Direct3D" /v "AllowTearing" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\WOW6432Node\Microsoft\Direct3D" /v "AllowTearing" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\Microsoft\Direct3D" /v "SoftwareOnly" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\WOW6432Node\Microsoft\Direct3D" /v "SoftwareOnly" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\Microsoft\Direct3D" /v "MaxFrameLatency" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\WOW6432Node\Microsoft\Direct3D" /v "MaxFrameLatency" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\Microsoft\Direct3D" /v "DisableThreadedOptimization" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\WOW6432Node\Microsoft\Direct3D" /v "DisableThreadedOptimization" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\Microsoft\Direct3D\Drivers" /v "SoftwareOnly" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\WOW6432Node\Microsoft\Direct3D\Drivers" /v "SoftwareOnly" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\Microsoft\Direct3D\Drivers" /v "EmulationOnly" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\WOW6432Node\Microsoft\Direct3D\Drivers" /v "EmulationOnly" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\Microsoft\Direct3D\ReferenceDevice" /v "Force10Level9" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\WOW6432Node\Microsoft\Direct3D\ReferenceDevice" /v "Force10Level9" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\Microsoft\Direct3D\ReferenceDevice" /v "DisableDriverManagement" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\WOW6432Node\Microsoft\Direct3D\ReferenceDevice" /v "DisableDriverManagement" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\Microsoft\DirectX" /v "UseDebugLayer" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\WOW6432Node\Microsoft\DirectX" /v "UseDebugLayer" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\Microsoft\DirectX" /v "EnableStereo" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\WOW6432Node\Microsoft\DirectX" /v "EnableStereo" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\Microsoft\DirectX" /v "AllowTearing" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\WOW6432Node\Microsoft\DirectX" /v "AllowTearing" /t REG_DWORD /d "1" /f >nul 2>&1
-
-echo %c%[18/22] Disabling additional NVIDIA GPU logging...%u%
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "RMTraceLevel" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "NVLogLevel" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "RMDbgLevel" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "NVVerbose" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "NVTweakLogLevel" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "EnableCoreDump" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "NVStResTracking" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "EnableGPUCrashDump" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "PerfLogLevel" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}\0000" /v "GPUTelemetry" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\NVIDIA Corporation\GPUDebugger" /v "EnableInterface" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\NVIDIA Corporation\GPUDebugger" /v "EnableRemoteDebugger" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\NVIDIA Corporation\GPUDebugger" /v "LogMask" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\NVIDIA Corporation\GPUDebugger" /v "DisableLoad" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\NVIDIA Corporation\GPUDebugger" /v "LogPath" /t REG_SZ /d "" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\NVDisplay.ContainerLocalSystem\LocalSystem\NvcDispCorePlugin" /v "RMDbgLevel" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\NVDisplay.ContainerLocalSystem\LocalSystem\NvcDispCorePlugin" /v "LogFile" /t REG_SZ /d "" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\NVDisplay.ContainerLocalSystem\LocalSystem" /v "TelemetryEnable" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\NVDisplay.ContainerLocalSystem\LocalSystem" /v "VerboseLog" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\NVDisplay.ContainerLocalSystem\LocalSystem\Watchdog" /v "LogFile" /t REG_SZ /d "" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\NVDisplay.ContainerLocalSystem\LocalSystem\Watchdog\Session" /v "Folder" /t REG_SZ /d "" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm" /v "LogLevel" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm" /v "EnableDebugLayer" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm" /v "NVAPIDebugLevel" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\NGXCore" /v "NGXDebugEnabled" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\NGXCore" /v "NGXPath" /t REG_SZ /d "" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\NVAPI" /v "NvAPILoggingEnabled" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\NVAPI" /v "NVAPIDebugLevel" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\NvCamera" /v "NvCameraPath" /t REG_EXPAND_SZ /d "" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\NVIDIA Corporation\Global\NVTweak" /v "NvCplDebug" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\NVIDIA Corporation\Global\NVTweak" /v "NvCplVerbose" /t REG_DWORD /d "0" /f >nul 2>&1
-reg delete "HKCR\Directory\Background\shellex\ContextMenuHandlers\NvCplDesktopContext" /f >nul 2>&1
-reg delete "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" /v "NvRemixRuntime" /f >nul 2>&1
-reg delete "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment" /v "RENDERDOC_CAPTUREOPTS" /f >nul 2>&1
-reg delete "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment" /v "NSIGHT_LAUNCH" /f >nul 2>&1
-sc config NvTelemetry start= disabled >nul 2>&1
-sc config NvProfileUpdater64 start= disabled >nul 2>&1
-
-echo %c%[19/22] Disabling unusual Vulkan layers (HKLM + HKCU)...%u%
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment" /v "VK_LOADER_DEBUG" /t REG_SZ /d "none" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment" /v "DISABLE_VK_LAYER_VALVE_steam_overlay_1" /t REG_SZ /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment" /v "DISABLE_VK_LAYER_NV_optimus" /t REG_SZ /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment" /v "DISABLE_VK_LAYER_OBS_HOOK" /t REG_SZ /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment" /v "VK_LAYER_PATH" /t REG_SZ /d "C:\Empty" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment" /v "VK_DRIVER_FILES" /t REG_SZ /d "C:\Program Files\NVIDIA Corporation\VulkanRT\nv-vk64.json" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment" /v "VK_ICD_FILENAMES" /t REG_SZ /d "C:\Drivers\nvidia_icd.json" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment" /v "VK_INSTANCE_LAYERS" /t REG_SZ /d "" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment" /v "VK_DEVICE_LAYERS" /t REG_SZ /d "" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment" /v "VK_DEBUG_REPORT" /t REG_SZ /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment" /v "VK_DEBUG_UTILS" /t REG_SZ /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment" /v "VK_FORCE_DISCRETE_GPU" /t REG_SZ /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment" /v "VK_SAMPLE_COUNT_OVERRIDE" /t REG_SZ /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment" /v "VK_ENABLE_RAY_TRACING" /t REG_SZ /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment" /v "VK_USE_DXR" /t REG_SZ /d "0" /f >nul 2>&1
-reg add "HKCU\Environment" /v "VK_LOADER_DEBUG" /t REG_SZ /d "none" /f >nul 2>&1
-reg add "HKCU\Environment" /v "DISABLE_VK_LAYER_VALVE_steam_overlay_1" /t REG_SZ /d "1" /f >nul 2>&1
-reg add "HKCU\Environment" /v "DISABLE_VK_LAYER_NV_optimus" /t REG_SZ /d "1" /f >nul 2>&1
-reg add "HKCU\Environment" /v "DISABLE_VK_LAYER_OBS_HOOK" /t REG_SZ /d "1" /f >nul 2>&1
-reg add "HKCU\Environment" /v "VK_LAYER_PATH" /t REG_SZ /d "C:\Empty" /f >nul 2>&1
-reg add "HKCU\Environment" /v "VK_DRIVER_FILES" /t REG_SZ /d "C:\Program Files\NVIDIA Corporation\VulkanRT\nv-vk64.json" /f >nul 2>&1
-reg add "HKCU\Environment" /v "VK_ICD_FILENAMES" /t REG_SZ /d "C:\Drivers\nvidia_icd.json" /f >nul 2>&1
-reg add "HKCU\Environment" /v "VK_INSTANCE_LAYERS" /t REG_SZ /d "" /f >nul 2>&1
-reg add "HKCU\Environment" /v "VK_DEVICE_LAYERS" /t REG_SZ /d "" /f >nul 2>&1
-reg add "HKCU\Environment" /v "VK_DEBUG_REPORT" /t REG_SZ /d "0" /f >nul 2>&1
-reg add "HKCU\Environment" /v "VK_DEBUG_UTILS" /t REG_SZ /d "0" /f >nul 2>&1
-reg add "HKCU\Environment" /v "VK_FORCE_DISCRETE_GPU" /t REG_SZ /d "1" /f >nul 2>&1
-reg add "HKCU\Environment" /v "VK_SAMPLE_COUNT_OVERRIDE" /t REG_SZ /d "1" /f >nul 2>&1
-reg add "HKCU\Environment" /v "VK_ENABLE_RAY_TRACING" /t REG_SZ /d "0" /f >nul 2>&1
-reg add "HKCU\Environment" /v "VK_USE_DXR" /t REG_SZ /d "0" /f >nul 2>&1
-
-echo %c%[20/22] Disabling Vulkan post-rendering scaling, AI filters, and anti-aliasing...%u%
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\FTS" /v "EnableNIS" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\FTS" /v "EnableDSR" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\FTS" /v "EnableSharpening" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\NVIDIA Corporation\Global\NGXCore" /v "EnableVSR" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\NVIDIA Corporation\Global\NGXCore" /v "EnableRTXVideoSuperResolution" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\NVIDIA Corporation\Global\NGXCore" /v "EnableDLSS" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\NVIDIA Corporation\Global\NGXCore" /v "EnableDLAA" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\NVIDIA Corporation\Global\NGXCore" /v "EnableRTXRemaster" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\NVIDIA Corporation\Global\NGXCore" /v "EnableITM" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\NVIDIA Corporation\Global\NGXCore" /v "EnableRTXVideoQualityEnhancement" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\NVIDIA Corporation\Global\NGXCore" /v "EnableRTX" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\NVIDIA Corporation\Global\NGXCore" /v "EnableRayTracing" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\NVIDIA Corporation\Global\NGXCore" /v "EnableResizableInternalResolution" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\NVIDIA Corporation\NvVSR" /v "EnableVSR" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\NVIDIA Corporation\NvVSR" /v "EnableRTXVideoSuperResolution" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\NVIDIA Corporation\NvVSR" /v "EnableRTXVideoQualityEnhancement" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\NVIDIA Corporation\NvVSR" /v "EnableSuperResolution" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\AMD\CN" /v "EnableRadeonSuperResolution" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\AMD\CN" /v "EnableFidelityFXSuperResolution" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\AMD\CN" /v "EnableRSR" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\AMD\CN" /v "EnableVariableRateShading" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\NVIDIA Corporation\Global\Ansel" /v "AnselAllowed" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\NVIDIA Corporation\Global\NvfCamera" /v "Enable" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\NVIDIA Corporation\Global\GeForceExperience" /v "EnableFreestyle" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\NVIDIA Corporation\Global\PerformanceSdk" /v "EnablePerfSdk" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\NVIDIA Corporation\Global\NvProfile" /v "TelemetryEnable" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\NVIDIA Corporation\Global\NVTweak" /v "EnablePerfHUD" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\NVIDIA Corporation\Global\NVTweak" /v "EnableFXAA" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\NVIDIA Corporation\Global\NVTweak" /v "EnableTransparencyAA" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\NVIDIA Corporation\Global\NVTweak" /v "EnableMLAA" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\NVIDIA Corporation\Global\NVTweak" /v "EnableAntiAliasing" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\NVIDIA Corporation\Global\NVTweak" /v "EnableCMAA" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\NVIDIA Corporation\Global\NVTweak" /v "EnableCMAA2" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\NVIDIA Corporation\Global\NVTweak" /v "EnableDLAA" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\NVIDIA Corporation\Global\NVTweak" /v "EnableDLSS" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\NVIDIA Corporation\Global\NVTweak" /v "EnableMFG" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\NVIDIA Corporation\Global\NVTweak" /v "EnableSMAA" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\NVIDIA Corporation\Global\NVTweak" /v "EnableMSAA" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\NVIDIA Corporation\Global\NVTweak" /v "EnableRGSS" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\NVIDIA Corporation\Global\NVTweak" /v "EnableHRAA" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\NVIDIA Corporation\Global\NVTweak" /v "EnableSSAA" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\NVIDIA Corporation\Global\NVTweak" /v "EnableTAA" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\NVIDIA Corporation\Global\NVTweak" /v "EnableTXAA" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\NVIDIA Corporation\Global\NVTweak" /v "EnableTMAA" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\NVIDIA Corporation\Global\NVTweak" /v "EnableTSSAA" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\NVIDIA Corporation\Global\NVTweak" /v "EnableFSAA" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\NVIDIA Corporation\Global\NVTweak" /v "EnableAA" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\NVIDIA Corporation\Global\NvDriver" /v "ResizableBar" /t REG_DWORD /d "0" /f >nul 2>&1
-
-echo %c%[21/22] Optimizing nvlddmkm FTS, Global, and Video performance settings...%u%
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm" /v "DisablePreemption" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm" /v "TdrLevel" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm" /v "TdrDelay" /t REG_DWORD /d "10" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm" /v "NvCplDisablePerf" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm" /v "NvTelemetryContainer" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\NVIDIA Corporation\Global\Stereo3D" /v "StereoEnable" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\NVIDIA Corporation\Global\Stereo3D" /v "StereoDisplayMode" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" /v "DisableOverlays" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" /v "DxgKrnlLatency" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" /v "DisplayAdaption" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\NVIDIA Corporation\Global\NVTweak" /v "PowerSavingMode" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\NVIDIA Corporation\Global\NVTweak" /v "MultiThreadedOptimization" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\NVIDIA Corporation\Global\NVTweak" /v "ScreenSpaceReflections" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\NVIDIA Corporation\Global\NVTweak" /v "VRRControl" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\FTS" /v "Scaling" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\FTS" /v "EnablePreemption" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\FTS" /v "EnableContextIsolation" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\FTS" /v "EnableFrameTimeReporting" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\FTS" /v "EnableTelemetry" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\FTS" /v "EnableLosslessCompression" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\FTS" /v "EnableYUVColorConversion" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\FTS" /v "EnablePageableMemory" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\FTS" /v "EnableUnifiedMemory" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\FTS" /v "EnableGPUDebugHeap" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\FTS" /v "EnableLowLatencyMode" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\FTS" /v "EnableAsynchronousCompute" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\FTS" /v "ScalingMode" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global" /v "EnableMSI" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global" /v "DisablePreemption" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global" /v "ThreadPolicy" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global" /v "EnableAsyncCmdQueue" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global" /v "PowerMizerEnable" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global" /v "PerfLevelSrc" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global" /v "EnableDynamicPState" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global" /v "EnablePowerSavingMode" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global" /v "PollForCompletion" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global" /v "EventDrivenMode" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global" /v "LowLatencyBoost" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global" /v "EnableDMAAcceleration" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global" /v "EnableP2PTransfers" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global" /v "ForceMaxPerfLinkState" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global" /v "EnableDriverInstrumentation" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global" /v "EnableNvTelemetry" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global" /v "EnableKernelEventTracing" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Video" /v "EnableOverlay" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Video" /v "EnableColorCorrection" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Video" /v "EnableColorEnhancement" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Video" /v "EnableDeinterlacing" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Video" /v "EnableDenoise" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Video" /v "EnableDeflicker" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Video" /v "EnableDynamicRangeCompression" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Video" /v "EnableGammaRamp" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Video" /v "EnablePresentationQueue" /t REG_DWORD /d "1" /f >nul 2>&1
-
-echo %c%[22/22] Zeroing nvlddmkm Global Startup event keys...%u%
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\ XgpuBalloonInit" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\AceCacheHDRInfo" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\AceCachePFFValues" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\AcePersistenceOnDriverLoad" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\AcePersistenceOnInstall" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\AcePersistenceStartup" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\AcePersistenceStartupResumeFromSuspend" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\AceRefreshPowerMode" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\AceResumeFromSuspend" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\AdjustPRROnLogin" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\AdjustPRROnServiceStart" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\AdjustSmoothScalingOnInstall" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\AdjustVsyncOnSliChange" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\ApplyCommandLineMode" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\ApplyScalingOverride" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\CheckUnsupportedDPConfig" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\CreateFeatureRegKeys" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\DevChangeConfigMuxes" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\DisableMSStereo" /ve /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\DriverNotUptoDate" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\EnableOrDisablePPABOnReboot" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\EnableShowStatusOnLogin" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\EnableSli" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\EnsurePerfCountSync" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\ForceStopNvTrayIcon" /ve /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\FrlDeviceChange" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\FrlDisplayChange" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\GetUserDataOnInstall" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\GSyncOverinstallPersistence" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\HandleGridPrimaryDisplay" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\HandleSmoothScalingFactorSelection" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\IDMColors" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\IDMInitialize" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\InitialNvTray" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\LoginColors" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\MonitorGfeInstallation" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\NotifyGdiPrimaryToDriver" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\NvidiaGpuArrived" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\PerformSurroundHotKeysRegistration" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\PlaceSourcesInFixedGridExtendedMode" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\ReEnumAudioDevices" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\ReEnumAudioDevicesOnBoot" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\RefreshHDMIAudioDriver" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\RefreshOSModeList" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\RemoveControlPanelClient" /ve /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\RemoveControlPanelClientr" /ve /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\ResetGammaValue" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\ResetOSGamma" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\RestoreColorAccuracyModePersistence" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\RestoreSmartmaxForSurround" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\RestoreSpanConfig" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\RestoreSpanConfigOnReboot" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\RestoreSpanConfigOnResume" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\SaveSpanPersistence" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\SdiPersistence" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\SdiPersistenceUpgrade" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\SendNonNvDisplayDetails" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\SendTelemetryData" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\SetSmartmaxFeatures" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\SetVRRIndicatorState" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\SetVRRModeValueForASyncDisplay" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\ShowBalloonMessages" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\ShowBalloonPopupOnLogin" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\ShowLicenseStatusOnLogin" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\ShowStoreNvcplNotification" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\ShowStoreNvcplUpgradeNotification" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\ShowVideoBridgeOnWrongFingerNotification" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\ShowVRRBalloonNotification" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\StartACETrayIcon" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\StartGridLicenseManagement" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\StartGridLicensingOnSessionLogin" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\StartLicensingPipeServer" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\StartNvTray" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\StartS3SR" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\StartWorkstationPipeServer" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\SwapSLIMasterGpuOnStart" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\SystemResumeFromSuspend" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\SystemSuspend" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\ToggleCursorPositionPolling" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\TVLocaleBoot" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\UpdateRegistryModeSettings" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\UpgradeBezelPeekHotkey" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\UpgradeGsyncPersistence" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\UpgradeSpanPersistence" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\USBDeviceArrival" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\USBDeviceRemoveComplete" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\WinSATAssessment" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup\XgpuBalloonHandleDevNodesChange" /ve /t REG_DWORD /d "0" /f >nul 2>&1
-
-echo %c%[23/30] Disabling NVIDIA FTS privacy/performance parameters...%u%
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Parameters\FTS" /v "EnableDDC68" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Parameters\FTS" /v "EnableGR3086" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Parameters\FTS" /v "EnableGR3122" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Parameters\FTS" /v "EnableGR3252" /t REG_DWORD /d "0" /f >nul 2>&1
-
-echo %c%[24/30] Disabling NVIDIA driver-level image enhancement hooks...%u%
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\FTS" /v "EnableVSR" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\FTS" /v "EnableImageSharpening" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\FTS" /v "EnableAnselUpscaling" /t REG_DWORD /d "0" /f >nul 2>&1
-
-echo %c%[25/30] Disabling RTX Remix injection hooks...%u%
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm" /v "EnableRTXRemix" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm" /v "EnableRTXInjection" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm" /v "NV_DX9_Remix_Enable" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\FTS" /v "EnableRTXRemixBridge" /t REG_DWORD /d "0" /f >nul 2>&1
-reg delete "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" /v "NvRemixRuntime" /f >nul 2>&1
-
-echo %c%[26/30] Disabling NVIDIA dynamic resolution scaling (DSR/DLDSR)...%u%
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\FTS" /v "EnableDynamicResolutionScaling" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\FTS" /v "EnableDSR" /t REG_DWORD /d "0" /f >nul 2>&1
-
-echo %c%[27/30] Disabling NVIDIA ray tracing (RTX, DXR)...%u%
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\FTS" /v "EnableRTX" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\FTS" /v "EnableRayTracing" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\FTS" /v "EnableDXR" /t REG_DWORD /d "0" /f >nul 2>&1
-
-echo %c%[28/30] Disabling NVIDIA anti-aliasing (MSAA, CSAA, HQAA)...%u%
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\FTS" /v "EnableMSAA" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\FTS" /v "EnableCSAA" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\FTS" /v "EnableHQAA" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\FTS" /v "AllowApplicationAAControl" /t REG_DWORD /d "0" /f >nul 2>&1
-
-echo %c%[29/30] Disabling system-wide ray tracing and AA flags (GraphicsDrivers)...%u%
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" /v "DisableDXR" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" /v "DisableRayTracing" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" /v "DisableHardwareRaytracing" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" /v "HwSchMode" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" /v "EnableMSAA" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" /v "EnableFxaa" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" /v "EnableAA" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" /v "DisableMultiSampleAntiAliasing" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" /v "DisablePreRenderAA" /t REG_DWORD /d "1" /f >nul 2>&1
-
-echo %c%[30/30] Disabling Vulkan ray tracing via environment variables...%u%
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment" /v "DISABLE_VK_RAY_TRACING" /t REG_SZ /d "1" /f >nul 2>&1
-reg add "HKCU\Environment" /v "DISABLE_VK_RAY_TRACING" /t REG_SZ /d "1" /f >nul 2>&1
-
-echo.
-echo %c%╔══════════════════════════════════════════════════════════════════════════════╗
-echo ║                      %green%NVIDIA%u%%c% OPTIMIZATION COMPLETED                           ║
-echo ╚══════════════════════════════════════════════════════════════════════════════╝%u%
-echo.
-echo %c%NVIDIA GPU optimizations have been successfully applied.%u%
-echo.
-echo %c%Applied Optimizations:%u%
-echo %c%• NVIDIA Profile Inspector configuration%u%
-echo %c%• Driver thread priority optimization%u%
-echo %c%• DPC and core distribution enhancements%u%
-echo %c%• GPU preemption disabled for stability%u%
-echo %c%• Graphics driver performance tweaks%u%
-echo %c%• Power management and latency optimization%u%
-echo %c%• ECC/VRAM scrubbing disabled%u%
-echo %c%• Interrupt locking, large pages, big page limits, PCIe Gen4 copy engine%u%
-echo %c%• GPU timer synchronization and PCIe protections configured%u%
-echo %c%• DirectX layer optimized (AllowTearing, MaxFrameLatency, no debug layers)%u%
-echo %c%• NVIDIA GPU logging fully disabled (GPUDebugger, NGXCore, NVAPI, NVTweak)%u%
-echo %c%• Vulkan layers locked down (Steam, NV Optimus, OBS hook, ray tracing disabled)%u%
-echo %c%• Vulkan AI/RT features disabled (DLSS, DSR, NIS, RTX, RTX Remix, DLAA, VSR)%u%
-echo %c%• nvlddmkm FTS/Global/Video performance tuned (telemetry, scaling, video off)%u%
-echo %c%• nvlddmkm Global Startup event keys zeroed (80+ background tasks disabled)%u%
-echo %c%• NVIDIA FTS privacy parameters disabled (DDC68, GR3086/3122/3252)%u%
-echo %c%• NVIDIA image enhancement hooks disabled (VSR, sharpening, Ansel)%u%
-echo %c%• RTX Remix injection fully disabled (nvlddmkm root + FTS + startup key)%u%
-echo %c%• NVIDIA DSR/DLDSR dynamic resolution scaling disabled%u%
-echo %c%• NVIDIA FTS ray tracing disabled (RTX, DXR)%u%
-echo %c%• NVIDIA FTS anti-aliasing disabled (MSAA, CSAA, HQAA)%u%
-echo %c%• System-wide ray tracing and AA flags set (GraphicsDrivers, HwSchMode=1)%u%
-echo %c%• Vulkan ray tracing blocked via environment variable%u%
-echo.
-echo %red%Performance Notes:%u%
-echo %c%• System may run warmer due to performance focus%u%
-echo %c%• Power consumption may increase slightly%u%
-echo %c%• Restart recommended for optimal performance%u%
-echo.
-echo %c%══════════════════════════ PRESS ANY KEY TO CONTINUE ══════════════════════════%u%
-pause >nul
-goto TweaksMenu
-
+rem NVIDIA graphics now share the vendor-neutral, documented-only GPU optimizer.
+rem The old version here disabled DLSS, ray tracing, Resizable BAR, HAGS (via
+rem HwSchMode=1), TDR crash recovery and PCIe protections - the opposite of
+rem "standard" performance tuning. Removed entirely rather than patched.
+set "GPU_RETURN=NVIDIAGPU"
+goto GPUOptimizer
 :NVIDIAGPUExperimental
 call :RequireExpertMode "Maximum Performance DWORD mode disables all NVIDIA power management and can raise temperatures, increase power draw, or cause instability."
 if errorlevel 1 goto NVIDIAGPU
@@ -3118,137 +2502,33 @@ echo %c%╔═══════════════════════
 echo ║                          %red%AMD%u%%c% GPU PERFORMANCE OPTIMIZER                       ║
 echo ╚══════════════════════════════════════════════════════════════════════════════╝%u%
 echo.
-echo %c%This optimization will apply comprehensive AMD Radeon performance tweaks:%u%
-echo %c%• Enable ReBAR (Resizable BAR) support for modern GPUs%u%
-echo %c%• Disable power-saving features (Radeon Chill, DeLag)%u%
-echo %c%• Optimize 3D rendering and anti-aliasing settings%u%
-echo %c%• Configure video enhancement and DXVA settings%u%
-echo %c%• Disable unnecessary AMD services and telemetry%u%
+echo %c%This will apply documented, reversible AMD optimizations:%u%
+echo %c%• Enable Resizable BAR (ReBAR) if your GPU/motherboard support it%u%
+echo %c%• Disable telemetry services and unnecessary background tasks%u%
+echo %c%• Enable Hardware-Accelerated GPU Scheduling and game-priority scheduling%u%
 echo.
-echo %red%%underline%Performance Notice:%u%
-echo %c%These optimizations prioritize performance over power efficiency.%u%
-echo %c%AMD Radeon Software features like Chill and Anti-Lag will be disabled.%u%
-echo.
+echo %orange%%underline%What this will NOT do:%u%
+echo %c%• Will not disable Radeon Chill/Anti-Lag or thermal throttling protection%u%
+echo %c%• Will not disable Resizable BAR, FSR/RSR, or ray tracing%u%
 echo.
 choice /C YN /M "%c%Apply AMD GPU optimizations? (Y/N)%u%"
 if errorlevel 2 goto C
 
 echo.
-echo %c%[0/7] Detecting AMD GPU registry entry...%u%
+echo %c%[1/2] Locating AMD GPU registry entry for ReBAR...%u%
 call :AMD_SelectGPUIndex
 if errorlevel 1 (
-    echo.
-    echo %red%AMD GPU optimizations were not applied.%u%
-    pause
-    goto C
+    echo %yellow%Skipping ReBAR - continuing with vendor-neutral optimizations only.%u%
+) else (
+    reg add "!AMD_GPU_CLASS_KEY!" /v "KMD_EnableReBarForLegacyASIC" /t REG_DWORD /d "1" /f >nul 2>&1
+    reg add "!AMD_GPU_CLASS_KEY!" /v "KMD_RebarControlMode" /t REG_DWORD /d "1" /f >nul 2>&1
+    reg add "!AMD_GPU_CLASS_KEY!" /v "KMD_RebarControlSupport" /t REG_DWORD /d "1" /f >nul 2>&1
+    echo %green%  ✓ Resizable BAR enabled for: !_amd_confirm_desc!%u%
 )
 
-echo.
-echo %c%╔══════════════════════════════════════════════════════════════════════════════╗
-echo ║                       %red%AMD%u%%c% OPTIMIZATION IN PROGRESS                           ║
-echo ╚══════════════════════════════════════════════════════════════════════════════╝%u%
-
-echo.
-echo %c%[1/7] Enabling ReBAR and Modern GPU Features...%u%
-reg add "!AMD_GPU_CLASS_KEY!" /v "KMD_EnableReBarForLegacyASIC" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!" /v "KMD_RebarControlMode" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!" /v "KMD_RebarControlSupport" /t REG_DWORD /d "1" /f >nul 2>&1
-
-echo %c%[2/7] Disabling Power Management Features...%u%
-reg add "!AMD_GPU_CLASS_KEY!" /v "KMD_USUEnable" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!" /v "KMD_RadeonBoostEnabled" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!" /v "KMD_ChillEnabled" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!" /v "KMD_DeLagEnabled" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!" /v "PP_ThermalAutoThrottlingEnable" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!" /v "DisableDrmdmaPowerGating" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!" /v "KMD_DisableDPD" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!" /v "KMD_EnableMSHWS" /t REG_DWORD /d "0" /f >nul 2>&1
-
-echo %c%[3/7] Configuring 3D Rendering and Anti-Aliasing...%u%
-reg add "!AMD_GPU_CLASS_KEY!\UMD" /v "Main3D" /t REG_BINARY /d "3100" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!\UMD" /v "AntiAlias" /t REG_BINARY /d "3100" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!\UMD" /v "AntiAliasSamples" /t REG_BINARY /d "3000" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!\UMD" /v "AnisoDegree" /t REG_BINARY /d "3000" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!\UMD" /v "Tessellation" /t REG_BINARY /d "3100" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!\UMD" /v "HighQualityAF" /t REG_BINARY /d "3100" /f >nul 2>&1
-
-echo %c%[4/7] Optimizing Texture and Buffer Settings...%u%
-reg add "!AMD_GPU_CLASS_KEY!\UMD" /v "TextureOpt" /t REG_BINARY /d "30000000" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!\UMD" /v "TextureLod" /t REG_BINARY /d "30000000" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!\UMD" /v "EnableTripleBuffering" /t REG_BINARY /d "3000" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!\UMD" /v "ShaderCache" /t REG_BINARY /d "3100" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!\UMD" /v "ExportCompressedTex" /t REG_BINARY /d "31000000" /f >nul 2>&1
-
-echo %c%[5/7] Configuring Display and VSync Settings...%u%
-reg add "!AMD_GPU_CLASS_KEY!\UMD" /v "VSyncControl" /t REG_BINARY /d "3100" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!\UMD" /v "TurboSync" /t REG_BINARY /d "3000" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!\UMD" /v "AntiStuttering" /t REG_BINARY /d "3100" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!\UMD" /v "DisplayCrossfireLogo" /t REG_BINARY /d "3000" /f >nul 2>&1
-
-echo %c%[6/7] Optimizing Video Enhancement and DXVA...%u%
-reg add "!AMD_GPU_CLASS_KEY!\UMD\DXVA" /v "LRTCEnable" /t REG_BINARY /d "30000000" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!\UMD\DXVA" /v "MosquitoNoiseRemoval_ENABLE" /t REG_BINARY /d "30000000" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!\UMD\DXVA" /v "Deblocking_ENABLE" /t REG_BINARY /d "30000000" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!\UMD\DXVA" /v "ColorVibrance_ENABLE" /t REG_BINARY /d "31000000" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!\UMD\DXVA" /v "BlueStretch_ENABLE" /t REG_BINARY /d "31000000" /f >nul 2>&1
-
-echo %c%[7/7] Disabling AMD Services and Telemetry...%u%
-reg add "HKLM\System\CurrentControlSet\Services\amdwddmg" /v "ChillEnabled" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\System\CurrentControlSet\Services\AMD Crash Defender Service" /v "Start" /t REG_DWORD /d "4" /f >nul 2>&1
-reg add "HKLM\System\CurrentControlSet\Services\AMD External Events Utility" /v "Start" /t REG_DWORD /d "4" /f >nul 2>&1
-reg add "HKLM\System\CurrentControlSet\Services\amdfendr" /v "Start" /t REG_DWORD /d "4" /f >nul 2>&1
-reg add "HKLM\System\CurrentControlSet\Services\amdfendrmgr" /v "Start" /t REG_DWORD /d "4" /f >nul 2>&1
-reg add "HKLM\System\CurrentControlSet\Services\amdlog" /v "Start" /t REG_DWORD /d "4" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!" /v "DisableDMACopy" /t REG_DWORD /d "1" /f >nul 2>&1
-reg add "!AMD_GPU_CLASS_KEY!" /v "DisableBlockWrite" /t REG_DWORD /d "0" /f >nul 2>&1
-
-echo %c%[8/11] Disabling AMD driver-level image enhancement hooks...%u%
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\amdkmdag" /v "EnableRSR" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\amdkmdag" /v "EnableFRTC" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\amdkmdag" /v "VSRSupportEnable" /t REG_DWORD /d "0" /f >nul 2>&1
-
-echo %c%[9/11] Disabling AMD driver-side dynamic scaling (RSR, VSR)...%u%
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\amdkmdag" /v "EnableVirtualSuperResolution" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\amdkmdag" /v "AllowDynamicResolution" /t REG_DWORD /d "0" /f >nul 2>&1
-
-echo %c%[10/11] Disabling AMD ray tracing support (DXR)...%u%
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\amdkmdag" /v "EnableRayTracing" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\amdkmdag" /v "DXRSupportEnable" /t REG_DWORD /d "0" /f >nul 2>&1
-
-echo %c%[11/11] Disabling AMD driver-level anti-aliasing overrides...%u%
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\amdkmdag" /v "EQAAEnable" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\amdkmdag" /v "MultiSampleAAEnable" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\amdkmdag" /v "OverrideAAEnable" /t REG_DWORD /d "0" /f >nul 2>&1
-
-echo.
-echo %c%╔══════════════════════════════════════════════════════════════════════════════╗
-echo ║                       %red%AMD%u%%c% OPTIMIZATION COMPLETED                             ║
-echo ╚══════════════════════════════════════════════════════════════════════════════╝%u%
-echo.
-echo %c%AMD GPU optimizations have been successfully applied.%u%
-echo.
-echo %c%Applied Optimizations:%u%
-echo %c%• ReBAR (Resizable BAR) enabled for compatible GPUs%u%
-echo %c%• Power management features disabled%u%
-echo %c%• 3D rendering and anti-aliasing optimized%u%
-echo %c%• Texture and buffer settings enhanced%u%
-echo %c%• Display synchronization configured%u%
-echo %c%• Video enhancement and DXVA optimized%u%
-echo %c%• Unnecessary AMD services disabled%u%
-echo %c%• AMD image enhancement hooks disabled (RSR, FRTC, VSR)%u%
-echo %c%• AMD dynamic scaling disabled (VSR, AllowDynamicResolution)%u%
-echo %c%• AMD ray tracing disabled (DXR support)%u%
-echo %c%• AMD anti-aliasing overrides disabled (EQAA, MSAA, override)%u%
-echo.
-echo %red%Performance Notes:%u%
-echo %c%• AMD Radeon Chill and Anti-Lag features disabled%u%
-echo %c%• Thermal throttling reduced for maximum performance%u%
-echo %c%• System may run warmer and consume more power%u%
-echo %c%• Restart recommended for optimal performance%u%
-echo.
-echo %c%══════════════════════════ PRESS ANY KEY TO CONTINUE ══════════════════════════%u%
-pause >nul
-goto TweaksMenu
+echo %c%[2/2] Applying telemetry removal and scheduling optimizations...%u%
+set "GPU_RETURN=C"
+goto GPUOptimizer
 
 :AMD_SelectGPUIndex
 rem Used only by :AMDGPU. Enumerates every numeric subkey under the Display class
@@ -3430,16 +2710,16 @@ netsh int tcp set global pacingprofile=off >nul 2>&1
 netsh int tcp set global MaxSynRetransmissions=2 >nul 2>&1
 netsh int tcp set heuristics disabled >nul 2>&1
 
-echo %c%[2/20] Detecting and Configuring Wi-Fi Interface...%u%
+echo %c%[2/20] Detecting Wi-Fi Interface...%u%
+rem MTU is intentionally left at its automatic value - forcing 1472 on every
+rem network can cause fragmentation on PPPoE/VPN connections that need a
+rem smaller MTU. Windows' own PMTU discovery already finds the correct value.
 set "WIFI_IFACE="
 for /f "tokens=2 delims=:" %%I in ('netsh interface show interface 2^>nul ^| findstr /i "Wireless"') do set "WIFI_IFACE=%%~I"
 if defined WIFI_IFACE (
     set "WIFI_IFACE=!WIFI_IFACE:~1!"
-    netsh interface ipv4 set subinterface "!WIFI_IFACE!" mtu=1472 store=persistent >nul 2>&1
     echo %c%  → Detected Wi-Fi interface: !WIFI_IFACE!%u%
 ) else (
-    netsh interface ipv4 set subinterface "Wi-Fi" mtu=1472 store=persistent >nul 2>&1
-    netsh interface ipv4 set subinterface "Wireless Network Connection" mtu=1472 store=persistent >nul 2>&1
     echo %c%  → Using default Wi-Fi interface names%u%
 )
 netsh wlan set profileparameter name=* connectiontype=ESS >nul 2>&1
@@ -3497,13 +2777,13 @@ reg add "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" /v "Tcp1323Opt
 reg add "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces" /v "TcpAckFrequency" /t REG_DWORD /d 1 /f >nul 2>&1
 reg add "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces" /v "TCPNoDelay" /t REG_DWORD /d 1 /f >nul 2>&1
 reg add "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" /v "DefaultTTL" /t REG_DWORD /d 64 /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" /v "TcpWindowSize" /t REG_DWORD /d 32768 /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" /v "GlobalMaxTcpWindowSize" /t REG_DWORD /d 32768 /f >nul 2>&1
+rem TcpWindowSize/GlobalMaxTcpWindowSize are intentionally NOT set: hardcoding
+rem a 32KB cap overrides Windows' auto-tuning and can throttle throughput on
+rem fast/high-latency connections. EnableTCPChimney is also skipped - Chimney
+rem Offload was removed from Windows since 8/Server 2012, the key is inert.
 reg add "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" /v "SackOpts" /t REG_DWORD /d 1 /f >nul 2>&1
 reg add "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" /v "TcpMaxDupAcks" /t REG_DWORD /d 2 /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" /v "EnableTCPA" /t REG_DWORD /d 1 /f >nul 2>&1
 reg add "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" /v "EnableRSS" /t REG_DWORD /d 1 /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" /v "EnableTCPChimney" /t REG_DWORD /d 1 /f >nul 2>&1
 
 echo %c%[9/20] Applying UDP optimizations for wireless gaming and streaming...%u%
 reg add "HKLM\SYSTEM\CurrentControlSet\Services\AFD\Parameters" /v "FastSendDatagramThreshold" /t REG_DWORD /d 1500 /f >nul 2>&1
@@ -3610,16 +2890,12 @@ netsh advfirewall set allprofiles firewallpolicy blockinbound,allowoutbound >nul
 reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\NetworkList\DefaultPolicies" /v "f0276b85-4e9f-44e4-a6ee-c4ed78d6dc5e" /t REG_DWORD /d 1 /f >nul 2>&1
 
 echo %c%[20/20] Refreshing Network Configuration...%u%
+rem A full Winsock/IP stack reset is NOT run here - that is a repair action,
+rem not an optimization, and can strip VPN/antivirus network filters until
+rem reinstalled. Use Internet Refresher if you need to repair the connection.
+rem IPv6 is also left enabled - disabling it can break IPv6-preferred sites
+rem and services; Windows already prefers IPv4 automatically where it is faster.
 ipconfig /flushdns >nul 2>&1
-netsh winsock reset >nul 2>&1
-netsh int ip reset >nul 2>&1
-for /f "tokens=*" %%I in ('netsh interface show interface ^| findstr /i "Wireless"') do (
-    for /f "tokens=2 delims=:" %%J in ('echo %%I ^| findstr /i "Wireless"') do (
-        set "ADAPTER=%%~J"
-        set "ADAPTER=!ADAPTER:~1!"
-        netsh interface ipv6 set interface "!ADAPTER!" admin=disable >nul 2>&1
-    )
-)
 arp -d * >nul 2>&1
 nbtstat -RR >nul 2>&1
 nbtstat -R >nul 2>&1
@@ -3637,13 +2913,13 @@ echo %c%Wi-Fi network optimization has been successfully completed.%u%
 echo.
 echo %c%Original Dex Wi-Fi Optimizations Applied:%u%
 echo %c%• Core TCP/IP settings optimized for wireless performance%u%
-echo %c%• Wi-Fi interface detection and MTU optimization%u%
+echo %c%• Wi-Fi interface detected (MTU left on automatic/PMTU discovery)%u%
 echo %c%• Comprehensive wireless adapter power management disabled%u%
 echo %c%• 802.11 wireless protocol settings optimized (MIMO, beamforming, etc.)%u%
 echo %c%• Wi-Fi Sense and hotspot features disabled for security%u%
 echo %c%• Advanced wireless network configuration applied%u%
 echo %c%• Gaming and performance optimizations specifically for Wi-Fi%u%
-echo %c%• Network configuration refresh with IPv6 disable on wireless adapters%u%
+echo %c%• DNS cache flushed (IPv6 kept enabled, no Winsock/IP stack reset)%u%
 echo.
 echo %c%Network-Enhance.bat Advanced Optimizations Applied:%u%
 echo %c%• Advanced TCP/IP stack optimized specifically for wireless network conditions%u%
@@ -3730,13 +3006,13 @@ reg add "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces" /v 
 reg add "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces" /v "TCPNoDelay" /t REG_DWORD /d 1 /f >nul 2>&1
 reg add "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" /v "DefaultTTL" /t REG_DWORD /d 64 /f >nul 2>&1
 reg add "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" /v "TcpInitialRTT" /t REG_DWORD /d 300 /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" /v "GlobalMaxTcpWindowSize" /t REG_DWORD /d 65535 /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" /v "TcpWindowSize" /t REG_DWORD /d 65535 /f >nul 2>&1
+rem TcpWindowSize/GlobalMaxTcpWindowSize/EnableTCPChimney intentionally skipped
+rem - see the note in the Wi-Fi optimizer for why a hardcoded window overrides
+rem (and can hurt) Windows' own auto-tuning, and Chimney Offload is inert since
+rem Windows 8.
 reg add "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" /v "SackOpts" /t REG_DWORD /d 1 /f >nul 2>&1
 reg add "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" /v "TcpMaxDupAcks" /t REG_DWORD /d 2 /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" /v "EnableTCPA" /t REG_DWORD /d 1 /f >nul 2>&1
 reg add "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" /v "EnableRSS" /t REG_DWORD /d 1 /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" /v "EnableTCPChimney" /t REG_DWORD /d 1 /f >nul 2>&1
 
 echo %c%[3/16] Applying UDP optimizations for wired gaming and streaming...%u%
 reg add "HKLM\SYSTEM\CurrentControlSet\Services\AFD\Parameters" /v "FastSendDatagramThreshold" /t REG_DWORD /d 1500 /f >nul 2>&1
@@ -4046,16 +3322,14 @@ reg add "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" /v "TcpAckFreq
 reg add "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces" /v "TcpAckFrequency" /t REG_DWORD /d 1 /f >nul 2>&1
 reg add "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces" /v "TCPNoDelay" /t REG_DWORD /d 1 /f >nul 2>&1
 reg add "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" /v "DefaultTTL" /t REG_DWORD /d 64 /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" /v "TcpWindowSize" /t REG_DWORD /d 65535 /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" /v "GlobalMaxTcpWindowSize" /t REG_DWORD /d 65535 /f >nul 2>&1
+rem TcpWindowSize/GlobalMaxTcpWindowSize/EnableTCPChimney intentionally skipped
+rem (overrides Windows auto-tuning / inert since Windows 8). EnablePMTUBHDetect
+rem is left at its default too - disabling PMTU black-hole detection can cause
+rem connections to hang on networks that silently drop ICMP.
 reg add "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" /v "TcpInitialRTT" /t REG_DWORD /d 300 /f >nul 2>&1
 reg add "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" /v "SackOpts" /t REG_DWORD /d 1 /f >nul 2>&1
 reg add "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" /v "TcpMaxDupAcks" /t REG_DWORD /d 2 /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" /v "EnablePMTUBHDetect" /t REG_DWORD /d 0 /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" /v "EnableTCPA" /t REG_DWORD /d 1 /f >nul 2>&1
 reg add "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" /v "EnableRSS" /t REG_DWORD /d 1 /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" /v "EnableTCPChimney" /t REG_DWORD /d 1 /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" /v "EnableWsd" /t REG_DWORD /d 0 /f >nul 2>&1
 
 echo %c%[3/18] Applying UDP optimizations for gaming and streaming...%u%
 reg add "HKLM\SYSTEM\CurrentControlSet\Services\AFD\Parameters" /v "FastSendDatagramThreshold" /t REG_DWORD /d 1500 /f >nul 2>&1
@@ -4207,7 +3481,6 @@ echo %c%[10/18] Applying connection-type specific optimizations...%u%
 if "!CONN_TYPE!"=="WiFi" (
     echo %c%  → Applying WiFi-specific optimizations...%u%
     reg add "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" /v "TcpInitialRTT" /t REG_DWORD /d 400 /f >nul 2>&1
-    reg add "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" /v "GlobalMaxTcpWindowSize" /t REG_DWORD /d 32768 /f >nul 2>&1
     netsh interface tcp set global autotuninglevel=normal >nul 2>&1
     set "_wifi_conn_pnp_found="
     for /f "delims=" %%b in ('powershell -NoProfile -Command "Get-CimInstance -ClassName Win32_NetworkAdapter -ErrorAction SilentlyContinue | Where-Object { $_.NetConnectionStatus -eq 2 -and $_.AdapterTypeId -eq 9 } | Select-Object -ExpandProperty PNPDeviceID" 2^>nul') do (
@@ -4226,7 +3499,6 @@ if "!CONN_TYPE!"=="WiFi" (
 ) else if "!CONN_TYPE!"=="Ethernet" (
     echo %c%  → Applying Ethernet-specific optimizations...%u%
     reg add "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" /v "TcpInitialRTT" /t REG_DWORD /d 300 /f >nul 2>&1
-    reg add "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" /v "GlobalMaxTcpWindowSize" /t REG_DWORD /d 65535 /f >nul 2>&1
     netsh interface tcp set global autotuninglevel=normal >nul 2>&1
     set "_eth_conn_pnp_found="
     for /f "delims=" %%b in ('powershell -NoProfile -Command "Get-CimInstance -ClassName Win32_NetworkAdapter -ErrorAction SilentlyContinue | Where-Object { $_.NetConnectionStatus -eq 2 -and $_.AdapterTypeId -eq 0 } | Select-Object -ExpandProperty PNPDeviceID" 2^>nul') do (
@@ -4242,12 +3514,12 @@ if "!CONN_TYPE!"=="WiFi" (
     )
 ) else if "!CONN_TYPE!"=="Fiber" (
     echo %c%  → Applying Fiber/High-speed optimizations...%u%
+    rem autotuninglevel is set to "normal", NOT "highlyrestricted" - the old
+    rem value here was backwards: highlyrestricted caps the TCP window to the
+    rem smallest size, which throttles throughput on exactly the fast, high
+    rem bandwidth-delay-product links this branch is meant to help.
     reg add "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" /v "TcpInitialRTT" /t REG_DWORD /d 200 /f >nul 2>&1
-    reg add "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" /v "GlobalMaxTcpWindowSize" /t REG_DWORD /d 131072 /f >nul 2>&1
-    reg add "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" /v "TcpWindowSize" /t REG_DWORD /d 131072 /f >nul 2>&1
-    netsh interface tcp set global autotuninglevel=highlyrestricted >nul 2>&1
-    reg add "HKLM\SYSTEM\CurrentControlSet\Services\AFD\Parameters" /v "DefaultSendWindow" /t REG_DWORD /d 131072 /f >nul 2>&1
-    reg add "HKLM\SYSTEM\CurrentControlSet\Services\AFD\Parameters" /v "DefaultReceiveWindow" /t REG_DWORD /d 131072 /f >nul 2>&1
+    netsh interface tcp set global autotuninglevel=normal >nul 2>&1
 ) else (
     echo %c%  → Applying general network optimizations...%u%
     netsh interface tcp set global autotuninglevel=normal >nul 2>&1
@@ -4562,14 +3834,10 @@ reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\54533251-82be
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\54533251-82be-4824-96c1-47b60b740d00\45bcc044-d885-43e2-8605-ee0ec6e96b59" /v "ValueMax" /t REG_DWORD /d "100" /f >nul 2>&1
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\54533251-82be-4824-96c1-47b60b740d00\45bcc044-d885-43e2-8605-ee0ec6e96b59" /v "ValueMin" /t REG_DWORD /d "100" /f >nul 2>&1
 
-echo %c%[5/12] Configuring Intel Spectre/Meltdown Mitigations...%u%
-set "_cpu_is_intel2="
-for /f "delims=" %%Z in ('powershell -NoProfile -Command "(Get-CimInstance -ClassName Win32_Processor -ErrorAction SilentlyContinue).Name" 2^>nul') do echo(%%Z| findstr /i "Intel" >nul && set "_cpu_is_intel2=1"
-if not defined _cpu_is_intel2 (wmic cpu get name 2>nul | findstr /i "Intel" >nul && set "_cpu_is_intel2=1")
-if defined _cpu_is_intel2 (
-    reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" /v "FeatureSettingsOverride" /t REG_DWORD /d "0" /f >nul 2>&1
-    reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" /v "FeatureSettingsOverrideMask" /t REG_DWORD /d "3" /f >nul 2>&1
-)
+echo %c%[5/12] Preserving Spectre/Meltdown Mitigations...%u%
+rem This tool never disables CPU speculative-execution vulnerability
+rem mitigations (FeatureSettingsOverride/Mask). No realistic FPS gain
+rem justifies reopening a known CPU security hole.
 
 echo %c%[6/12] Optimizing System Responsiveness...%u%
 reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" /v "SystemResponsiveness" /t REG_DWORD /d "10" /f >nul 2>&1
@@ -4772,13 +4040,9 @@ echo %c%[11/12] Optimizing Memory Controller for Boost Performance...%u%
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" /v "DisablePagingExecutive" /t REG_DWORD /d "1" /f >nul 2>&1
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" /v "LargeSystemCache" /t REG_DWORD /d "0" /f >nul 2>&1
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" /v "SecondLevelDataCache" /t REG_DWORD /d "1024" /f >nul 2>&1
-set "_cpu_is_amd="
-for /f "delims=" %%Z in ('powershell -NoProfile -Command "(Get-CimInstance -ClassName Win32_Processor -ErrorAction SilentlyContinue).Name" 2^>nul') do echo(%%Z| findstr "AMD" >nul && set "_cpu_is_amd=1"
-if not defined _cpu_is_amd (wmic cpu get name 2>nul | findstr "AMD" >nul && set "_cpu_is_amd=1")
-if defined _cpu_is_amd (
-    reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" /v "FeatureSettingsOverride" /t REG_DWORD /d "64" /f >nul 2>&1
-    reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" /v "FeatureSettingsOverrideMask" /t REG_DWORD /d "3" /f >nul 2>&1
-)
+rem Spectre/Meltdown mitigations (FeatureSettingsOverride/Mask) are never
+rem disabled here - no realistic FPS gain justifies reopening a known CPU
+rem security hole.
 
 echo %c%[12/12] Configuring AMD-Specific Boost Settings...%u%
 reg add "HKLM\SOFTWARE\AMD\CN" /v "PowerScheme" /t REG_DWORD /d "1" /f >nul 2>&1
@@ -4970,11 +4234,16 @@ if "!RAM_GB_IS_VALID!"=="1" (
 echo %c%System Total RAM (for display): !TotalRAM! MB. RAM Profile set to: !RAM_PROFILE!%u%
 
 echo %c%[2/6] Optimizing Critical System Service Priorities...%u%
+rem "Realtime" priority is intentionally NOT used here. It can starve the
+rem whole system - including mouse/keyboard input and the kernel itself - if
+rem any of these background services has a burst of activity, and has been
+rem known to hang machines hard enough to need a forced reboot. "above normal"
+rem still gives them a real edge over default background processes.
 set "CRITICAL_SERVICES=DsSvc Dhcp DPS Dnscache WinHttpAutoProxySvc DcpSvc WlanSvc LSM Spooler vds RpcSs PlugPlay AudioSrv WIA"
 for %%s in (%CRITICAL_SERVICES%) do (
     for /f "tokens=3" %%a in ('sc queryex "%%s" 2^>nul ^| findstr "PID"') do (
         if not "%%a"=="" if not "%%a"=="0" (
-            wmic process where ProcessId=%%a CALL setpriority "realtime" >nul 2>&1
+            wmic process where ProcessId=%%a CALL setpriority "above normal" >nul 2>&1
         )
     )
 )
@@ -5050,7 +4319,7 @@ echo %c%• Total RAM detected: !TotalRAM! MB (approx. !RAM_GB! GB)%u%
 echo %c%• Memory profile: !RAM_PROFILE! performance configuration%u%
 echo.
 echo %c%Applied Optimizations:%u%
-echo %c%• Critical system services prioritized to realtime%u%
+echo %c%• Critical system services prioritized to Above Normal%u%
 echo %c%• Non-essential services deprioritized%u%
 echo %c%• Memory management settings optimized%u%
 echo %c%• Virtual memory and paging configured%u%
@@ -5059,9 +4328,9 @@ echo %c%• Prefetch and Superfetch optimized%u%
 echo %c%• File system allocation enhanced%u%
 echo.
 echo %red%Performance Notes:%u%
-echo %c%• Page file will be cleared at shutdown for security%u%
+echo %c%• Page file is NOT cleared at shutdown, for a faster shutdown/reboot%u%
 echo %c%• Executive code locked in memory for performance%u%
-echo %c%• Service priorities optimized for gaming/performance%u%
+echo %c%• Service priorities optimized for gaming/performance (no Realtime hacks)%u%
 if "!RAM_PROFILE!"=="MAXIMUM" echo %c%• Large system cache enabled for high-RAM systems%u%
 if "!RAM_PROFILE!"=="LOW" echo %c%• Conservative settings applied for low-RAM systems%u%
 echo.
@@ -5131,11 +4400,10 @@ reg add "HKCU\Control Panel\Keyboard"           /v "KeyboardSpeed"           /t 
 reg add "HKLM\SYSTEM\CurrentControlSet\Services\kbdclass\Parameters" /v "KeyboardDataQueueSize" /t REG_DWORD /d "300" /f >nul 2>&1
 reg add "HKLM\SYSTEM\CurrentControlSet\Services\kbdclass\Parameters" /v "ThreadPriority"       /t REG_DWORD /d "31"  /f >nul 2>&1
 
-echo %c%[4/8] Disabling Accessibility Features for Performance...%u%
-reg add "HKCU\Control Panel\Accessibility\StickyKeys"     /v "Flags" /t REG_SZ /d "506"  /f >nul 2>&1
-reg add "HKCU\Control Panel\Accessibility\ToggleKeys"     /v "Flags" /t REG_SZ /d "58"   /f >nul 2>&1
-reg add "HKCU\Control Panel\Accessibility\MouseKeys"      /v "Flags" /t REG_SZ /d "38"   /f >nul 2>&1
-reg add "HKCU\Control Panel\Accessibility\FilterKeys"     /v "Flags" /t REG_SZ /d "126"  /f >nul 2>&1
+echo %c%[4/8] Preserving Accessibility Features...%u%
+rem StickyKeys/ToggleKeys/MouseKeys/FilterKeys are left untouched. Disabling
+rem them has zero measurable performance benefit (they only run when actively
+rem triggered) and strips functionality that people who depend on it need.
 
 echo %c%[5/8] Optimizing Mouse Precision and Acceleration...%u%
 reg add "HKCU\Control Panel\Mouse" /v "MouseSpeed"      /t REG_SZ /d "0"   /f >nul 2>&1
@@ -5205,7 +4473,7 @@ if "%MOUSE_PROFILE%"=="GAMING" (
 )
 echo %c%• Input data queue sizes increased%u%
 echo %c%• Thread priorities elevated for input devices%u%
-echo %c%• Accessibility features optimized%u%
+echo %c%• Accessibility features (StickyKeys/FilterKeys/etc.) left untouched%u%
 echo.
 echo %red%Performance Notes:%u%
 echo %c%• Mouse acceleration disabled for 1:1 movement precision%u%
@@ -5241,6 +4509,15 @@ echo.
 echo.
 choice /C YN /M "%c%Apply network connectivity optimizations? Press Y to proceed, N to cancel.%u%"
 if errorlevel 2 goto TweaksMenu
+
+echo.
+echo %c%Current DNS configuration:%u%
+ipconfig /all | findstr /i "DNS Servers"
+echo.
+echo %c%Switching DNS overwrites the above (router/ISP/VPN/Pi-hole, etc.) with%u%
+echo %c%static Cloudflare servers on every connected adapter.%u%
+choice /C YN /M "%c%Switch to Cloudflare DNS (1.1.1.1)? (Y/N)%u%"
+if errorlevel 2 (set "NET_SWITCH_DNS=false") else (set "NET_SWITCH_DNS=true")
 cls
 echo.
 echo %c%╔══════════════════════════════════════════════════════════════════════════════╗
@@ -5273,34 +4550,37 @@ chcp 437 >nul
 echo %c%[5/10] Applying Advanced Network Registry Settings...%u%
 reg add "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" /v EnableICMPRedirect   /t REG_DWORD /d 0      /f >nul 2>&1
 reg add "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" /v EnablePMTUDiscovery /t REG_DWORD /d 1      /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" /v GlobalMaxTcpWindowSize /t REG_DWORD /d 65535  /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" /v TcpWindowSize         /t REG_DWORD /d 65535  /f >nul 2>&1
+rem TcpWindowSize/GlobalMaxTcpWindowSize intentionally skipped - a hardcoded
+rem window overrides Windows' own auto-tuning and can cap throughput.
 reg add "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" /v DefaultTTL             /t REG_DWORD /d 64     /f >nul 2>&1
 chcp 437 >nul
-echo %c%[6/10] Configuring High-Performance DNS Servers for All Connected Adapters...%u%
-for /f "tokens=1,2,3,* delims= " %%A in ('
-    netsh interface show interface ^
-    ^| findstr /I "Connected" ^
-    ^| findstr /I "Dedicated"
-') do (
-    for /f "tokens=* delims= " %%I in ("%%D") do (
-        echo    Interface detected: "%%I"
+echo %c%[6/10] Configuring DNS Servers for All Connected Adapters...%u%
+if "!NET_SWITCH_DNS!"=="true" (
+    for /f "tokens=1,2,3,* delims= " %%A in ('
+        netsh interface show interface ^
+        ^| findstr /I "Connected" ^
+        ^| findstr /I "Dedicated"
+    ') do (
+        for /f "tokens=* delims= " %%I in ("%%D") do (
+            echo    Interface detected: "%%I"
 
-        netsh interface ip set dns name="%%I" static 1.1.1.1 primary   >nul 2>&1
-        netsh interface ip add dns name="%%I" 1.0.0.1 index=2         >nul 2>&1
+            netsh interface ip set dns name="%%I" static 1.1.1.1 primary   >nul 2>&1
+            netsh interface ip add dns name="%%I" 1.0.0.1 index=2         >nul 2>&1
 
-        netsh interface ipv6 add dns name="%%I" 2606:4700:4700::1111 index=1 >nul 2>&1
-        netsh interface ipv6 add dns name="%%I" 2606:4700:4700::1001 index=2 >nul 2>&1
+            netsh interface ipv6 add dns name="%%I" 2606:4700:4700::1111 index=1 >nul 2>&1
+            netsh interface ipv6 add dns name="%%I" 2606:4700:4700::1001 index=2 >nul 2>&1
 
-        echo  - DNS set on "%%I"
+            echo  - DNS set on "%%I"
+        )
     )
+) else (
+    echo %c%  → Keeping your existing DNS configuration%u%
 )
 timeout /t 1 >nul
 chcp 437 >nul
 chcp 65001 >nul
 echo %c%[7/10] Optimizing Network Stack Settings...%u%
 netsh int tcp set global autotuninglevel=normal  >nul 2>&1
-netsh int tcp set global chimney=enabled         >nul 2>&1
 netsh int tcp set global rss=enabled             >nul 2>&1
 netsh int tcp set global netdma=enabled          >nul 2>&1
 netsh int tcp set global ecncapability=enabled   >nul 2>&1
@@ -5334,26 +4614,27 @@ echo %c%Network connectivity and DNS optimizations have been successfully applie
 echo.
 echo %c%Applied Optimizations:%u%
 echo %c%• DNS cache flushed and refreshed%u%
-echo %c%• Cloudflare IPv4/IPv6 DNS set on all connected adapters%u%
+if "!NET_SWITCH_DNS!"=="true" (echo %c%• Cloudflare IPv4/IPv6 DNS set on all connected adapters%u%) else (echo %c%• Your existing DNS configuration was kept%u%)
 echo %c%• Winsock/IP/TCP/UDP stack reset and reconfigured%u%
 echo %c%• Network throttling disabled for gaming%u%
-echo %c%• Advanced registry settings optimized (PMTU, TTL, window size)%u%
+echo %c%• Advanced registry settings optimized (PMTU, TTL)%u%
 echo %c%• Network adapter settings restarted and optimized%u%
-echo %c%• TCP/IP stack autotuning, chimney, and RSS enabled%u%
+echo %c%• TCP/IP stack autotuning and RSS enabled%u%
 echo %c%• Connection stability and speed improved%u%
 echo.
 echo %red%Performance Notes:%u%
-echo %c%• DNS resolution speed significantly improved (Cloudflare)%u%
-echo %c%• IPv6 DNS configured for dual-stack environments%u%
+if "!NET_SWITCH_DNS!"=="true" echo %c%• DNS resolution speed significantly improved (Cloudflare)%u%
 echo %c%• Network latency reduced for gaming and streaming%u%
 echo %c%• May require system restart for full optimization%u%
 echo.
-echo %c%New DNS Configuration:%u%
-echo %c%• Primary IPv4 DNS: 1.1.1.1 (Cloudflare – Ultra-fast)%u%
-echo %c%• Secondary IPv4 DNS: 1.0.0.1 (Cloudflare – Backup)%u%
-echo %c%• Primary IPv6 DNS: 2606:4700:4700::1111%u%
-echo %c%• Secondary IPv6 DNS: 2606:4700:4700::1001%u%
-echo.
+if "!NET_SWITCH_DNS!"=="true" (
+    echo %c%New DNS Configuration:%u%
+    echo %c%• Primary IPv4 DNS: 1.1.1.1 ^(Cloudflare - Ultra-fast^)%u%
+    echo %c%• Secondary IPv4 DNS: 1.0.0.1 ^(Cloudflare - Backup^)%u%
+    echo %c%• Primary IPv6 DNS: 2606:4700:4700::1111%u%
+    echo %c%• Secondary IPv6 DNS: 2606:4700:4700::1001%u%
+    echo.
+)
 echo %c%══════════════════════════ PRESS ANY KEY TO CONTINUE ══════════════════════════%u%
 pause >nul
 goto TweaksMenu
@@ -8715,6 +7996,7 @@ pause >nul
 goto HardwareSecurityCenter
 
 :GPUOptimizer
+if not defined GPU_RETURN set "GPU_RETURN=HardwareMenu"
 cls
 call :SetupConsole
 echo.
@@ -8753,7 +8035,11 @@ echo %c%• Will not force the GPU to run at maximum clock 24/7%u%
 echo %c%• Will not disable driver crash recovery (TDR) or PCIe protections%u%
 echo.
 choice /C YN /M "%c%Apply GPU optimizations? (Y/N)%u%"
-if errorlevel 2 goto HardwareMenu
+if errorlevel 2 (
+    set "GPU_JUMP=!GPU_RETURN!"
+    set "GPU_RETURN="
+    goto !GPU_JUMP!
+)
 
 echo.
 choice /C YN /M "%c%Also disable the companion app overlay/ShadowPlay and its auto-start? (Y/N)%u%"
@@ -8881,7 +8167,9 @@ echo %orange%A restart is recommended for HAGS to take full effect.%u%
 echo.
 echo %c%══════════════════════════ PRESS ANY KEY TO CONTINUE ══════════════════════════%u%
 pause >nul
-goto HardwareMenu
+set "GPU_JUMP=!GPU_RETURN!"
+set "GPU_RETURN="
+goto !GPU_JUMP!
 
 :StorageAcceleration
 cls
