@@ -3,6 +3,7 @@ set version=2.1.0
 title Dex Tweaks - %version%
 if /I "%~1"=="--self-test" goto DexSelfTestEntry
 if /I "%~1"=="--smoke-test" goto DexSmokeTestEntry
+if /I "%~1"=="--auto-maintenance" goto DexAutoMaintenanceEntry
 
 net session >nul 2>&1
 if %errorlevel% neq 0 goto NotAdmin
@@ -2145,25 +2146,25 @@ if errorlevel 2 goto TweaksMenu
 
 echo.
 echo %c%[1/3] Downloading SetTimerResolution...%u%
-mkdir "C:\DexTools\TimerResolution" >nul 2>&1
-curl.exe --fail --location --proto "=https" --max-time 60 -o "C:\DexTools\TimerResolution\SetTimerResolution.exe.download" "https://github.com/valleyofdoom/TimerResolution/releases/latest/download/SetTimerResolution.exe" 2>nul
+mkdir "%SystemDrive%\DexTools\TimerResolution" >nul 2>&1
+curl.exe --fail --location --proto "=https" --max-time 60 -o "%SystemDrive%\DexTools\TimerResolution\SetTimerResolution.exe.download" "https://github.com/valleyofdoom/TimerResolution/releases/latest/download/SetTimerResolution.exe" 2>nul
 if errorlevel 1 (
     echo %red%  Failed to download SetTimerResolution.exe. Place it manually at:%u%
-    echo %c%  C:\DexTools\TimerResolution\SetTimerResolution.exe%u%
-    del /f /q "C:\DexTools\TimerResolution\SetTimerResolution.exe.download" >nul 2>&1
+    echo %c%  %SystemDrive%\DexTools\TimerResolution\SetTimerResolution.exe%u%
+    del /f /q "%SystemDrive%\DexTools\TimerResolution\SetTimerResolution.exe.download" >nul 2>&1
 ) else (
-    powershell -NoProfile -Command "$p='C:\DexTools\TimerResolution\SetTimerResolution.exe.download';try{$s=Get-AuthenticodeSignature -LiteralPath $p -ErrorAction Stop;if($s.Status -eq 'Valid'){exit 0}else{exit 1}}catch{exit 1}" >nul 2>&1
+    powershell -NoProfile -Command "$p='%SystemDrive%\DexTools\TimerResolution\SetTimerResolution.exe.download';try{$s=Get-AuthenticodeSignature -LiteralPath $p -ErrorAction Stop;if($s.Status -eq 'Valid'){exit 0}else{exit 1}}catch{exit 1}" >nul 2>&1
     if errorlevel 1 (
         echo %red%  Download blocked: the executable has no valid Authenticode signature.%u%
         call :LogEvent "BLOCKED" "Unsigned TimerResolution executable was not installed"
-        del /f /q "C:\DexTools\TimerResolution\SetTimerResolution.exe.download" >nul 2>&1
+        del /f /q "%SystemDrive%\DexTools\TimerResolution\SetTimerResolution.exe.download" >nul 2>&1
     ) else (
-        move /y "C:\DexTools\TimerResolution\SetTimerResolution.exe.download" "C:\DexTools\TimerResolution\SetTimerResolution.exe" >nul 2>&1
+        move /y "%SystemDrive%\DexTools\TimerResolution\SetTimerResolution.exe.download" "%SystemDrive%\DexTools\TimerResolution\SetTimerResolution.exe" >nul 2>&1
         echo %green%  [+] Downloaded and signature verified%u%
     )
 )
 
-powershell -NoProfile -Command "$p='C:\DexTools\TimerResolution\SetTimerResolution.exe';try{$s=Get-AuthenticodeSignature -LiteralPath $p -ErrorAction Stop;if($s.Status -eq 'Valid'){exit 0}else{exit 1}}catch{exit 1}" >nul 2>&1
+powershell -NoProfile -Command "$p='%SystemDrive%\DexTools\TimerResolution\SetTimerResolution.exe';try{$s=Get-AuthenticodeSignature -LiteralPath $p -ErrorAction Stop;if($s.Status -eq 'Valid'){exit 0}else{exit 1}}catch{exit 1}" >nul 2>&1
 if errorlevel 1 (
     echo %red%  Timer Resolution setup cancelled because no signed executable is available.%u%
     reg delete "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" /v "TimerResolution" /f >nul 2>&1
@@ -2187,13 +2188,13 @@ echo %red%  [5] Skip%u%
 echo.
 set /p TR_OPT="%c%Enter option (1-5): %u%"
 if "!TR_OPT!"=="1" (
-    reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" /v "TimerResolution" /t REG_SZ /d "\"C:\DexTools\TimerResolution\SetTimerResolution.exe\" --resolution 5000 --no-console" /f >nul 2>&1
+    reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" /v "TimerResolution" /t REG_SZ /d "\"%SystemDrive%\DexTools\TimerResolution\SetTimerResolution.exe\" --resolution 5000 --no-console" /f >nul 2>&1
     echo %green%  [+] Timer Resolution 0.500ms set to auto-start%u%
 ) else if "!TR_OPT!"=="2" (
-    reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" /v "TimerResolution" /t REG_SZ /d "\"C:\DexTools\TimerResolution\SetTimerResolution.exe\" --resolution 5040 --no-console" /f >nul 2>&1
+    reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" /v "TimerResolution" /t REG_SZ /d "\"%SystemDrive%\DexTools\TimerResolution\SetTimerResolution.exe\" --resolution 5040 --no-console" /f >nul 2>&1
     echo %green%  [+] Timer Resolution 0.504ms set to auto-start%u%
 ) else if "!TR_OPT!"=="3" (
-    reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" /v "TimerResolution" /t REG_SZ /d "\"C:\DexTools\TimerResolution\SetTimerResolution.exe\" --resolution 5070 --no-console" /f >nul 2>&1
+    reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" /v "TimerResolution" /t REG_SZ /d "\"%SystemDrive%\DexTools\TimerResolution\SetTimerResolution.exe\" --resolution 5070 --no-console" /f >nul 2>&1
     echo %green%  [+] Timer Resolution 0.507ms set to auto-start%u%
 ) else if "!TR_OPT!"=="4" (
     set /p TR_CUSTOM="%c%Enter value in 100-nanosecond units (e.g. 5000): %u%"
@@ -2207,7 +2208,7 @@ if "!TR_OPT!"=="1" (
         ) else if !TR_CUSTOM_NUM! GTR 156250 (
             echo %red%  Value is above the safe range of this panel.%u%
         ) else (
-            reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" /v "TimerResolution" /t REG_SZ /d "\"C:\DexTools\TimerResolution\SetTimerResolution.exe\" --resolution !TR_CUSTOM_NUM! --no-console" /f >nul 2>&1
+            reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" /v "TimerResolution" /t REG_SZ /d "\"%SystemDrive%\DexTools\TimerResolution\SetTimerResolution.exe\" --resolution !TR_CUSTOM_NUM! --no-console" /f >nul 2>&1
             echo %green%  [+] Timer Resolution !TR_CUSTOM_NUM! set to auto-start%u%
         )
     )
@@ -2284,6 +2285,8 @@ echo                         ╚════════════════
 echo.
 echo %c%Standard:%u% Profile Inspector + driver tweaks + latency optimizations
 echo %c%Experimental:%u% %red%Disables ALL NVIDIA power management. Higher heat + power draw.%u%
+echo %c%Tip:%u% Advanced ^> Performance Toolkit ^> Driver Restore Point before installing or%u%
+echo %c%     replacing your GPU driver, in addition to the automatic Expert Mode snapshot.%u%
 echo.
 set /p NvChoice="%c%Choose an option »%u% "
 if "!NvChoice!"=="0" goto C
@@ -2510,6 +2513,9 @@ echo.
 echo %orange%%underline%What this will NOT do:%u%
 echo %c%• Will not disable Radeon Chill/Anti-Lag or thermal throttling protection%u%
 echo %c%• Will not disable Resizable BAR, FSR/RSR, or ray tracing%u%
+echo.
+echo %c%Tip:%u% Advanced ^> Performance Toolkit ^> Driver Restore Point before installing or%u%
+echo %c%     replacing your GPU driver.%u%
 echo.
 choice /C YN /M "%c%Apply AMD GPU optimizations? (Y/N)%u%"
 if errorlevel 2 goto C
@@ -4243,7 +4249,7 @@ set "CRITICAL_SERVICES=DsSvc Dhcp DPS Dnscache WinHttpAutoProxySvc DcpSvc WlanSv
 for %%s in (%CRITICAL_SERVICES%) do (
     for /f "tokens=3" %%a in ('sc queryex "%%s" 2^>nul ^| findstr "PID"') do (
         if not "%%a"=="" if not "%%a"=="0" (
-            wmic process where ProcessId=%%a CALL setpriority "above normal" >nul 2>&1
+            powershell -NoProfile -Command "try{(Get-CimInstance Win32_Process -Filter 'ProcessId=%%a') | Invoke-CimMethod -MethodName SetPriority -Arguments @{Priority=32768} | Out-Null}catch{}" >nul 2>&1
         )
     )
 )
@@ -4253,7 +4259,7 @@ set "LOW_PRIORITY_SERVICES=BITS smphost PNRPsvc SensrSvc Wcmsvc Wersvc wuauserv 
 for %%s in (%LOW_PRIORITY_SERVICES%) do (
     for /f "tokens=3" %%a in ('sc queryex "%%s" 2^>nul ^| findstr "PID"') do (
         if not "%%a"=="" if not "%%a"=="0" (
-            wmic process where ProcessId=%%a CALL setpriority "low" >nul 2>&1
+            powershell -NoProfile -Command "try{(Get-CimInstance Win32_Process -Filter 'ProcessId=%%a') | Invoke-CimMethod -MethodName SetPriority -Arguments @{Priority=64} | Out-Null}catch{}" >nul 2>&1
         )
     )
 )
@@ -11717,7 +11723,6 @@ echo.
 echo %c%[4/11] Blocking Windows Defender Telemetry...%u%
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows Defender\Spynet" /v "SubmitSamplesConsent" /t REG_DWORD /d "2" /f >nul 2>&1
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows Defender\Spynet" /v "SpynetReporting" /t REG_DWORD /d "0" /f >nul 2>&1
-reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows Defender" /v "DisableAntiSpyware" /t REG_DWORD /d "1" /f >nul 2>&1
 chcp 437 >nul
 powershell -Command "Set-MpPreference -MAPSReporting Disabled" >nul 2>&1
 powershell -Command "Set-MpPreference -SubmitSamplesConsent NeverSend" >nul 2>&1
@@ -12428,6 +12433,7 @@ echo                        %c%║%u%           [%c%5%u%] Program Debloat       
 echo                        %c%║%u%           [%c%6%u%] DirectX Optimization               %c%║%u%
 echo                        %c%║%u%           [%c%7%u%] OBS Optimizer                      %c%║%u%
 echo                        %c%║%u%           [%c%8%u%] Capture Priority Tool              %c%║%u%
+echo                        %c%║%u%           [%c%P%u%] Performance Toolkit                %c%║%u%
 echo %c%                       ╚══════════════════════════════════════════════════╝
 echo %c%                             ║  %u%[%c%9%u%] Theme Presets    [%c%0%u%] Go Back    %c%║%u%
 echo %c%                             ║            %u% [%c%Quit%u%] Leave%c%             ║
@@ -12446,6 +12452,7 @@ if "!M!"=="5" goto ProgramDebloat
 if "!M!"=="6" goto DirectXOptimization
 if "!M!"=="7" goto OBSOptimizer
 if "!M!"=="8" goto CapturePriorityTool
+if /I "!M!"=="P" goto PerformanceToolkit
 if "!M!"=="9" goto Presets
 if "!M!"=="0" goto menu
 if "!M!"=="Quit" goto Destruct
@@ -12454,6 +12461,138 @@ cls
 echo %underline%%red%Invalid Input. Press any key to continue.%u%
 pause >nul
 goto AdvancedMenu
+
+:PerformanceToolkit
+cls
+call :SetupConsole
+echo.
+echo.
+echo %c%╔══════════════════════════════════════════════════════════════════════════════╗
+echo ║                            PERFORMANCE TOOLKIT                               ║
+echo ╚══════════════════════════════════════════════════════════════════════════════╝%u%
+echo.
+echo  [1] Startup App Manager - view and disable programs that auto-start with Windows
+echo  [2] CPU / GPU Temperature Snapshot - quick best-effort sensor reading
+echo  [3] Scheduled Auto-Maintenance - run a weekly health check and cleanup unattended
+echo  [4] Driver Restore Point - dedicated checkpoint before installing/changing GPU drivers
+echo  [0] Back
+echo.
+set /p PT="%c%Choose an option »%u% "
+if "!PT!"=="1" goto StartupManager
+if "!PT!"=="2" goto TempSnapshot
+if "!PT!"=="3" goto ScheduledMaintenanceSetup
+if "!PT!"=="4" goto DriverRestorePoint
+if "!PT!"=="0" goto AdvancedMenu
+goto PerformanceToolkit
+
+:StartupManager
+cls
+call :SetupConsole
+echo.
+echo %c%STARTUP APP MANAGER%u%
+echo.
+echo %c%Programs currently set to auto-start with Windows:%u%
+echo.
+set "DEX_STARTUP_LIST=%temp%\dex_startup_list.txt"
+del /f /q "%DEX_STARTUP_LIST%" >nul 2>&1
+chcp 437 >nul
+powershell -NoProfile -Command "$i=0; Get-CimInstance Win32_StartupCommand -ErrorAction SilentlyContinue | Select-Object Name,Location,User,Command | ForEach-Object { $i++; \"$i|$($_.Name)|$($_.Location)|$($_.Command)\" } | Set-Content -Encoding UTF8 -LiteralPath '%DEX_STARTUP_LIST%'" >nul 2>&1
+chcp 65001 >nul
+if not exist "%DEX_STARTUP_LIST%" (
+    echo No startup entries were found or they could not be read.
+    pause
+    goto PerformanceToolkit
+)
+set /a DEX_STARTUP_COUNT=0
+for /f "usebackq tokens=1,2,3 delims=|" %%a in ("%DEX_STARTUP_LIST%") do (
+    set /a DEX_STARTUP_COUNT+=1
+    echo   [%%a] %%b  ^(%%c^)
+)
+if !DEX_STARTUP_COUNT! EQU 0 (
+    echo No startup entries were found.
+    pause
+    goto PerformanceToolkit
+)
+echo.
+echo %c%This list is read-only reporting via WMI. Registry Run keys and the Startup%u%
+echo %c%folder can only be edited safely per-entry; use Task Manager's Startup tab%u%
+echo %c%or "shell:startup" to remove shortcuts, and the Run keys shown above with%u%
+echo %c%regedit if you understand what each entry does.%u%
+echo.
+echo %c%Open the Startup folder now? [Y/N]%u%
+choice /C YN /N
+if errorlevel 2 goto PerformanceToolkit
+explorer.exe "shell:startup"
+pause
+goto PerformanceToolkit
+
+:TempSnapshot
+cls
+call :SetupConsole
+echo.
+echo %c%CPU / GPU TEMPERATURE SNAPSHOT%u%
+echo.
+echo %c%This is a best-effort reading using sensors Windows exposes without extra%u%
+echo %c%drivers. Many laptops and GPUs hide their sensors from this API; if nothing%u%
+echo %c%shows below, use HWiNFO, HWMonitor or your GPU vendor's app instead.%u%
+echo.
+chcp 437 >nul
+powershell -NoProfile -Command "try { $zones = Get-CimInstance -Namespace root/wmi -ClassName MSAcpi_ThermalZoneTemperature -ErrorAction Stop; if ($zones) { $zones | ForEach-Object { $c = [math]::Round(($_.CurrentTemperature / 10) - 273.15, 1); Write-Host ('CPU/ACPI thermal zone: {0} C' -f $c) } } else { Write-Host 'No ACPI thermal zone sensors were exposed by this system.' } } catch { Write-Host 'No ACPI thermal zone sensors were exposed by this system.' }"
+powershell -NoProfile -Command "try { $gpu = Get-CimInstance -Namespace root/CIMV2 -ClassName Win32_VideoController -ErrorAction Stop | Select-Object -First 1; Write-Host ('GPU: {0} (vendor tool required for temperature)' -f $gpu.Name) } catch {}"
+chcp 65001 >nul
+echo.
+call :LogEvent "REPORT" "Temperature snapshot requested"
+pause
+goto PerformanceToolkit
+
+:ScheduledMaintenanceSetup
+cls
+call :SetupConsole
+echo.
+echo %c%SCHEDULED AUTO-MAINTENANCE%u%
+echo.
+echo %c%Creates a weekly Windows scheduled task that silently runs a Dex Tweaks%u%
+echo %c%maintenance pass: DISM CheckHealth, SFC verify-only, and temp file cleanup.%u%
+echo %c%It never applies tweaks, changes settings or requires interaction.%u%
+echo.
+choice /C YN /M "%c%Create/refresh the weekly maintenance task? (Y/N)%u%"
+if errorlevel 2 goto PerformanceToolkit
+set "DEX_SELF_PATH=%~f0"
+schtasks /Create /TN "DexTweaks_AutoMaintenance" /TR "\"%DEX_SELF_PATH%\" --auto-maintenance" /SC WEEKLY /D SUN /ST 04:00 /RL HIGHEST /F >nul 2>&1
+if errorlevel 1 (
+    echo %red%Could not create the scheduled task.%u%
+    call :LogEvent "FAIL" "Scheduled auto-maintenance task creation failed"
+) else (
+    echo %c%✔ Weekly maintenance task created: runs Sundays at 04:00.%u%
+    call :LogEvent "OK" "Scheduled auto-maintenance task created"
+)
+echo.
+pause
+goto PerformanceToolkit
+
+:DriverRestorePoint
+cls
+call :SetupConsole
+echo.
+echo %c%DRIVER RESTORE POINT%u%
+echo.
+echo %c%Creates a dedicated Windows Restore Point before you install or change a%u%
+echo %c%GPU driver. This is separate from the general Restore Point/snapshot flows%u%
+echo %c%so it is easy to find and roll back to if a driver install goes wrong.%u%
+echo.
+choice /C YN /M "%c%Create a driver restore point now? (Y/N)%u%"
+if errorlevel 2 goto PerformanceToolkit
+powershell -NoProfile -ExecutionPolicy Bypass -Command "try { Enable-ComputerRestore -Drive $env:SystemDrive -ErrorAction SilentlyContinue; Checkpoint-Computer -Description 'DexTweaks_PreDriverInstall_%DEX_SESSION%' -RestorePointType DEVICE_DRIVER_INSTALL -ErrorAction Stop; exit 0 } catch { Write-Host $_.Exception.Message; exit 1 }"
+if errorlevel 1 (
+    echo %red%Restore point creation failed. Check System Protection settings.%u%
+    call :LogEvent "FAIL" "Driver restore point creation failed"
+) else (
+    echo %c%✔ Driver restore point created. You can now proceed with driver changes.%u%
+    call :LogEvent "BACKUP" "Driver restore point created"
+)
+echo.
+pause
+goto PerformanceToolkit
 
 :CapturePriorityTool
 cls
@@ -14313,9 +14452,10 @@ echo %c%Installing %name%...%u%
 choco install "%package%" -y --no-progress
 
 if errorlevel 1 (
-    echo %red%Installation failed or package integrity could not be verified.%u%
+    echo %red%Chocolatey installation failed or package integrity could not be verified.%u%
     echo %yellow%Dex Tweaks will not bypass Chocolatey checksum validation.%u%
     call :LogEvent "FAIL" "Chocolatey installation failed for %package%"
+    call :TryWinGetFallback "%package%" "%name%"
 ) else (
     echo %c%✔ Successfully installed %name%!%u%
     call :LogEvent "OK" "Chocolatey installed %package%"
@@ -14323,6 +14463,31 @@ if errorlevel 1 (
 
 echo.
 exit /b
+
+:TryWinGetFallback
+set "wg_package=%~1"
+set "wg_name=%~2"
+where winget >nul 2>&1
+if errorlevel 1 (
+    echo %grey%WinGet is not available on this system, skipping fallback.%u%
+    exit /b 1
+)
+echo %c%Trying WinGet as a fallback source for %wg_name%...%u%
+winget install --id "%wg_package%" -e --accept-package-agreements --accept-source-agreements --silent >nul 2>&1
+if not errorlevel 1 (
+    echo %c%✔ Successfully installed %wg_name% via WinGet!%u%
+    call :LogEvent "OK" "WinGet installed %wg_package% (Chocolatey fallback)"
+    exit /b 0
+)
+winget install "%wg_name%" --accept-package-agreements --accept-source-agreements --silent >nul 2>&1
+if not errorlevel 1 (
+    echo %c%✔ Successfully installed %wg_name% via WinGet!%u%
+    call :LogEvent "OK" "WinGet installed %wg_name% (Chocolatey fallback, name match)"
+    exit /b 0
+)
+echo %red%WinGet fallback could not find or install a matching package either.%u%
+call :LogEvent "FAIL" "WinGet fallback also failed for %wg_package%"
+exit /b 1
 
 :ShowMessage
 echo %yellow%This option does not have an automated function yet.%u%
@@ -14377,6 +14542,7 @@ if /I "!confirmInstall!"=="Y" (
         echo %red%Installation failed or package integrity could not be verified.%u%
         echo %yellow%Dex Tweaks will not bypass Chocolatey checksum validation.%u%
         call :LogEvent "FAIL" "Chocolatey search install failed for !installPkg!"
+        call :TryWinGetFallback "!installPkg!" "!name!"
     ) else (
         echo %c%✔ Successfully installed %name%!%u%
         call :LogEvent "OK" "Chocolatey search installed !installPkg!"
@@ -14545,6 +14711,29 @@ if "%DEX_SMOKE_INVALID%"=="1" (
 echo PASS: Windows 10/11 detection, runtime, dashboard, profile queue and snapshot are operational.
 rd /s /q "%DEX_TEST_ROOT%" >nul 2>&1
 echo Temporary smoke-test data cleaned.
+endlocal
+exit /b 0
+
+:DexAutoMaintenanceEntry
+@echo off
+setlocal enabledelayedexpansion
+net session >nul 2>&1
+if %errorlevel% neq 0 (
+    echo Dex Tweaks auto-maintenance requires Administrator privileges. Skipping.
+    endlocal
+    exit /b 1
+)
+call :InitializeDexRuntime
+call :LogEvent "MAINTENANCE" "Scheduled auto-maintenance started"
+set "DEX_MAINT_REPORT=%DEX_REPORTS%\AutoMaintenance_%DEX_SESSION%.txt"
+> "%DEX_MAINT_REPORT%" echo Dex Tweaks scheduled auto-maintenance - %date% %time%
+DISM /Online /Cleanup-Image /CheckHealth >>"%DEX_MAINT_REPORT%" 2>&1
+set "DEX_MAINT_DISM_RC=%errorlevel%"
+sfc /verifyonly >>"%DEX_MAINT_REPORT%" 2>&1
+set "DEX_MAINT_SFC_RC=%errorlevel%"
+del /f /q /s "%temp%\*" >nul 2>&1
+del /f /q /s "%windir%\Temp\*" >nul 2>&1
+call :LogEvent "MAINTENANCE" "Auto-maintenance finished DISM=%DEX_MAINT_DISM_RC% SFC=%DEX_MAINT_SFC_RC%"
 endlocal
 exit /b 0
 
@@ -15295,6 +15484,8 @@ if not exist "%DEX_SNAPSHOT_FILE%" (
 )
 call :LogEvent "BACKUP" "Managed snapshot created: %DEX_SNAPSHOT%"
 echo Managed snapshot created: "%DEX_SNAPSHOT%"
+echo (Covers Game Bar/DVR, HAGS, visual effects, a few privacy keys, power plan,
+echo  Defender preferences, BCD and wuauserv/BITS/WSearch startup type only.)
 exit /b 0
 
 :RestoreLatestManagedSnapshot
@@ -15325,6 +15516,11 @@ if not exist "!DEX_RESTORE_PATH!\metadata.txt" (
 )
 echo.
 echo Latest snapshot: "!DEX_RESTORE_PATH!"
+echo NOTE: this snapshot only covers Game Bar/DVR, HAGS, visual effects, a few
+echo telemetry/advertising keys, power plan, Defender preferences, BCD and the
+echo startup type of wuauserv/BITS/WSearch. It does NOT reverse Service Tweaks,
+echo Debloater, Network Tweaks, GPU/CPU tweaks or deleted files. For a full
+echo rollback use Windows System Restore or the Full Registry Backup instead.
 choice /C YN /N /M "Restore this managed snapshot? [Y/N]: "
 if errorlevel 2 exit /b
 set /a DEX_RESTORE_FAIL=0
@@ -15571,9 +15767,47 @@ if errorlevel 1 set /a DEX_FULL_FAIL+=1
 REG SAVE HKCU "%DEX_FULL_PATH%\NTUSER.hiv" /y >nul 2>&1
 if errorlevel 1 set /a DEX_FULL_FAIL+=1
 > "%DEX_FULL_PATH%\README.txt" echo Full registry backup created by Dex Tweaks on %date% %time%.
->>"%DEX_FULL_PATH%\README.txt" echo Use Windows Recovery Environment or System Restore for full hive recovery.
+>>"%DEX_FULL_PATH%\README.txt" echo These hives cannot be restored while Windows is running normally.
+>>"%DEX_FULL_PATH%\README.txt" echo Boot into Windows Recovery Environment (WinRE), open Command Prompt, and run:
+>>"%DEX_FULL_PATH%\README.txt" echo   Restore_FullRegistry_WinRE.bat
+>>"%DEX_FULL_PATH%\README.txt" echo This companion script replaces the offline hive files for you. Read it before running it.
+
+> "%DEX_FULL_PATH%\Restore_FullRegistry_WinRE.bat" echo @echo off
+>>"%DEX_FULL_PATH%\Restore_FullRegistry_WinRE.bat" echo :: Run this ONLY from Windows Recovery Environment (WinRE) Command Prompt,
+>>"%DEX_FULL_PATH%\Restore_FullRegistry_WinRE.bat" echo :: never from a normally booted Windows. It replaces offline registry hives.
+>>"%DEX_FULL_PATH%\Restore_FullRegistry_WinRE.bat" echo :: Generated by Dex Tweaks on %date% %time%.
+>>"%DEX_FULL_PATH%\Restore_FullRegistry_WinRE.bat" echo setlocal
+>>"%DEX_FULL_PATH%\Restore_FullRegistry_WinRE.bat" echo set "SRC=%%~dp0"
+>>"%DEX_FULL_PATH%\Restore_FullRegistry_WinRE.bat" echo echo In WinRE, the broken Windows install usually is NOT drive C:\.
+>>"%DEX_FULL_PATH%\Restore_FullRegistry_WinRE.bat" echo echo Run "wmic logicaldisk get caption" or check with "dir D:\Windows" first.
+>>"%DEX_FULL_PATH%\Restore_FullRegistry_WinRE.bat" echo set /p "WINDIR_DRIVE=Enter the drive letter of the offline Windows install (e.g. D): "
+>>"%DEX_FULL_PATH%\Restore_FullRegistry_WinRE.bat" echo if not exist "%%WINDIR_DRIVE%%:\Windows\System32\config" (echo That drive does not look like a Windows install. Aborting. ^& goto :eof)
+>>"%DEX_FULL_PATH%\Restore_FullRegistry_WinRE.bat" echo set "CFG=%%WINDIR_DRIVE%%:\Windows\System32\config"
+>>"%DEX_FULL_PATH%\Restore_FullRegistry_WinRE.bat" echo set "SAFETY=%%CFG%%\DexPreRestoreSafety_%%date:~-4%%%%date:~3,2%%%%date:~0,2%%_%%time:~0,2%%%%time:~3,2%%"
+>>"%DEX_FULL_PATH%\Restore_FullRegistry_WinRE.bat" echo set "SAFETY=%%SAFETY: =0%%"
+>>"%DEX_FULL_PATH%\Restore_FullRegistry_WinRE.bat" echo mkdir "%%SAFETY%%" ^>nul 2^>^&1
+>>"%DEX_FULL_PATH%\Restore_FullRegistry_WinRE.bat" echo echo Saving a copy of the CURRENT (possibly broken) hives to %%SAFETY%% first...
+>>"%DEX_FULL_PATH%\Restore_FullRegistry_WinRE.bat" echo copy /y "%%CFG%%\SOFTWARE" "%%SAFETY%%\SOFTWARE" ^>nul 2^>^&1
+>>"%DEX_FULL_PATH%\Restore_FullRegistry_WinRE.bat" echo copy /y "%%CFG%%\SYSTEM" "%%SAFETY%%\SYSTEM" ^>nul 2^>^&1
+>>"%DEX_FULL_PATH%\Restore_FullRegistry_WinRE.bat" echo copy /y "%%CFG%%\SAM" "%%SAFETY%%\SAM" ^>nul 2^>^&1
+>>"%DEX_FULL_PATH%\Restore_FullRegistry_WinRE.bat" echo copy /y "%%CFG%%\SECURITY" "%%SAFETY%%\SECURITY" ^>nul 2^>^&1
+>>"%DEX_FULL_PATH%\Restore_FullRegistry_WinRE.bat" echo copy /y "%%CFG%%\DEFAULT" "%%SAFETY%%\DEFAULT" ^>nul 2^>^&1
+>>"%DEX_FULL_PATH%\Restore_FullRegistry_WinRE.bat" echo echo Safety copy done: %%SAFETY%%
+>>"%DEX_FULL_PATH%\Restore_FullRegistry_WinRE.bat" echo choice /C YN /M "Overwrite the offline hives with the Dex Tweaks backup now? [Y/N]"
+>>"%DEX_FULL_PATH%\Restore_FullRegistry_WinRE.bat" echo if errorlevel 2 goto :eof
+>>"%DEX_FULL_PATH%\Restore_FullRegistry_WinRE.bat" echo if exist "%%SRC%%SOFTWARE.hiv" copy /y "%%SRC%%SOFTWARE.hiv" "%%CFG%%\SOFTWARE" ^>nul
+>>"%DEX_FULL_PATH%\Restore_FullRegistry_WinRE.bat" echo if exist "%%SRC%%SYSTEM.hiv" copy /y "%%SRC%%SYSTEM.hiv" "%%CFG%%\SYSTEM" ^>nul
+>>"%DEX_FULL_PATH%\Restore_FullRegistry_WinRE.bat" echo if exist "%%SRC%%SAM.hiv" copy /y "%%SRC%%SAM.hiv" "%%CFG%%\SAM" ^>nul
+>>"%DEX_FULL_PATH%\Restore_FullRegistry_WinRE.bat" echo if exist "%%SRC%%SECURITY.hiv" copy /y "%%SRC%%SECURITY.hiv" "%%CFG%%\SECURITY" ^>nul
+>>"%DEX_FULL_PATH%\Restore_FullRegistry_WinRE.bat" echo if exist "%%SRC%%DEFAULT.hiv" copy /y "%%SRC%%DEFAULT.hiv" "%%CFG%%\DEFAULT" ^>nul
+>>"%DEX_FULL_PATH%\Restore_FullRegistry_WinRE.bat" echo echo Done. NTUSER.hiv was NOT applied automatically: it belongs to one specific
+>>"%DEX_FULL_PATH%\Restore_FullRegistry_WinRE.bat" echo echo user profile only. If needed, copy it manually over that user's NTUSER.DAT
+>>"%DEX_FULL_PATH%\Restore_FullRegistry_WinRE.bat" echo echo under %%WINDIR_DRIVE%%:\Users\ under the correct profile folder.
+>>"%DEX_FULL_PATH%\Restore_FullRegistry_WinRE.bat" echo echo Reboot normally now to test.
+>>"%DEX_FULL_PATH%\Restore_FullRegistry_WinRE.bat" echo pause
 echo Backup completed with %DEX_FULL_FAIL% error(s): "%DEX_FULL_PATH%"
-call :LogEvent "BACKUP" "Full registry backup completed with %DEX_FULL_FAIL% error(s)"
+echo A ready-to-run WinRE restore script was generated: "%DEX_FULL_PATH%\Restore_FullRegistry_WinRE.bat"
+call :LogEvent "BACKUP" "Full registry backup completed with %DEX_FULL_FAIL% error(s), WinRE restore script generated"
 pause
 exit /b
 
