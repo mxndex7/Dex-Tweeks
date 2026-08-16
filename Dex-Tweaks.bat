@@ -1045,7 +1045,16 @@ if "%FIREFOX_FOUND%"=="true" (
     echo %c%[4/8] Mozilla Firefox not detected, skipping...%u%
 )
 
-goto :eof
+echo.
+echo %c%╔══════════════════════════════════════════════════════════════════════════════╗
+echo ║                        BROWSER CONFIG COMPLETED                              ║
+echo ╚══════════════════════════════════════════════════════════════════════════════╝%u%
+echo.
+echo %c%Browser privacy and performance settings have been applied.%u%
+echo.
+echo %c%══════════════════════════ PRESS ANY KEY TO CONTINUE ══════════════════════════%u%
+pause >nul
+goto TweaksMenu
 
 :CreateFirefoxPrivacyConfig
 set "FIREFOX_PREF_DIR=%~1"
@@ -4302,16 +4311,6 @@ if "!RAM_PROFILE!"=="MAXIMUM" (
     reg add "HKLM\SYSTEM\CurrentControlSet\Control\FileSystem"                   /v "ContigFileAllocSize" /t REG_DWORD /d "64"   /f >nul 2>&1
 )
 
-echo.
-echo %c%Cleaning temporary memory allocations...%u%
-for %%B in (chrome.exe firefox.exe msedge.exe) do (
-    tasklist /fi "imagename eq %%B" | find /i "%%B" >nul 2>&1
-    if not errorlevel 1 (
-        taskkill /f /im "%%B" >nul 2>&1
-        timeout /t 1 >nul
-        start "" "%%B" >nul 2>&1
-    )
-)
 chcp 65001 >nul
 echo.
 echo %c%╔══════════════════════════════════════════════════════════════════════════════╗
@@ -13642,7 +13641,7 @@ chcp 65001 >nul
 if "%file%"=="" (
     echo No file was selected.
     pause
-    goto :eof
+    goto Boosters
 )
 cls
 
@@ -14080,8 +14079,8 @@ echo %c%[N]%u% Next Page (53-104)   %c%[M]%u% Main Menu   %red%[X]%u% Exit
 set /p "p1Choice=%c%Choose an option »%u% "
 if /I "!p1Choice!"=="N" goto PAGE2
 if /I "!p1Choice!"=="M" goto START
-if /I "!p1Choice!"=="X" goto :EOF
-if /I "!p1Choice!"=="x" goto :EOF
+if /I "!p1Choice!"=="X" goto START
+if /I "!p1Choice!"=="x" goto START
 
 call :InstallSoftware "!p1Choice!" "PAGE1"
 goto PAGE1
@@ -14115,8 +14114,8 @@ set /p "p2Choice=%c%Choose an option »%u% "
 if /I "!p2Choice!"=="P" goto PAGE1
 if /I "!p2Choice!"=="N" goto PAGE3
 if /I "!p2Choice!"=="M" goto START
-if /I "!p2Choice!"=="X" goto :EOF
-if /I "!p2Choice!"=="x" goto :EOF
+if /I "!p2Choice!"=="X" goto START
+if /I "!p2Choice!"=="x" goto START
 
 call :InstallSoftware "!p2Choice!" "PAGE2"
 goto PAGE2
@@ -14150,8 +14149,8 @@ set /p "p3Choice=%c%Choose an option »%u% "
 if /I "!p3Choice!"=="P" goto PAGE2
 if /I "!p3Choice!"=="N" goto PAGE4
 if /I "!p3Choice!"=="M" goto START
-if /I "!p3Choice!"=="X" goto :EOF
-if /I "!p3Choice!"=="x" goto :EOF
+if /I "!p3Choice!"=="X" goto START
+if /I "!p3Choice!"=="x" goto START
 
 call :InstallSoftware "!p3Choice!" "PAGE3"
 goto PAGE3
@@ -14184,8 +14183,8 @@ echo %c%[P]%u% Previous (105-156)   %c%[M]%u% Main Menu   %red%[X]%u% Exit
 set /p "p4Choice=%c%Choose an option »%u% "
 if /I "!p4Choice!"=="P" goto PAGE3
 if /I "!p4Choice!"=="M" goto START
-if /I "!p4Choice!"=="X" goto :EOF
-if /I "!p4Choice!"=="x" goto :EOF
+if /I "!p4Choice!"=="X" goto START
+if /I "!p4Choice!"=="x" goto START
 
 call :InstallSoftware "!p4Choice!" "PAGE4"
 goto PAGE4
@@ -14772,6 +14771,7 @@ exit /b
 
 :DetectOperatingSystem
 set "_OS_BUILD=0"
+set "_OS_PRODUCTTYPE_NUM="
 set "DEX_PRODUCT_TYPE=0"
 set "DEX_OS_64BIT=0"
 if defined DEX_TEST_BUILD (
@@ -14779,17 +14779,36 @@ if defined DEX_TEST_BUILD (
     set "DEX_PRODUCT_TYPE=1"
     set "DEX_OS_64BIT=1"
 )
-if not defined DEX_TEST_BUILD for /f "tokens=3" %%b in ('reg query "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion" /v CurrentBuildNumber 2^>nul ^| findstr /I "CurrentBuildNumber"') do set "_OS_BUILD=%%b"
 if not defined DEX_TEST_BUILD (
-    set "_OS_INSTALLTYPE="
-    for /f "tokens=3" %%t in ('reg query "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion" /v InstallationType 2^>nul ^| findstr /I "InstallationType"') do set "_OS_INSTALLTYPE=%%t"
-    if /I "!_OS_INSTALLTYPE!"=="Client" (set "DEX_PRODUCT_TYPE=1") else (set "DEX_PRODUCT_TYPE=3")
+    rem CIM/PowerShell is the primary source: it returns clean numeric values and
+    rem is not affected by console code page or locale, unlike parsing "reg query"
+    rem text output while the console runs UTF-8 (chcp 65001), which can garble
+    rem "for /f" parsing on some builds/locales and made new Windows versions
+    rem look unsupported even though they were not.
+    chcp 437 >nul
+    for /f "delims=" %%b in ('powershell -NoProfile -Command "(Get-CimInstance -ClassName Win32_OperatingSystem -ErrorAction SilentlyContinue).BuildNumber" 2^>nul') do set "_OS_BUILD=%%b"
+    for /f "delims=" %%t in ('powershell -NoProfile -Command "(Get-CimInstance -ClassName Win32_OperatingSystem -ErrorAction SilentlyContinue).ProductType" 2^>nul') do set "_OS_PRODUCTTYPE_NUM=%%t"
+    chcp 65001 >nul
+    rem Win32_OperatingSystem.ProductType: 1=Workstation/client, 2=Domain Controller, 3=Server
+    if "!_OS_PRODUCTTYPE_NUM!"=="1" set "DEX_PRODUCT_TYPE=1"
+    if not "!_OS_PRODUCTTYPE_NUM!"=="1" if defined _OS_PRODUCTTYPE_NUM set "DEX_PRODUCT_TYPE=3"
+    rem CIM was unavailable for build and/or product type: fall back to the
+    rem registry, still guarded against the UTF-8 console code page.
+    chcp 437 >nul
+    if "!_OS_BUILD!"=="0" for /f "tokens=3" %%b in ('reg query "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion" /v CurrentBuildNumber 2^>nul ^| findstr /I "CurrentBuildNumber"') do set "_OS_BUILD=%%b"
+    if not "!DEX_PRODUCT_TYPE!"=="1" if not "!DEX_PRODUCT_TYPE!"=="3" (
+        set "_OS_INSTALLTYPE="
+        for /f "tokens=3" %%t in ('reg query "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion" /v InstallationType 2^>nul ^| findstr /I "InstallationType"') do set "_OS_INSTALLTYPE=%%t"
+        if /I "!_OS_INSTALLTYPE!"=="Client" (set "DEX_PRODUCT_TYPE=1") else (set "DEX_PRODUCT_TYPE=3")
+    )
+    chcp 65001 >nul
     set "DEX_OS_64BIT=0"
     if defined PROCESSOR_ARCHITEW6432 set "DEX_OS_64BIT=1"
     if /I "%PROCESSOR_ARCHITECTURE%"=="AMD64" set "DEX_OS_64BIT=1"
     if /I "%PROCESSOR_ARCHITECTURE%"=="ARM64" set "DEX_OS_64BIT=1"
 )
-set /a _OS_BUILD_NUM=_OS_BUILD+0
+set /a _OS_BUILD_NUM=_OS_BUILD+0 2>nul
+if not defined _OS_BUILD_NUM set "_OS_BUILD_NUM=0"
 set "DEX_OS_FAMILY=Unsupported"
 set "DEX_OS_NAME=Unsupported Windows"
 set "DEX_OS_SUPPORT=Blocked"
