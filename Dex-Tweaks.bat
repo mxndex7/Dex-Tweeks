@@ -1,6 +1,5 @@
 @echo off
-set version=2.1.0
-title Dex Tweaks - %version%
+title Dex Tweaks
 if /I "%~1"=="--self-test" goto DexSelfTestEntry
 if /I "%~1"=="--smoke-test" goto DexSmokeTestEntry
 if /I "%~1"=="--auto-maintenance" goto DexAutoMaintenanceEntry
@@ -49,109 +48,6 @@ if /I "!DEX_OS_FAMILY!"=="Windows 10" (
     timeout /t 3 >nul /nobreak
 )
 
-echo Checking for updates...
-set "update_available=false"
-set "latest_version="
-set "download_url="
-set "update_api_url=https://api.github.com/repos/mxndex7/Dex-Tweaks/releases/latest"
-set "DEX_UPDATE_CACHE=%DEX_STATE_DIR%\update_check.cache"
-set "DEX_TODAY=%DEX_SESSION:~0,8%"
-set "_update_cache_hit="
-
-if exist "%DEX_UPDATE_CACHE%" (
-    set "_cache_date="
-    for /f "tokens=1* delims==" %%a in ('type "%DEX_UPDATE_CACHE%" 2^>nul') do (
-        if "%%a"=="CHECKED" set "_cache_date=%%b"
-        if "%%a"=="VERSION" set "latest_version=%%b"
-        if "%%a"=="URL" set "download_url=%%b"
-    )
-    if "!_cache_date!"=="!DEX_TODAY!" (
-        set "_update_cache_hit=1"
-    ) else (
-        set "latest_version="
-        set "download_url="
-    )
-)
-
-if defined _update_cache_hit (
-    echo Using cached update check from today.
-    goto update_check_done
-)
-
-set "latest_version="
-set "download_url="
-chcp 437 >nul
-powershell -NoProfile -ExecutionPolicy Bypass -Command "try { $response = Invoke-RestMethod -Uri '%update_api_url%' -Headers @{'User-Agent'='Dex-Tweaks-Updater'} -TimeoutSec 5; $version = $response.tag_name -replace '^v', ''; $name = $response.name; if ($name -match 'Dex V(.+)') { $nameVersion = $matches[1] } else { $nameVersion = $version }; Write-Host \"VERSION=$nameVersion\"; Write-Host \"URL=$($response.html_url)\" } catch { Write-Host 'ERROR=Unable to check for updates' }" > "%temp%\update_check.txt" 2>nul
-chcp 65001 >nul
-
-if exist "%temp%\update_check.txt" (
-    for /f "tokens=1* delims==" %%a in ('type "%temp%\update_check.txt" 2^>nul') do (
-        if "%%a"=="VERSION" set "latest_version=%%b"
-        if "%%a"=="URL" set "download_url=%%b"
-        if "%%a"=="ERROR" (
-            echo Update check failed - continuing with current version
-            goto skip_update_check
-        )
-    )
-    del "%temp%\update_check.txt" 2>nul
-)
-
-if defined latest_version (
-    > "%DEX_UPDATE_CACHE%" echo CHECKED=%DEX_TODAY%
-    >>"%DEX_UPDATE_CACHE%" echo VERSION=%latest_version%
-    >>"%DEX_UPDATE_CACHE%" echo URL=%download_url%
-)
-
-:update_check_done
-if defined latest_version (
-    powershell -NoProfile -Command "if($env:latest_version -notmatch '^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$'){exit 1};if($env:download_url -notlike 'https://github.com/mxndex7/Dex-Tweaks/releases/*'){exit 1};exit 0" >nul 2>&1
-    if errorlevel 1 (
-        echo Update metadata failed validation - continuing with current version
-        call :LogEvent "BLOCKED" "Invalid update metadata received"
-        set "latest_version="
-        set "download_url="
-        goto skip_update_check
-    )
-    set "update_available=false"
-    for /f "delims=" %%V in ('powershell -NoProfile -Command "try { if ([version]$env:latest_version -gt [version]$env:version) { 'true' } else { 'false' } } catch { 'false' }" 2^>nul') do set "update_available=%%V"
-    if "!update_available!"=="true" (
-        call :SetupConsole
-        echo.
-        echo  +===========================================================================+
-        echo  ^|                              UPDATE AVAILABLE                             ^|
-        echo  +===========================================================================+
-        echo  ^| Current Version: !version!                                                      ^|
-        echo  ^| Latest Version:  !latest_version!                                                      ^|
-        echo  ^|                                                                           ^|
-        echo  ^| A newer version of Dex Tweaks is available!                             ^|
-        echo  +===========================================================================+
-        echo.
-        choice /C YNV /M "Download update now? (Y)es / (N)o / (V)iew release page"
-        if errorlevel 3 (
-            echo Opening release page...
-            start "" "!download_url!"
-            choice /C YN /M "Continue to download? (Y/N)"
-            if errorlevel 2 goto skip_update_check
-        )
-        if errorlevel 2 goto skip_update_check
-        echo.
-        echo Opening the verified GitHub release page...
-        echo Download the release asset published by mxndex7.
-        echo Review the release notes before replacing this file.
-        echo.
-        start "" "!download_url!"
-        echo.
-        echo Press any key to continue with current version for now...
-        pause >nul
-    ) else (
-        echo You are up to date ^(v!version!^)
-        timeout /t 2 >nul
-    )
-) else (
-    echo Could not determine latest version - continuing with current version
-)
-
-:skip_update_check
 cls
 
 :variables
@@ -510,7 +406,7 @@ echo        %c%██████╔╝███████╗██╔╝╚�
 echo        %c%╚═════╝ ╚══════╝╚═╝  ╚═╝ %u%%white%   ╚═╝      ╚═╝   ╚═╝  ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝
 echo.
 echo.
-echo                                 %c%Version:%u% %white%%version%%u%     %c%User:%u%%white% %username%%u%     %c%Date:%u%%white% %date%%u%
+echo                                 %c%User:%u%%white% %username%%u%     %c%Date:%u%%white% %date%%u%
 echo.
 echo.
 echo                   %c%GPU:%u%%white% %GPUName% %u%    %c%CPU:%u%%white% %CPUName%%u%
@@ -616,7 +512,6 @@ echo.
 echo.
 echo      %green%▌ Creator:%u% %c%Mendes%u%
 echo      %green%▌ Purpose:%u% %c%Improve System Performance%u%
-echo      %green%▌ Version:%u% %c%%version% %u%
 echo.
 echo.
 echo      %c%Dex Tweaks is the result of months of research, testing, and development%u%
@@ -12458,7 +12353,6 @@ echo %c%                       ╚═══════════════�
 echo %c%                             ║  %u%[%c%9%u%] Theme Presets    [%c%0%u%] Go Back    %c%║%u%
 echo %c%                             ║            %u% [%c%Quit%u%] Leave%c%             ║
 echo %c%                             ╚══════════════════════════════════════╝
-echo %u%                                      Current Version: %c%%version%
 echo %u%                                %u%User %c%%username% %u%- Date %c%%date% %u%
 echo.
 echo.
@@ -14783,7 +14677,7 @@ set "DEX_DESKTOP=%USERPROFILE%\Desktop"
 for /f "delims=" %%D in ('powershell -NoProfile -Command "[Environment]::GetFolderPath('Desktop')" 2^>nul') do if not "%%D"=="" set "DEX_DESKTOP=%%D"
 set "DEX_LAST_PROFILE=Not applied"
 if exist "%DEX_PROFILE_FILE%" set /p DEX_LAST_PROFILE=<"%DEX_PROFILE_FILE%"
-> "%DEX_LOG%" echo Dex Tweaks %version% - Session %DEX_SESSION%
+> "%DEX_LOG%" echo Dex Tweaks - Session %DEX_SESSION%
 >>"%DEX_LOG%" echo Started: %date% %time%
 call :BuildSearchCatalog
 call :LogEvent "INFO" "Runtime initialized"
@@ -14927,7 +14821,7 @@ exit /b
 :DisplayCompactDashboard
 echo.
 echo %c%===============================================================================%u%
-echo %c% DEX TWEAKS CONTROL PANEL%u%  v%version%  ^| !DEX_OS_NAME! build !_OS_BUILD_NUM!
+echo %c% DEX TWEAKS CONTROL PANEL%u%  ^| !DEX_OS_NAME! build !_OS_BUILD_NUM!
 echo %c%-------------------------------------------------------------------------------%u%
 echo  Security: %DEX_DEFENDER%  ^| Network: %DEX_NETWORK%  ^| Reboot: %DEX_REBOOT_STATUS%
 echo  Power: %DEX_POWER%
@@ -14989,7 +14883,6 @@ call :RefreshDashboardCache
 set "DEX_DASH_REPORT=%DEX_REPORTS%\Dashboard_%DEX_SESSION%.txt"
 > "%DEX_DASH_REPORT%" echo Dex Tweaks Dashboard Report
 >>"%DEX_DASH_REPORT%" echo Generated=%date% %time%
->>"%DEX_DASH_REPORT%" echo Version=%version%
 >>"%DEX_DASH_REPORT%" echo OperatingSystem=!DEX_OS_NAME!
 >>"%DEX_DASH_REPORT%" echo CompatibilityMode=!DEX_OS_SUPPORT!
 >>"%DEX_DASH_REPORT%" echo WindowsBuild=!_OS_BUILD_NUM!
@@ -15110,8 +15003,24 @@ choice /C AC0 /N /M "[A] Apply  [C] Cancel  [0] Main menu: "
 if errorlevel 3 goto menu
 if errorlevel 2 goto ProfilesCenter
 if errorlevel 1 (
+    set "DEX_BENCH_THIS_APPLY="
+    if /I not "%DEX_SELECTED_PROFILE%"=="Custom" (
+        choice /C YN /N /M "Capture a before/after benchmark for this profile? [Y/N]: "
+        if errorlevel 2 (
+            set "DEX_BENCH_THIS_APPLY="
+        ) else (
+            set "DEX_BENCH_THIS_APPLY=1"
+            call :CaptureBenchmark "%DEX_BASELINE%" "BASELINE"
+        )
+    )
     call :CreateManagedSnapshot "Before_%DEX_SELECTED_PROFILE%"
     call :ApplyQueue
+    if defined DEX_BENCH_THIS_APPLY (
+        call :CaptureBenchmark "%DEX_AFTER%" "CURRENT"
+        echo.
+        echo %c%Benchmark comparison for this profile:%u%
+        call :CompareBenchmarks
+    )
     goto ProfileComplete
 )
 goto ProfilesCenter
@@ -15997,7 +15906,7 @@ goto BenchmarkCenter
 :CaptureBenchmark
 echo.
 echo Capturing %~2 measurements...
-powershell -NoProfile -Command "$os=Get-CimInstance Win32_OperatingSystem; $cpu=Get-CimInstance Win32_Processor | Select-Object -First 1; $p=Get-Process; $svc=Get-Service; $sys=Get-CimInstance Win32_PerfFormattedData_PerfOS_System -ErrorAction SilentlyContinue; $boot=[math]::Round(((Get-Date)-$os.LastBootUpTime).TotalMinutes,2); @('Label=%~2','Captured='+(Get-Date -Format s),'ProcessCount='+$p.Count,'RunningServices='+@($svc|Where-Object Status -eq Running).Count,'FreeMemoryMB='+[math]::Round($os.FreePhysicalMemory/1024,0),'TotalMemoryMB='+[math]::Round($os.TotalVisibleMemorySize/1024,0),'CpuLoadPercent='+$cpu.LoadPercentage,'UptimeMinutes='+$boot,'SystemDriveFreeGB='+[math]::Round((Get-PSDrive $env:SystemDrive.Substring(0,1)).Free/1GB,2)) | Set-Content -Encoding ASCII -LiteralPath '%~1'"
+powershell -NoProfile -Command "$os=Get-CimInstance Win32_OperatingSystem; $cpu=Get-CimInstance Win32_Processor | Select-Object -First 1; $p=Get-Process; $svc=Get-Service; $sys=Get-CimInstance Win32_PerfFormattedData_PerfOS_System -ErrorAction SilentlyContinue; $boot=[math]::Round(((Get-Date)-$os.LastBootUpTime).TotalMinutes,2); @('Label=%~2',('Captured='+(Get-Date -Format s)),('ProcessCount='+$p.Count),('RunningServices='+@($svc|Where-Object Status -eq Running).Count),('FreeMemoryMB='+[math]::Round($os.FreePhysicalMemory/1024,0)),('TotalMemoryMB='+[math]::Round($os.TotalVisibleMemorySize/1024,0)),('CpuLoadPercent='+$cpu.LoadPercentage),('UptimeMinutes='+$boot),('SystemDriveFreeGB='+[math]::Round((Get-PSDrive $env:SystemDrive.Substring(0,1)).Free/1GB,2))) | Set-Content -Encoding ASCII -LiteralPath '%~1'"
 if errorlevel 1 (
     echo Measurement failed.
     call :LogEvent "FAIL" "Benchmark capture %~2 failed"
