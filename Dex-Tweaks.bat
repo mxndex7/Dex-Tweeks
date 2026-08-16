@@ -54,9 +54,34 @@ set "update_available=false"
 set "latest_version="
 set "download_url="
 set "update_api_url=https://api.github.com/repos/mxndex7/Dex-Tweaks/releases/latest"
+set "DEX_UPDATE_CACHE=%DEX_STATE_DIR%\update_check.cache"
+set "DEX_TODAY=%DEX_SESSION:~0,8%"
+set "_update_cache_hit="
 
+if exist "%DEX_UPDATE_CACHE%" (
+    set "_cache_date="
+    for /f "tokens=1* delims==" %%a in ('type "%DEX_UPDATE_CACHE%" 2^>nul') do (
+        if "%%a"=="CHECKED" set "_cache_date=%%b"
+        if "%%a"=="VERSION" set "latest_version=%%b"
+        if "%%a"=="URL" set "download_url=%%b"
+    )
+    if "!_cache_date!"=="!DEX_TODAY!" (
+        set "_update_cache_hit=1"
+    ) else (
+        set "latest_version="
+        set "download_url="
+    )
+)
+
+if defined _update_cache_hit (
+    echo Using cached update check from today.
+    goto update_check_done
+)
+
+set "latest_version="
+set "download_url="
 chcp 437 >nul
-powershell -NoProfile -ExecutionPolicy Bypass -Command "try { $response = Invoke-RestMethod -Uri '%update_api_url%' -Headers @{'User-Agent'='Dex-Tweaks-Updater'}; $version = $response.tag_name -replace '^v', ''; $name = $response.name; if ($name -match 'Dex V(.+)') { $nameVersion = $matches[1] } else { $nameVersion = $version }; Write-Host \"VERSION=$nameVersion\"; Write-Host \"URL=$($response.html_url)\" } catch { Write-Host 'ERROR=Unable to check for updates' }" > "%temp%\update_check.txt" 2>nul
+powershell -NoProfile -ExecutionPolicy Bypass -Command "try { $response = Invoke-RestMethod -Uri '%update_api_url%' -Headers @{'User-Agent'='Dex-Tweaks-Updater'} -TimeoutSec 5; $version = $response.tag_name -replace '^v', ''; $name = $response.name; if ($name -match 'Dex V(.+)') { $nameVersion = $matches[1] } else { $nameVersion = $version }; Write-Host \"VERSION=$nameVersion\"; Write-Host \"URL=$($response.html_url)\" } catch { Write-Host 'ERROR=Unable to check for updates' }" > "%temp%\update_check.txt" 2>nul
 chcp 65001 >nul
 
 if exist "%temp%\update_check.txt" (
@@ -71,6 +96,13 @@ if exist "%temp%\update_check.txt" (
     del "%temp%\update_check.txt" 2>nul
 )
 
+if defined latest_version (
+    > "%DEX_UPDATE_CACHE%" echo CHECKED=%DEX_TODAY%
+    >>"%DEX_UPDATE_CACHE%" echo VERSION=%latest_version%
+    >>"%DEX_UPDATE_CACHE%" echo URL=%download_url%
+)
+
+:update_check_done
 if defined latest_version (
     powershell -NoProfile -Command "if($env:latest_version -notmatch '^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$'){exit 1};if($env:download_url -notlike 'https://github.com/mxndex7/Dex-Tweaks/releases/*'){exit 1};exit 0" >nul 2>&1
     if errorlevel 1 (
