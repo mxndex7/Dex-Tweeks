@@ -8553,33 +8553,34 @@ set "comp_user=Unknown"
 set "win_version=Unknown"
 set "win_build=Unknown"
 
-echo %c%• Reading computer model...%u%
-for /f "delims=" %%i in ('powershell -NoProfile -Command "(Get-CimInstance -ClassName Win32_ComputerSystem -ErrorAction SilentlyContinue).Model" 2^>nul') do if not "%%i"=="" set "comp_model=%%i"
-if "!comp_model!"=="Unknown" for /f "tokens=2 delims==" %%i in ('wmic computersystem get model /value 2^>nul ^| find "=" 2^>nul') do (
-    set "comp_model=%%i"
-    if "!comp_model!"=="" set "comp_model=Unknown"
+echo %c%• Reading computer identity...%u%
+set "_cs_model="
+set "_cs_manufacturer="
+set "_cs_name="
+set "_cs_user="
+for /f "tokens=1-4 delims=|" %%i in ('powershell -NoProfile -Command "$c=Get-CimInstance -ClassName Win32_ComputerSystem -ErrorAction SilentlyContinue; $v=@($c.Model,$c.Manufacturer,$c.Name,$c.UserName) | ForEach-Object{if($_){$_}else{'NA'}}; $v -join '|'" 2^>nul') do (
+    set "_cs_model=%%i"
+    set "_cs_manufacturer=%%j"
+    set "_cs_name=%%k"
+    set "_cs_user=%%l"
 )
+if /I "!_cs_model!"=="NA" set "_cs_model="
+if /I "!_cs_manufacturer!"=="NA" set "_cs_manufacturer="
+if /I "!_cs_name!"=="NA" set "_cs_name="
+if /I "!_cs_user!"=="NA" set "_cs_user="
 
-echo %c%• Reading manufacturer...%u%
-for /f "delims=" %%i in ('powershell -NoProfile -Command "(Get-CimInstance -ClassName Win32_ComputerSystem -ErrorAction SilentlyContinue).Manufacturer" 2^>nul') do if not "%%i"=="" set "comp_manufacturer=%%i"
-if "!comp_manufacturer!"=="Unknown" for /f "tokens=2 delims==" %%i in ('wmic computersystem get manufacturer /value 2^>nul ^| find "=" 2^>nul') do (
-    set "comp_manufacturer=%%i"
-    if "!comp_manufacturer!"=="" set "comp_manufacturer=Unknown"
-)
+if defined _cs_model set "comp_model=!_cs_model!"
+if not defined _cs_model for /f "tokens=2 delims==" %%i in ('wmic computersystem get model /value 2^>nul ^| find "=" 2^>nul') do if not "%%i"=="" set "comp_model=%%i"
 
-echo %c%• Reading computer name...%u%
-for /f "delims=" %%i in ('powershell -NoProfile -Command "(Get-CimInstance -ClassName Win32_ComputerSystem -ErrorAction SilentlyContinue).Name" 2^>nul') do if not "%%i"=="" set "comp_name=%%i"
-if "!comp_name!"=="Unknown" for /f "tokens=2 delims==" %%i in ('wmic computersystem get name /value 2^>nul ^| find "=" 2^>nul') do (
-    set "comp_name=%%i"
-    if "!comp_name!"=="" set "comp_name=Unknown"
-)
+if defined _cs_manufacturer set "comp_manufacturer=!_cs_manufacturer!"
+if not defined _cs_manufacturer for /f "tokens=2 delims==" %%i in ('wmic computersystem get manufacturer /value 2^>nul ^| find "=" 2^>nul') do if not "%%i"=="" set "comp_manufacturer=%%i"
 
-echo %c%• Reading current user...%u%
-for /f "delims=" %%i in ('powershell -NoProfile -Command "(Get-CimInstance -ClassName Win32_ComputerSystem -ErrorAction SilentlyContinue).UserName" 2^>nul') do if not "%%i"=="" set "comp_user=%%i"
-if "!comp_user!"=="Unknown" for /f "tokens=2 delims==" %%i in ('wmic computersystem get username /value 2^>nul ^| find "=" 2^>nul') do (
-    set "comp_user=%%i"
-    if "!comp_user!"=="" set "comp_user=%username%"
-)
+if defined _cs_name set "comp_name=!_cs_name!"
+if not defined _cs_name for /f "tokens=2 delims==" %%i in ('wmic computersystem get name /value 2^>nul ^| find "=" 2^>nul') do if not "%%i"=="" set "comp_name=%%i"
+
+if defined _cs_user set "comp_user=!_cs_user!"
+if not defined _cs_user for /f "tokens=2 delims==" %%i in ('wmic computersystem get username /value 2^>nul ^| find "=" 2^>nul') do if not "%%i"=="" set "comp_user=%%i"
+if not defined _cs_user if "!comp_user!"=="Unknown" set "comp_user=%username%"
 
 echo %c%• Reading Windows version...%u%
 set "win_version=!DEX_OS_NAME!"
@@ -8611,43 +8612,47 @@ set "bios_version=Unknown"
 set "bios_date=Unknown"
 
 echo %c%• Reading motherboard info...%u%
-for /f "delims=" %%i in ('powershell -NoProfile -Command "(Get-CimInstance -ClassName Win32_BaseBoard -ErrorAction SilentlyContinue).Manufacturer" 2^>nul') do if not "%%i"=="" set "mb_manufacturer=%%i"
-if "!mb_manufacturer!"=="Unknown" for /f "tokens=2 delims==" %%i in ('wmic baseboard get manufacturer /value 2^>nul ^| find "=" 2^>nul') do (
-    set "mb_manufacturer=%%i"
-    if "!mb_manufacturer!"=="" set "mb_manufacturer=Unknown"
-)
-
-for /f "delims=" %%i in ('powershell -NoProfile -Command "(Get-CimInstance -ClassName Win32_BaseBoard -ErrorAction SilentlyContinue).Product" 2^>nul') do if not "%%i"=="" set "mb_product=%%i"
-if "!mb_product!"=="Unknown" for /f "tokens=2 delims==" %%i in ('wmic baseboard get product /value 2^>nul ^| find "=" 2^>nul') do (
-    set "mb_product=%%i"
-    if "!mb_product!"=="" set "mb_product=Unknown"
-)
-
-for /f "delims=" %%i in ('powershell -NoProfile -Command "(Get-CimInstance -ClassName Win32_BaseBoard -ErrorAction SilentlyContinue).Version" 2^>nul') do if not "%%i"=="" set "mb_version=%%i"
-if "!mb_version!"=="Unknown" for /f "tokens=2 delims==" %%i in ('wmic baseboard get version /value 2^>nul ^| find "=" 2^>nul') do (
-    set "mb_version=%%i"
-    if "!mb_version!"=="" set "mb_version=Unknown"
-)
-
 echo %c%• Reading BIOS info...%u%
-for /f "delims=" %%i in ('powershell -NoProfile -Command "(Get-CimInstance -ClassName Win32_BIOS -ErrorAction SilentlyContinue).Manufacturer" 2^>nul') do if not "%%i"=="" set "bios_manufacturer=%%i"
-if "!bios_manufacturer!"=="Unknown" for /f "tokens=2 delims==" %%i in ('wmic bios get manufacturer /value 2^>nul ^| find "=" 2^>nul') do (
-    set "bios_manufacturer=%%i"
-    if "!bios_manufacturer!"=="" set "bios_manufacturer=Unknown"
+set "_mb_manufacturer="
+set "_mb_product="
+set "_mb_version="
+set "_bios_manufacturer="
+set "_bios_version="
+set "_bios_date="
+for /f "tokens=1-6 delims=|" %%i in ('powershell -NoProfile -Command "$m=Get-CimInstance -ClassName Win32_BaseBoard -ErrorAction SilentlyContinue; $b=Get-CimInstance -ClassName Win32_BIOS -ErrorAction SilentlyContinue; $bd=$null; if($b -and $b.ReleaseDate){try{$bd=$b.ReleaseDate.ToString('yyyy-MM-dd')}catch{}}; $v=@($m.Manufacturer,$m.Product,$m.Version,$b.Manufacturer,$b.SMBIOSBIOSVersion,$bd) | ForEach-Object{if($_){$_}else{'NA'}}; $v -join '|'" 2^>nul') do (
+    set "_mb_manufacturer=%%i"
+    set "_mb_product=%%j"
+    set "_mb_version=%%k"
+    set "_bios_manufacturer=%%l"
+    set "_bios_version=%%m"
+    set "_bios_date=%%n"
 )
+if /I "!_mb_manufacturer!"=="NA" set "_mb_manufacturer="
+if /I "!_mb_product!"=="NA" set "_mb_product="
+if /I "!_mb_version!"=="NA" set "_mb_version="
+if /I "!_bios_manufacturer!"=="NA" set "_bios_manufacturer="
+if /I "!_bios_version!"=="NA" set "_bios_version="
+if /I "!_bios_date!"=="NA" set "_bios_date="
 
-for /f "delims=" %%i in ('powershell -NoProfile -Command "(Get-CimInstance -ClassName Win32_BIOS -ErrorAction SilentlyContinue).SMBIOSBIOSVersion" 2^>nul') do if not "%%i"=="" set "bios_version=%%i"
-if "!bios_version!"=="Unknown" for /f "tokens=2 delims==" %%i in ('wmic bios get smbiosbiosversion /value 2^>nul ^| find "=" 2^>nul') do (
-    set "bios_version=%%i"
-    if "!bios_version!"=="" set "bios_version=Unknown"
-)
+if defined _mb_manufacturer set "mb_manufacturer=!_mb_manufacturer!"
+if not defined _mb_manufacturer for /f "tokens=2 delims==" %%i in ('wmic baseboard get manufacturer /value 2^>nul ^| find "=" 2^>nul') do if not "%%i"=="" set "mb_manufacturer=%%i"
 
-for /f "delims=" %%i in ('powershell -NoProfile -Command "try { (Get-CimInstance -ClassName Win32_BIOS -ErrorAction Stop).ReleaseDate.ToString('yyyy-MM-dd') } catch { '' }" 2^>nul') do if not "%%i"=="" set "bios_date=%%i"
-if "!bios_date!"=="Unknown" for /f "tokens=2 delims==" %%i in ('wmic bios get releasedate /value 2^>nul ^| find "=" 2^>nul') do (
+if defined _mb_product set "mb_product=!_mb_product!"
+if not defined _mb_product for /f "tokens=2 delims==" %%i in ('wmic baseboard get product /value 2^>nul ^| find "=" 2^>nul') do if not "%%i"=="" set "mb_product=%%i"
+
+if defined _mb_version set "mb_version=!_mb_version!"
+if not defined _mb_version for /f "tokens=2 delims==" %%i in ('wmic baseboard get version /value 2^>nul ^| find "=" 2^>nul') do if not "%%i"=="" set "mb_version=%%i"
+
+if defined _bios_manufacturer set "bios_manufacturer=!_bios_manufacturer!"
+if not defined _bios_manufacturer for /f "tokens=2 delims==" %%i in ('wmic bios get manufacturer /value 2^>nul ^| find "=" 2^>nul') do if not "%%i"=="" set "bios_manufacturer=%%i"
+
+if defined _bios_version set "bios_version=!_bios_version!"
+if not defined _bios_version for /f "tokens=2 delims==" %%i in ('wmic bios get smbiosbiosversion /value 2^>nul ^| find "=" 2^>nul') do if not "%%i"=="" set "bios_version=%%i"
+
+if defined _bios_date set "bios_date=!_bios_date!"
+if not defined _bios_date for /f "tokens=2 delims==" %%i in ('wmic bios get releasedate /value 2^>nul ^| find "=" 2^>nul') do (
     set "rawdate=%%i"
-    if not "!rawdate!"=="" if not "!rawdate!"=="Unknown" (
-        set "bios_date=!rawdate:~0,4!-!rawdate:~4,2!-!rawdate:~6,2!"
-    )
+    if not "!rawdate!"=="" if not "!rawdate!"=="Unknown" set "bios_date=!rawdate:~0,4!-!rawdate:~4,2!-!rawdate:~6,2!"
 )
 
 echo %c%Motherboard: !mb_manufacturer!%u%
@@ -11095,9 +11100,7 @@ echo %c%✓ Active protection retained; no broad game-folder exclusions added%u%
 echo.
 echo %c%[2/4] Configuring Performance Settings...%u%
 chcp 437 >nul
-powershell -Command "Set-MpPreference -EnableNetworkProtection Enabled" >nul 2>&1
-powershell -Command "Set-MpPreference -ScanAvgCPULoadFactor 10" >nul 2>&1
-powershell -Command "Set-MpPreference -CheckForSignaturesBeforeRunningScan $true" >nul 2>&1
+powershell -Command "Set-MpPreference -EnableNetworkProtection Enabled -ScanAvgCPULoadFactor 10 -CheckForSignaturesBeforeRunningScan $true" >nul 2>&1
 chcp 65001 >nul
 echo %c%✓ Performance settings optimized%u%
 
@@ -11113,8 +11116,7 @@ echo %c%✓ Gaming interruptions disabled%u%
 echo.
 echo %c%[4/4] Configuring Scan Schedules...%u%
 chcp 437 >nul
-powershell -Command "Set-MpPreference -RemediatePurgeItemsAfterDelay 30" >nul 2>&1
-powershell -Command "Set-MpPreference -ScanPurgeItemsAfterDelay 30" >nul 2>&1
+powershell -Command "Set-MpPreference -RemediatePurgeItemsAfterDelay 30 -ScanPurgeItemsAfterDelay 30" >nul 2>&1
 chcp 65001 >nul
 echo %c%✓ Scan schedules optimized%u%
 goto DefenderComplete
@@ -11152,8 +11154,7 @@ echo %c%✓ Real-time protection disabled%u%
 echo.
 echo %c%[2/5] Disabling Cloud Protection...%u%
 chcp 437 >nul
-powershell -Command "Set-MpPreference -MAPSReporting Disabled" >nul 2>&1
-powershell -Command "Set-MpPreference -SubmitSamplesConsent NeverSend" >nul 2>&1
+powershell -Command "Set-MpPreference -MAPSReporting Disabled -SubmitSamplesConsent NeverSend" >nul 2>&1
 chcp 65001 >nul
 reg add "HKLM\SOFTWARE\Microsoft\Windows Defender\Spynet" /v "SubmitSamplesConsent" /t REG_DWORD /d "2" /f >nul 2>&1
 echo %c%✓ Cloud protection disabled%u%
@@ -11161,30 +11162,21 @@ echo %c%✓ Cloud protection disabled%u%
 echo.
 echo %c%[3/5] Adding System Exclusions...%u%
 chcp 437 >nul
-powershell -Command "Add-MpPreference -ExclusionPath 'C:\Windows\Temp'" >nul 2>&1
-powershell -Command "Add-MpPreference -ExclusionPath 'C:\Windows\Prefetch'" >nul 2>&1
-powershell -Command "Add-MpPreference -ExclusionPath 'C:\Windows\SoftwareDistribution'" >nul 2>&1
-powershell -Command "Add-MpPreference -ExclusionPath '%TEMP%'" >nul 2>&1
-powershell -Command "Add-MpPreference -ExclusionProcess 'svchost.exe'" >nul 2>&1
+powershell -Command "Add-MpPreference -ExclusionPath 'C:\Windows\Temp','C:\Windows\Prefetch','C:\Windows\SoftwareDistribution','%TEMP%' -ExclusionProcess 'svchost.exe'" >nul 2>&1
 chcp 65001 >nul
 echo %c%✓ System exclusions added%u%
 
 echo.
 echo %c%[4/5] Disabling Background Scanning...%u%
 chcp 437 >nul
-powershell -Command "Set-MpPreference -DisableBehaviorMonitoring $true" >nul 2>&1
-powershell -Command "Set-MpPreference -DisableBlockAtFirstSeen $true" >nul 2>&1
-powershell -Command "Set-MpPreference -DisableIOAVProtection $true" >nul 2>&1
-powershell -Command "Set-MpPreference -DisableScriptScanning $true" >nul 2>&1
+powershell -Command "Set-MpPreference -DisableBehaviorMonitoring $true -DisableBlockAtFirstSeen $true -DisableIOAVProtection $true -DisableScriptScanning $true" >nul 2>&1
 chcp 65001 >nul
 echo %c%✓ Background scanning disabled%u%
 
 echo.
 echo %c%[5/5] Optimizing Scan Performance...%u%
 chcp 437 >nul
-powershell -Command "Set-MpPreference -ScanAvgCPULoadFactor 5" >nul 2>&1
-powershell -Command "Set-MpPreference -EnableLowCpuPriority $true" >nul 2>&1
-powershell -Command "Set-MpPreference -ScanOnlyIfIdleEnabled $true" >nul 2>&1
+powershell -Command "Set-MpPreference -ScanAvgCPULoadFactor 5 -EnableLowCpuPriority $true -ScanOnlyIfIdleEnabled $true" >nul 2>&1
 chcp 65001 >nul
 echo %c%✓ Scan performance optimized%u%
 goto DefenderComplete
@@ -11753,8 +11745,7 @@ echo %c%[4/11] Blocking Windows Defender Telemetry...%u%
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows Defender\Spynet" /v "SubmitSamplesConsent" /t REG_DWORD /d "2" /f >nul 2>&1
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows Defender\Spynet" /v "SpynetReporting" /t REG_DWORD /d "0" /f >nul 2>&1
 chcp 437 >nul
-powershell -Command "Set-MpPreference -MAPSReporting Disabled" >nul 2>&1
-powershell -Command "Set-MpPreference -SubmitSamplesConsent NeverSend" >nul 2>&1
+powershell -Command "Set-MpPreference -MAPSReporting Disabled -SubmitSamplesConsent NeverSend" >nul 2>&1
 chcp 65001 >nul
 echo %c%✓ Windows Defender telemetry blocked%u%
 
@@ -14815,9 +14806,13 @@ if not defined DEX_TEST_BUILD (
     rem "for /f" parsing on some builds/locales and made new Windows versions
     rem look unsupported even though they were not.
     chcp 437 >nul
-    for /f "delims=" %%b in ('powershell -NoProfile -Command "(Get-CimInstance -ClassName Win32_OperatingSystem -ErrorAction SilentlyContinue).BuildNumber" 2^>nul') do set "_OS_BUILD=%%b"
-    for /f "delims=" %%t in ('powershell -NoProfile -Command "(Get-CimInstance -ClassName Win32_OperatingSystem -ErrorAction SilentlyContinue).ProductType" 2^>nul') do set "_OS_PRODUCTTYPE_NUM=%%t"
+    for /f "tokens=1,2 delims=|" %%b in ('powershell -NoProfile -Command "$o=Get-CimInstance -ClassName Win32_OperatingSystem -ErrorAction SilentlyContinue; $v=@($o.BuildNumber,$o.ProductType) | ForEach-Object{if($_){$_}else{'NA'}}; $v -join '|'" 2^>nul') do (
+        set "_OS_BUILD=%%b"
+        set "_OS_PRODUCTTYPE_NUM=%%c"
+    )
     chcp 65001 >nul
+    if /I "!_OS_BUILD!"=="NA" set "_OS_BUILD=0"
+    if /I "!_OS_PRODUCTTYPE_NUM!"=="NA" set "_OS_PRODUCTTYPE_NUM="
     rem Win32_OperatingSystem.ProductType: 1=Workstation/client, 2=Domain Controller, 3=Server
     if "!_OS_PRODUCTTYPE_NUM!"=="1" set "DEX_PRODUCT_TYPE=1"
     if not "!_OS_PRODUCTTYPE_NUM!"=="1" if defined _OS_PRODUCTTYPE_NUM set "DEX_PRODUCT_TYPE=3"
