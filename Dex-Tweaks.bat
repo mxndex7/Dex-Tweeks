@@ -12339,20 +12339,20 @@ echo        %c%██║  ██║██╔══╝   ██╔██╗  %u%%
 echo        %c%██████╔╝███████╗██╔╝╚██╗ %u%%white%   ██║     ╚██╔╝ ╚██╔╝ ███████╗██║  ██║██║ ╚██╗██████╔╝
 echo        %c%╚═════╝ ╚══════╝╚═╝  ╚═╝ %u%%white%   ╚═╝      ╚═╝   ╚═╝  ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝
 echo.
-echo %c%                       ╔══════════════════════════════════════════════════╗ %u%
-echo                        %c%║%u%           [%c%1%u%] Dex Toolbox                      %c%║%u%
+echo %c%                       ╔══════════════════════════════════════════════════╗%u%
+echo                        %c%║%u%           [%c%1%u%] Dex Toolbox                        %c%║%u%
 echo                        %c%║%u%           [%c%2%u%] Game Boosters                      %c%║%u%
 echo                        %c%║%u%           [%c%3%u%] Scheduled Tasks                    %c%║%u%
-echo                        %c%║%u%           [%c%4%u%] Interrupt %u%^&%c% Scheduling Lab           %c%║%u%
+echo                        %c%║%u%           [%c%4%u%] Interrupt %u%^&%c% Scheduling Lab         %c%║%u%
 echo                        %c%║%u%           [%c%5%u%] Program Debloat                    %c%║%u%
 echo                        %c%║%u%           [%c%6%u%] DirectX Optimization               %c%║%u%
 echo                        %c%║%u%           [%c%7%u%] OBS Optimizer                      %c%║%u%
 echo                        %c%║%u%           [%c%8%u%] Capture Priority Tool              %c%║%u%
 echo                        %c%║%u%           [%c%P%u%] Performance Toolkit                %c%║%u%
 echo %c%                       ╚══════════════════════════════════════════════════╝
-echo %c%                             ║  %u%[%c%9%u%] Theme Presets    [%c%0%u%] Go Back    %c%║%u%
-echo %c%                             ║            %u% [%c%Quit%u%] Leave%c%             ║
-echo %c%                             ╚══════════════════════════════════════╝
+echo                        %c%║%u%        [%c%9%u%] Theme Presets    [%c%0%u%] Go Back          %c%║%u%
+echo                        %c%║%u%                  %u% [%c%Quit%u%] Leave                   %c%║%u%
+echo %c%                       ╚══════════════════════════════════════════════════╝%u%
 echo %u%                                %u%User %c%%username% %u%- Date %c%%date% %u%
 echo.
 echo.
@@ -13561,14 +13561,14 @@ cls
 
 for %%F in ("%file%") do (
     reg query "HKCU\Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers" /v "%%~F" >nul 2>&1 && (
-        reg delete "HKCU\Software\Microsoft\DirectX\UserGpuPreferences" /v "%%~F" /f
-        reg delete "HKCU\Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers" /v "%%~F" /f
-        reg delete "HKLM\Software\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\%%~nxF\PerfOptions" /v "CpuPriorityClass" /f
+        reg delete "HKCU\Software\Microsoft\DirectX\UserGpuPreferences" /v "%%~F" /f >nul 2>&1
+        reg delete "HKCU\Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers" /v "%%~F" /f >nul 2>&1
+        reg delete "HKLM\Software\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\%%~nxF\PerfOptions" /v "CpuPriorityClass" /f >nul 2>&1
         echo Undid Game Optimizations for %%~nxF
     ) || (
-        reg add "HKCU\Software\Microsoft\DirectX\UserGpuPreferences" /v "%%~F" /t REG_SZ /d "GpuPreference=2;" /f
-        reg add "HKCU\Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers" /v "%%~F" /t REG_SZ /d "~ DISABLEDXMAXIMIZEDWINDOWEDMODE" /f
-        reg add "HKLM\Software\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\%%~nxF\PerfOptions" /v "CpuPriorityClass" /t REG_DWORD /d "3" /f
+        reg add "HKCU\Software\Microsoft\DirectX\UserGpuPreferences" /v "%%~F" /t REG_SZ /d "GpuPreference=2;" /f >nul 2>&1
+        reg add "HKCU\Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers" /v "%%~F" /t REG_SZ /d "~ DISABLEDXMAXIMIZEDWINDOWEDMODE" /f >nul 2>&1
+        reg add "HKLM\Software\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\%%~nxF\PerfOptions" /v "CpuPriorityClass" /t REG_DWORD /d "3" /f >nul 2>&1
         echo Applied: GPU High Performance, Fullscreen Optimizations Disabled, CPU Priority Set for %%~nxF
     )
 )
