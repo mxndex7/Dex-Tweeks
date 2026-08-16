@@ -419,12 +419,44 @@ chcp 65001 >nul
 cls
 goto :eof
 
+:DexGetCPUInfo
+if defined DEX_CPU_CACHED goto :eof
+set "DEX_CPU_NAME="
+set "DEX_CPU_MANUFACTURER="
+set "DEX_CPU_CORES="
+set "DEX_CPU_THREADS="
+set "DEX_CPU_MAXCLOCK="
+chcp 437 >nul
+for /f "tokens=1-5 delims=|" %%a in ('powershell -NoProfile -Command "$p=Get-CimInstance -ClassName Win32_Processor -ErrorAction SilentlyContinue | Select-Object -First 1; $v=@($p.Name,$p.Manufacturer,$p.NumberOfCores,$p.NumberOfLogicalProcessors,$p.MaxClockSpeed) | ForEach-Object{if($_){$_}else{'NA'}}; $v -join '|'" 2^>nul') do (
+    set "DEX_CPU_NAME=%%a"
+    set "DEX_CPU_MANUFACTURER=%%b"
+    set "DEX_CPU_CORES=%%c"
+    set "DEX_CPU_THREADS=%%d"
+    set "DEX_CPU_MAXCLOCK=%%e"
+)
+chcp 65001 >nul
+if /I "!DEX_CPU_NAME!"=="NA" set "DEX_CPU_NAME="
+if /I "!DEX_CPU_MANUFACTURER!"=="NA" set "DEX_CPU_MANUFACTURER="
+if /I "!DEX_CPU_CORES!"=="NA" set "DEX_CPU_CORES="
+if /I "!DEX_CPU_THREADS!"=="NA" set "DEX_CPU_THREADS="
+if /I "!DEX_CPU_MAXCLOCK!"=="NA" set "DEX_CPU_MAXCLOCK="
+
+if not defined DEX_CPU_NAME for /f "tokens=2 delims==" %%a in ('wmic cpu get name /value 2^>nul ^| find /I "Name"') do set "DEX_CPU_NAME=%%a"
+if not defined DEX_CPU_CORES for /f "tokens=2 delims==" %%a in ('wmic cpu get NumberOfCores /format:value 2^>nul ^| findstr /i "NumberOfCores"') do set "DEX_CPU_CORES=%%a"
+if not defined DEX_CPU_THREADS for /f "tokens=2 delims==" %%a in ('wmic cpu get NumberOfLogicalProcessors /format:value 2^>nul ^| findstr /i "NumberOfLogicalProcessors"') do set "DEX_CPU_THREADS=%%a"
+if not defined DEX_CPU_MAXCLOCK for /f "tokens=2 delims==" %%a in ('wmic cpu get MaxClockSpeed /format:value 2^>nul ^| findstr /i "MaxClockSpeed"') do set "DEX_CPU_MAXCLOCK=%%a"
+
+set "DEX_CPU_IS_INTEL="
+if defined DEX_CPU_NAME echo(!DEX_CPU_NAME!| findstr /i "Intel" >nul && set "DEX_CPU_IS_INTEL=1"
+if not defined DEX_CPU_IS_INTEL if defined DEX_CPU_MANUFACTURER echo(!DEX_CPU_MANUFACTURER!| findstr /i "Intel" >nul && set "DEX_CPU_IS_INTEL=1"
+
+set "DEX_CPU_CACHED=1"
+goto :eof
+
 :DisplayBanner
 if not defined CPUName (
-    chcp 437 >nul
-    for /f "delims=" %%A in ('powershell -NoProfile -Command "(Get-CimInstance Win32_Processor).Name" 2^>nul') do set "CPUName=%%A"
-    chcp 65001 >nul
-    if not defined CPUName for /f "tokens=2 delims==" %%A in ('wmic cpu get name /value 2^>nul ^| find /I "Name"') do set "CPUName=%%A"
+    call :DexGetCPUInfo
+    if defined DEX_CPU_NAME set "CPUName=!DEX_CPU_NAME!"
 )
 
 if not defined GPUName (
@@ -1699,9 +1731,8 @@ reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power" /v "CsEnabled" /t REG_DWOR
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power" /v "CoalescingTimerInterval" /t REG_DWORD /d "0" /f >nul 2>&1
 
 echo %c%  → Optimizing CPU vendor-specific settings...%u%
-set "_cpu_is_intel="
-for /f "delims=" %%Z in ('powershell -NoProfile -Command "(Get-CimInstance -ClassName Win32_Processor -ErrorAction SilentlyContinue).Name" 2^>nul') do echo(%%Z| findstr /i "Intel" >nul && set "_cpu_is_intel=1"
-if not defined _cpu_is_intel (wmic cpu get name 2>nul | findstr /i "Intel" >nul && set "_cpu_is_intel=1")
+call :DexGetCPUInfo
+set "_cpu_is_intel=!DEX_CPU_IS_INTEL!"
 if defined _cpu_is_intel (
     echo %c%    → Applying Intel-specific optimizations...%u%
     reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power" /v "Class2InitialUnparkCount" /t REG_DWORD /d "100" /f >nul 2>&1
@@ -1736,12 +1767,12 @@ echo %c%  → Creating configuration backup...%u%
 echo Desktop Ultimate Performance Plan Created: %date% %time% > "%temp%\desktop_plan_created"
 echo Scheme GUID: %CUSTOM_GUID% >> "%temp%\desktop_plan_created"
 echo CPU Vendor: >> "%temp%\desktop_plan_created"
-set "_desktop_plan_cpu_logged="
-for /f "delims=" %%i in ('powershell -NoProfile -Command "(Get-CimInstance -ClassName Win32_Processor -ErrorAction SilentlyContinue).Name" 2^>nul') do (
-    echo %%i >> "%temp%\desktop_plan_created"
-    set "_desktop_plan_cpu_logged=1"
+call :DexGetCPUInfo
+if defined DEX_CPU_NAME (
+    echo !DEX_CPU_NAME! >> "%temp%\desktop_plan_created"
+) else (
+    wmic cpu get name >> "%temp%\desktop_plan_created" 2>nul
 )
-if not defined _desktop_plan_cpu_logged wmic cpu get name >> "%temp%\desktop_plan_created" 2>nul
 
 echo %c%  → Power scheme activation completed%u%
 goto :eof
@@ -3807,9 +3838,8 @@ set "NumberOfCores=6"
 set "MaxClockSpeed=3000"
 set "CPU_SCORE=18000"
 
-set "temp_cores="
-for /f "delims=" %%a in ('powershell -NoProfile -Command "(Get-CimInstance -ClassName Win32_Processor -ErrorAction SilentlyContinue).NumberOfCores" 2^>nul') do set "temp_cores=%%a"
-if not defined temp_cores for /f "tokens=2 delims==" %%a in ('wmic cpu get NumberOfCores /format:value 2^>nul ^| findstr /i "NumberOfCores" 2^>nul') do set "temp_cores=%%a"
+call :DexGetCPUInfo
+set "temp_cores=!DEX_CPU_CORES!"
 if defined temp_cores (
     for /f "tokens=* delims= " %%b in ("!temp_cores!") do set "temp_cores=%%b"
     if not "!temp_cores!"=="" (
@@ -3818,9 +3848,7 @@ if defined temp_cores (
     )
 )
 
-set "temp_speed="
-for /f "delims=" %%a in ('powershell -NoProfile -Command "(Get-CimInstance -ClassName Win32_Processor -ErrorAction SilentlyContinue).MaxClockSpeed" 2^>nul') do set "temp_speed=%%a"
-if not defined temp_speed for /f "tokens=2 delims==" %%a in ('wmic cpu get MaxClockSpeed /format:value 2^>nul ^| findstr /i "MaxClockSpeed" 2^>nul') do set "temp_speed=%%a"
+set "temp_speed=!DEX_CPU_MAXCLOCK!"
 if defined temp_speed (
     for /f "tokens=* delims= " %%b in ("!temp_speed!") do set "temp_speed=%%b"
     if not "!temp_speed!"=="" (
@@ -3985,15 +4013,12 @@ echo ╚════════════════════════
 
 echo.
 echo %c%[1/12] Detecting CPU Specifications...%u%
+call :DexGetCPUInfo
 set "NumberOfCores="
+if defined DEX_CPU_CORES set /a "NumberOfCores=!DEX_CPU_CORES!" >nul 2>&1
 set "MaxClockSpeed="
-for /f "delims=" %%a in ('powershell -NoProfile -Command "(Get-CimInstance -ClassName Win32_Processor -ErrorAction SilentlyContinue).NumberOfCores" 2^>nul') do set /a "NumberOfCores=%%a" >nul 2>&1
-if not defined NumberOfCores for /f "tokens=2 delims==" %%a in ('wmic cpu get NumberOfCores /format:value 2^>nul ^| findstr "NumberOfCores"') do set /a "NumberOfCores=%%a" >nul 2>&1
-for /f "delims=" %%a in ('powershell -NoProfile -Command "(Get-CimInstance -ClassName Win32_Processor -ErrorAction SilentlyContinue).MaxClockSpeed" 2^>nul') do set /a "MaxClockSpeed=%%a" >nul 2>&1
-if not defined MaxClockSpeed for /f "tokens=2 delims==" %%a in ('wmic cpu get MaxClockSpeed /format:value 2^>nul ^| findstr "MaxClockSpeed"') do set /a "MaxClockSpeed=%%a" >nul 2>&1
-set "CPUName="
-for /f "delims=" %%a in ('powershell -NoProfile -Command "(Get-CimInstance -ClassName Win32_Processor -ErrorAction SilentlyContinue).Name" 2^>nul') do set "CPUName=%%a"
-if not defined CPUName for /f "tokens=2 delims==" %%a in ('wmic cpu get Name /format:value 2^>nul ^| findstr "Name"') do set "CPUName=%%a" >nul 2>&1
+if defined DEX_CPU_MAXCLOCK set /a "MaxClockSpeed=!DEX_CPU_MAXCLOCK!" >nul 2>&1
+set "CPUName=!DEX_CPU_NAME!"
 if not defined NumberOfCores set NumberOfCores=4
 if not defined MaxClockSpeed set MaxClockSpeed=3000
 set /a "CPU_SCORE=%NumberOfCores%*%MaxClockSpeed%"
@@ -4117,12 +4142,11 @@ echo ╚════════════════════════
 
 echo.
 echo %c%[1/6] Detecting CPU Specifications...%u%
+call :DexGetCPUInfo
 set "NumberOfCores="
+if defined DEX_CPU_CORES set /a "NumberOfCores=!DEX_CPU_CORES!" >nul 2>&1
 set "MaxClockSpeed="
-for /f "delims=" %%a in ('powershell -NoProfile -Command "(Get-CimInstance -ClassName Win32_Processor -ErrorAction SilentlyContinue).NumberOfCores" 2^>nul') do set /a "NumberOfCores=%%a" >nul 2>&1
-if not defined NumberOfCores for /f "tokens=2 delims==" %%a in ('wmic cpu get NumberOfCores /format:value 2^>nul ^| findstr "NumberOfCores"') do set /a "NumberOfCores=%%a" >nul 2>&1
-for /f "delims=" %%a in ('powershell -NoProfile -Command "(Get-CimInstance -ClassName Win32_Processor -ErrorAction SilentlyContinue).MaxClockSpeed" 2^>nul') do set /a "MaxClockSpeed=%%a" >nul 2>&1
-if not defined MaxClockSpeed for /f "tokens=2 delims==" %%a in ('wmic cpu get MaxClockSpeed /format:value 2^>nul ^| findstr "MaxClockSpeed"') do set /a "MaxClockSpeed=%%a" >nul 2>&1
+if defined DEX_CPU_MAXCLOCK set /a "MaxClockSpeed=!DEX_CPU_MAXCLOCK!" >nul 2>&1
 if not defined NumberOfCores set NumberOfCores=4
 if not defined MaxClockSpeed set MaxClockSpeed=3000
 set /a "CPU_SCORE=%NumberOfCores%*%MaxClockSpeed%"
@@ -7015,9 +7039,8 @@ set "bios_version="
 for /f "delims=" %%i in ('powershell -NoProfile -Command "(Get-CimInstance -ClassName Win32_BIOS -ErrorAction SilentlyContinue).SMBIOSBIOSVersion" 2^>nul') do set "bios_version=%%i"
 if not defined bios_version for /f "tokens=1,* delims==" %%a in ('wmic bios get smbiosbiosversion /value ^| find "="') do for /f "delims=" %%i in ("%%b") do set "bios_version=%%i"
 
-set "cpu_name="
-for /f "delims=" %%i in ('powershell -NoProfile -Command "(Get-CimInstance -ClassName Win32_Processor -ErrorAction SilentlyContinue).Name" 2^>nul') do set "cpu_name=%%i"
-if not defined cpu_name for /f "tokens=1,* delims==" %%a in ('wmic cpu get name /value ^| find "="') do for /f "delims=" %%i in ("%%b") do set "cpu_name=%%i"
+call :DexGetCPUInfo
+set "cpu_name=!DEX_CPU_NAME!"
 
 chcp 437 >nul
 powershell -Command "try { $tpm = Get-Tpm -ErrorAction SilentlyContinue; if ($tpm) { if ($tpm.TpmPresent) { Write-Host 'TPM_PRESENT' } else { Write-Host 'TPM_ABSENT' } } else { Write-Host 'TPM_UNKNOWN' } } catch { Write-Host 'TPM_UNKNOWN' }" > "%temp%\tpm_status.txt"
@@ -8619,38 +8642,13 @@ set "cpu_cache=Unknown"
 set "cpu_arch=Unknown"
 
 echo %c%• Reading CPU name...%u%
-for /f "delims=" %%i in ('powershell -NoProfile -Command "(Get-CimInstance -ClassName Win32_Processor -ErrorAction SilentlyContinue).Name" 2^>nul') do if not "%%i"=="" (set "cpu_name=%%i" & goto :cpu_name_done)
-if "!cpu_name!"=="Unknown" for /f "tokens=2 delims==" %%i in ('wmic cpu get name /value 2^>nul ^| find "=" 2^>nul') do (
-    set "cpu_name=%%i"
-    if "!cpu_name!"=="" set "cpu_name=Unknown"
-    goto :cpu_name_done
-)
-:cpu_name_done
-
 echo %c%• Reading CPU specifications...%u%
-for /f "delims=" %%i in ('powershell -NoProfile -Command "(Get-CimInstance -ClassName Win32_Processor -ErrorAction SilentlyContinue).Manufacturer" 2^>nul') do if not "%%i"=="" set "cpu_manufacturer=%%i"
-if "!cpu_manufacturer!"=="Unknown" for /f "tokens=2 delims==" %%i in ('wmic cpu get manufacturer /value 2^>nul ^| find "=" 2^>nul') do (
-    set "cpu_manufacturer=%%i"
-    if "!cpu_manufacturer!"=="" set "cpu_manufacturer=Unknown"
-)
-
-for /f "delims=" %%i in ('powershell -NoProfile -Command "(Get-CimInstance -ClassName Win32_Processor -ErrorAction SilentlyContinue).NumberOfCores" 2^>nul') do if not "%%i"=="" set "cpu_cores=%%i"
-if "!cpu_cores!"=="Unknown" for /f "tokens=2 delims==" %%i in ('wmic cpu get numberofcores /value 2^>nul ^| find "=" 2^>nul') do (
-    set "cpu_cores=%%i"
-    if "!cpu_cores!"=="" set "cpu_cores=Unknown"
-)
-
-for /f "delims=" %%i in ('powershell -NoProfile -Command "(Get-CimInstance -ClassName Win32_Processor -ErrorAction SilentlyContinue).NumberOfLogicalProcessors" 2^>nul') do if not "%%i"=="" set "cpu_threads=%%i"
-if "!cpu_threads!"=="Unknown" for /f "tokens=2 delims==" %%i in ('wmic cpu get numberoflogicalprocessors /value 2^>nul ^| find "=" 2^>nul') do (
-    set "cpu_threads=%%i"
-    if "!cpu_threads!"=="" set "cpu_threads=Unknown"
-)
-
-for /f "delims=" %%i in ('powershell -NoProfile -Command "(Get-CimInstance -ClassName Win32_Processor -ErrorAction SilentlyContinue).MaxClockSpeed" 2^>nul') do if not "%%i"=="" set "cpu_speed=%%i"
-if "!cpu_speed!"=="0" for /f "tokens=2 delims==" %%i in ('wmic cpu get maxclockspeed /value 2^>nul ^| find "=" 2^>nul') do (
-    set "cpu_speed=%%i"
-    if "!cpu_speed!"=="" set "cpu_speed=0"
-)
+call :DexGetCPUInfo
+if defined DEX_CPU_NAME set "cpu_name=!DEX_CPU_NAME!"
+if defined DEX_CPU_MANUFACTURER set "cpu_manufacturer=!DEX_CPU_MANUFACTURER!"
+if defined DEX_CPU_CORES set "cpu_cores=!DEX_CPU_CORES!"
+if defined DEX_CPU_THREADS set "cpu_threads=!DEX_CPU_THREADS!"
+if defined DEX_CPU_MAXCLOCK set "cpu_speed=!DEX_CPU_MAXCLOCK!"
 
 echo %c%Processor: !cpu_name!%u%
 echo %c%Manufacturer: !cpu_manufacturer!%u%
@@ -13361,10 +13359,9 @@ goto InterruptSchedulingLab
 
 :ApplyInterruptAffinity
 cls
-chcp 437 >nul
-for /f %%f in ('powershell -NoProfile -Command "(Get-CimInstance Win32_Processor).NumberOfCores"') do set "NumberOfCores=%%f"
-for /f %%f in ('powershell -NoProfile -Command "(Get-CimInstance Win32_Processor).NumberOfLogicalProcessors"') do set "NumberOfLogicalProcessors=%%f"
-chcp 65001 >nul
+call :DexGetCPUInfo
+set "NumberOfCores=!DEX_CPU_CORES!"
+set "NumberOfLogicalProcessors=!DEX_CPU_THREADS!"
 if "!NumberOfCores!" == "2" (
 	exit /b 0
 )
