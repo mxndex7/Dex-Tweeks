@@ -12,7 +12,7 @@ Painel administrativo em Batch para Windows 10 e Windows 11: diagnóstico, manut
 
 | Item | Requisito |
 |---|---|
-| Sistema | Windows 10 64 bits (build 19044+) ou Windows 11 64 bits (build 22000+) |
+| Sistema | Windows 10 64 bits (qualquer build) ou Windows 11 64 bits (qualquer build) |
 | Conta | Administrador |
 | Shell | Prompt de Comando e PowerShell |
 

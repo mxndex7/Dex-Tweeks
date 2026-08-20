@@ -25,15 +25,16 @@ call :InitializeDexRuntime
 call :DetectOperatingSystem
 if errorlevel 1 (
     call :SetupConsole
+    chcp 65001 >nul
     echo.
     echo %red%╔══════════════════════════════════════════════════════════════════════════════╗
     echo ║                        UNSUPPORTED OPERATING SYSTEM                          ║
     echo ╚══════════════════════════════════════════════════════════════════════════════╝%u%
     echo.
-    echo %red%  Dex Tweaks requires 64-bit Windows 10 build 19044 or later.%u%
+    echo %red%  Dex Tweaks requires 64-bit Windows 10 or Windows 11 (client edition).%u%
     echo.
-    echo %orange%  Windows 10 21H2/LTSC 2021 and Windows 11 are supported.%u%
-    echo %c%  Update Windows before using this tool.%u%
+    echo %orange%  Every Windows 10 and Windows 11 build is supported.%u%
+    echo %c%  This system was not detected as a supported edition or architecture.%u%
     echo.
     echo %grey%  Detected build: !_OS_BUILD_NUM!   Client type: !DEX_PRODUCT_TYPE!   64-bit: !DEX_OS_64BIT!%u%
     echo.
@@ -14591,9 +14592,13 @@ call :DetectOperatingSystem
 if errorlevel 1 set "DEX_SMOKE_INVALID=1"
 if /I not "!DEX_OS_FAMILY!"=="Windows 11" set "DEX_SMOKE_INVALID=1"
 if not "!DEX_CAP_WIN11_UI!"=="1" set "DEX_SMOKE_INVALID=1"
-set "DEX_TEST_BUILD=19043"
+set "DEX_TEST_BUILD=10000"
 call :DetectOperatingSystem
 if not errorlevel 1 set "DEX_SMOKE_INVALID=1"
+set "DEX_TEST_BUILD=19043"
+call :DetectOperatingSystem
+if errorlevel 1 set "DEX_SMOKE_INVALID=1"
+if /I not "!DEX_OS_FAMILY!"=="Windows 10" set "DEX_SMOKE_INVALID=1"
 set "DEX_TEST_BUILD=19045"
 call :DetectOperatingSystem
 set "c="
@@ -14717,7 +14722,16 @@ if not defined DEX_TEST_BUILD (
     if not "!DEX_PRODUCT_TYPE!"=="1" if not "!DEX_PRODUCT_TYPE!"=="3" (
         set "_OS_INSTALLTYPE="
         for /f "tokens=3" %%t in ('reg query "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion" /v InstallationType 2^>nul ^| findstr /I "InstallationType"') do set "_OS_INSTALLTYPE=%%t"
-        if /I "!_OS_INSTALLTYPE!"=="Client" (set "DEX_PRODUCT_TYPE=1") else (set "DEX_PRODUCT_TYPE=3")
+        if /I "!_OS_INSTALLTYPE!"=="Client" (
+            set "DEX_PRODUCT_TYPE=1"
+        ) else (
+            if defined _OS_INSTALLTYPE (
+                set "DEX_PRODUCT_TYPE=3"
+            ) else (
+                set "DEX_PRODUCT_TYPE=1"
+                call :LogEvent "WARN" "Could not confirm product type via CIM or registry; assuming Windows client"
+            )
+        )
     )
     chcp 65001 >nul
     set "DEX_OS_64BIT=0"
@@ -14741,7 +14755,7 @@ if not "!DEX_OS_64BIT!"=="1" (
     call :LogEvent "BLOCKED" "64-bit Windows required"
     exit /b 1
 )
-if !_OS_BUILD_NUM! LSS 19044 (
+if !_OS_BUILD_NUM! LSS 10240 (
     call :LogEvent "BLOCKED" "Unsupported Windows client build !_OS_BUILD_NUM!"
     exit /b 1
 )

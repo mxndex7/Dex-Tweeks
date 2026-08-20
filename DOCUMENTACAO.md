@@ -26,7 +26,7 @@ Referencia rapida das telas do `Dex-Tweaks.bat`: o que cada uma faz e o nivel de
 
 | Item | Comportamento |
 |---|---|
-| Windows 10 | Build 19044+, roda em modo de compatibilidade com o mesmo catalogo do Windows 11 |
+| Windows 10 | Qualquer build (10240+), roda em modo de compatibilidade com o mesmo catalogo do Windows 11 |
 | Windows 11 | Build 22000+, modo nativo |
 | Administrador | Verificado via `net session` no inicio |
 | Termo inicial | `I agree` na primeira execucao; termo e cor ficam salvos |
